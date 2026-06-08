@@ -30,8 +30,9 @@ class QueueTable extends StatelessWidget {
               columns: const [
                 DataColumn(label: Text('Video')),
                 DataColumn(label: Text('Audio')),
-                DataColumn(label: Text('Status')),
                 DataColumn(label: Text('Output')),
+                DataColumn(label: Text('Status')),
+                DataColumn(label: Text('Retries')),
               ],
               rows: [
                 for (final job in jobs)
@@ -39,11 +40,22 @@ class QueueTable extends StatelessWidget {
                     cells: [
                       DataCell(_FileCell(text: job.video.name)),
                       DataCell(_FileCell(text: job.audio.name)),
-                      DataCell(_StatusChip(status: job.status)),
                       DataCell(
                         Tooltip(
                           message: job.errorMessage ?? job.outputPath,
                           child: _FileCell(text: job.outputName),
+                        ),
+                      ),
+                      DataCell(_StatusChip(status: job.status)),
+                      DataCell(
+                        Center(
+                          child: Text(
+                            '${job.retryCount}',
+                            style: TextStyle(
+                              fontSize: AppResponsive.bodySize(context),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                     ],

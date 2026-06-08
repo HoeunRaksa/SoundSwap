@@ -237,10 +237,29 @@ class _LargeLayout extends StatelessWidget {
   }
 }
 
-class _ControlsPanel extends StatelessWidget {
+class _ControlsPanel extends StatefulWidget {
   const _ControlsPanel({required this.controller});
 
   final HomeController controller;
+
+  @override
+  State<_ControlsPanel> createState() => _ControlsPanelState();
+}
+
+class _ControlsPanelState extends State<_ControlsPanel> {
+  late final TextEditingController _prefixController;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefixController = TextEditingController(text: widget.controller.outputNamePrefix);
+  }
+
+  @override
+  void dispose() {
+    _prefixController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -253,6 +272,7 @@ class _ControlsPanel extends StatelessWidget {
           'Batch audio replacement',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontSize: AppResponsive.titleSize(context),
+            fontWeight: FontWeight.bold,
           ),
         ),
         SizedBox(height: gap / 2),
@@ -266,28 +286,42 @@ class _ControlsPanel extends StatelessWidget {
         SizedBox(height: gap),
         FolderSelectorCard(
           title: 'Video folder',
-          path: controller.videoFolderPath,
+          path: widget.controller.videoFolderPath,
           icon: Icons.movie_creation_outlined,
-          onPressed: controller.pickVideoFolder,
+          onPressed: widget.controller.pickVideoFolder,
         ),
         SizedBox(height: gap),
         FolderSelectorCard(
           title: 'Audio folder',
-          path: controller.audioFolderPath,
+          path: widget.controller.audioFolderPath,
           icon: Icons.library_music_outlined,
-          onPressed: controller.pickAudioFolder,
+          onPressed: widget.controller.pickAudioFolder,
         ),
         SizedBox(height: gap),
         FolderSelectorCard(
           title: 'Output folder',
-          path: controller.outputFolderPath,
+          path: widget.controller.outputFolderPath,
           icon: Icons.drive_folder_upload_outlined,
-          onPressed: controller.pickOutputFolder,
+          onPressed: widget.controller.pickOutputFolder,
         ),
         SizedBox(height: gap),
-        ProgressPanel(controller: controller),
+        TextField(
+          controller: _prefixController,
+          onChanged: widget.controller.setOutputNamePrefix,
+          style: TextStyle(fontSize: AppResponsive.bodySize(context)),
+          decoration: InputDecoration(
+            labelText: 'Output Name Prefix',
+            hintText: 'e.g. mydaily (defaults to soundswap)',
+            prefixIcon: Icon(
+              Icons.edit_note,
+              size: AppResponsive.iconSize(context),
+            ),
+          ),
+        ),
         SizedBox(height: gap),
-        _MetricsGrid(controller: controller),
+        ProgressPanel(controller: widget.controller),
+        SizedBox(height: gap),
+        _MetricsGrid(controller: widget.controller),
       ],
     );
   }

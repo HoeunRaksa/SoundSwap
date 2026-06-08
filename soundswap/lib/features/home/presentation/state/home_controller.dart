@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:soundswap/core/constants/app_constants.dart';
-import 'package:soundswap/core/utils/file_name_utils.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
@@ -41,6 +40,13 @@ class HomeController extends ChangeNotifier {
   String? currentFfmpegCommand;
   String? latestError;
   String? latestStackTrace;
+  String outputNamePrefix = '';
+
+  void setOutputNamePrefix(String value) {
+    outputNamePrefix = value;
+    jobs = _buildJobs();
+    notifyListeners();
+  }
 
   int retryCount = 0;
   bool isScanning = false;
@@ -230,17 +236,33 @@ class HomeController extends ChangeNotifier {
       return [];
     }
 
-    return [
-      for (var i = 0; i < videos.length; i++)
+    final prefix = outputNamePrefix.trim().isEmpty ? 'soundswap' : outputNamePrefix.trim();
+    final allocatedPaths = <String>{};
+    final jobsList = <SoundSwapJob>[];
+
+    var currentNum = 1;
+    for (var i = 0; i < videos.length; i++) {
+      String candidatePath;
+      while (true) {
+        final fileName = '$prefix-$currentNum.mp4';
+        candidatePath = p.join(outputFolderPath!, fileName);
+        if (!File(candidatePath).existsSync() && !allocatedPaths.contains(candidatePath)) {
+          allocatedPaths.add(candidatePath);
+          currentNum++;
+          break;
+        }
+        currentNum++;
+      }
+
+      jobsList.add(
         SoundSwapJob(
           video: videos[i],
           audio: _randomAudio(),
-          outputPath: p.join(
-            outputFolderPath!,
-            FileNameUtils.outputFileName(videos[i].path),
-          ),
+          outputPath: candidatePath,
         ),
-    ];
+      );
+    }
+    return jobsList;
   }
 
   Future<void> _validateBeforeStart() async {
