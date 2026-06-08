@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:soundswap/core/constants/app_constants.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
+import 'package:soundswap/features/home/presentation/widgets/debug_console_panel.dart';
 import 'package:soundswap/features/home/presentation/widgets/folder_selector_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/metric_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/progress_panel.dart';
@@ -90,7 +91,18 @@ class _WideLayout extends StatelessWidget {
       children: [
         SizedBox(width: 390, child: _ControlsPanel(controller: controller)),
         const SizedBox(width: 24),
-        Expanded(child: _QueuePanel(controller: controller)),
+        Expanded(
+          child: Column(
+            children: [
+              Expanded(child: _QueuePanel(controller: controller)),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 360,
+                child: DebugConsolePanel(controller: controller),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -108,7 +120,12 @@ class _CompactLayout extends StatelessWidget {
         children: [
           _ControlsPanel(controller: controller),
           const SizedBox(height: 20),
-          SizedBox(height: 520, child: _QueuePanel(controller: controller)),
+          SizedBox(height: 420, child: _QueuePanel(controller: controller)),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 420,
+            child: DebugConsolePanel(controller: controller),
+          ),
         ],
       ),
     );

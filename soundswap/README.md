@@ -48,12 +48,12 @@ When the selected audio is longer than the video, SoundSwap uses a random start
 position:
 
 ```powershell
-ffmpeg -y -i "video.mp4" -ss RANDOM_START -i "audio.mp3" -map 0:v -map 1:a -c:v copy -t VIDEO_DURATION -shortest "output.mp4"
+ffmpeg -y -i "video.mp4" -ss RANDOM_START -i "audio.mp3" -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -t VIDEO_DURATION -shortest "output.mp4"
 ```
 
 When the selected audio is shorter than or equal to the video, SoundSwap loops
 the audio:
 
 ```powershell
-ffmpeg -y -i "video.mp4" -stream_loop -1 -i "audio.mp3" -map 0:v -map 1:a -c:v copy -t VIDEO_DURATION "output.mp4"
+ffmpeg -y -i "video.mp4" -stream_loop -1 -i "audio.mp3" -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -t VIDEO_DURATION "output.mp4"
 ```
