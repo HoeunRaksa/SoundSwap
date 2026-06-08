@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/shared/services/ffmpeg_setup_service.dart';
 
@@ -11,54 +12,75 @@ class FfmpegSettingsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final ready = controller.isFfmpegReady;
+    final gap = AppResponsive.cardGap(context);
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(gap),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
+            Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Icon(
                   ready ? Icons.check_circle : Icons.build_circle_outlined,
+                  size: AppResponsive.iconSize(context),
                   color: ready ? Colors.green : colorScheme.primary,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
+                SizedBox(
+                  width: AppResponsive.isSmall(context) ? double.infinity : 170,
                   child: Text(
                     'Settings / FFmpeg',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontSize: AppResponsive.bodySize(context) + 2,
+                    ),
                   ),
                 ),
                 if (!ready)
-                  FilledButton.icon(
-                    onPressed: controller.isInstallingFfmpeg
-                        ? null
-                        : controller.installFfmpeg,
-                    icon: controller.isInstallingFfmpeg
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.download),
-                    label: const Text('Install FFmpeg'),
+                  SizedBox(
+                    height: AppResponsive.buttonHeight(context),
+                    child: FilledButton.icon(
+                      onPressed: controller.isInstallingFfmpeg
+                          ? null
+                          : controller.installFfmpeg,
+                      icon: controller.isInstallingFfmpeg
+                          ? SizedBox(
+                              width: AppResponsive.iconSize(context),
+                              height: AppResponsive.iconSize(context),
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Icon(
+                              Icons.download,
+                              size: AppResponsive.iconSize(context),
+                            ),
+                      label: Text(
+                        'Install FFmpeg',
+                        style: TextStyle(
+                          fontSize: AppResponsive.bodySize(context),
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: gap),
             Text(
               controller.ffmpegSetupMessage,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: ready ? Colors.green : colorScheme.onSurfaceVariant,
+                fontSize: AppResponsive.bodySize(context),
               ),
             ),
             if (controller.isInstallingFfmpeg) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: gap),
               LinearProgressIndicator(value: controller.ffmpegSetupProgress),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: gap),
             _SetupStepRow(
               label: 'Downloading',
               active: controller.ffmpegSetupStep == FfmpegSetupStep.downloading,
@@ -89,11 +111,11 @@ class FfmpegSettingsPanel extends StatelessWidget {
               done: ready,
             ),
             if (controller.ffmpegPath != null) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: gap / 2),
               _PathText(label: 'ffmpeg.exe', value: controller.ffmpegPath!),
             ],
             if (controller.ffprobePath != null) ...[
-              const SizedBox(height: 6),
+              SizedBox(height: gap / 3),
               _PathText(label: 'ffprobe.exe', value: controller.ffprobePath!),
             ],
           ],
@@ -129,7 +151,9 @@ class _SetupStepRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: EdgeInsets.symmetric(
+        vertical: AppResponsive.cardGap(context) / 5,
+      ),
       child: Row(
         children: [
           Icon(
@@ -138,15 +162,18 @@ class _SetupStepRow extends StatelessWidget {
                 : active
                 ? Icons.radio_button_checked
                 : Icons.radio_button_unchecked,
-            size: 18,
+            size: AppResponsive.iconSize(context) - 4,
             color: done
                 ? Colors.green
                 : active
                 ? colorScheme.primary
                 : colorScheme.outline,
           ),
-          const SizedBox(width: 8),
-          Text(label),
+          SizedBox(width: AppResponsive.cardGap(context) / 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: AppResponsive.bodySize(context)),
+          ),
         ],
       ),
     );
@@ -167,7 +194,9 @@ class _PathText extends StatelessWidget {
         '$label: $value',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodySmall,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontSize: AppResponsive.bodySize(context) - 1,
+        ),
       ),
     );
   }

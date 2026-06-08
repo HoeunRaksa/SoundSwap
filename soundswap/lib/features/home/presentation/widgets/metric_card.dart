@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soundswap/core/responsive/app_responsive.dart';
 
 class MetricCard extends StatelessWidget {
   const MetricCard({
@@ -15,14 +16,19 @@ class MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final gap = AppResponsive.cardGap(context) * 0.75;
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(gap),
         child: Row(
           children: [
-            Icon(icon, color: colorScheme.primary),
-            const SizedBox(width: 12),
+            Icon(
+              icon,
+              size: AppResponsive.iconSize(context),
+              color: colorScheme.primary,
+            ),
+            SizedBox(width: gap),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,10 +37,16 @@ class MetricCard extends StatelessWidget {
                     label,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
+                      fontSize: AppResponsive.bodySize(context) - 1,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(value, style: Theme.of(context).textTheme.headlineSmall),
+                  SizedBox(height: gap / 3),
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: AppResponsive.titleSize(context) - 9,
+                    ),
+                  ),
                 ],
               ),
             ),

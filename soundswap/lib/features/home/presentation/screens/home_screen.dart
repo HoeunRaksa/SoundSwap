@@ -50,28 +50,39 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
-        final compact = AppResponsive.isCompact(context);
-        final padding = AppResponsive.pagePadding(context);
-
         return Scaffold(
           appBar: AppBar(
-            title: const Text(AppConstants.appName),
+            title: Text(
+              AppConstants.appName,
+              style: TextStyle(fontSize: AppResponsive.titleSize(context)),
+            ),
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 16),
+                padding: EdgeInsets.only(
+                  right: AppResponsive.horizontalPadding(context),
+                ),
                 child: Chip(
-                  avatar: const Icon(Icons.terminal, size: 18),
-                  label: const Text('FFmpeg CLI'),
+                  avatar: Icon(
+                    Icons.terminal,
+                    size: AppResponsive.iconSize(context),
+                  ),
+                  label: Text(
+                    'FFmpeg CLI',
+                    style: TextStyle(fontSize: AppResponsive.bodySize(context)),
+                  ),
                 ),
               ),
             ],
           ),
           body: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.all(padding),
-              child: compact
-                  ? _CompactLayout(controller: _controller)
-                  : _WideLayout(controller: _controller),
+            child: ResponsivePadding(
+              child: ResponsiveCenter(
+                child: ResponsiveLayout(
+                  small: _SmallLayout(controller: _controller),
+                  medium: _MediumLayout(controller: _controller),
+                  large: _LargeLayout(controller: _controller),
+                ),
+              ),
             ),
           ),
         );
@@ -80,25 +91,61 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _WideLayout extends StatelessWidget {
-  const _WideLayout({required this.controller});
+class _SmallLayout extends StatelessWidget {
+  const _SmallLayout({required this.controller});
 
   final HomeController controller;
 
   @override
   Widget build(BuildContext context) {
+    final gap = AppResponsive.cardGap(context);
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _ControlsPanel(controller: controller),
+          SizedBox(height: gap),
+          SizedBox(
+            height: AppResponsive.queuePanelHeight(context),
+            child: _QueuePanel(controller: controller),
+          ),
+          SizedBox(height: gap),
+          SizedBox(
+            height: AppResponsive.debugPanelHeight(context),
+            child: DebugConsolePanel(controller: controller),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MediumLayout extends StatelessWidget {
+  const _MediumLayout({required this.controller});
+
+  final HomeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = AppResponsive.cardGap(context);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 390, child: _ControlsPanel(controller: controller)),
-        const SizedBox(width: 24),
+        SizedBox(
+          width: AppResponsive.sidebarWidth(context),
+          child: SingleChildScrollView(
+            child: _ControlsPanel(controller: controller),
+          ),
+        ),
+        SizedBox(width: gap),
         Expanded(
           child: Column(
             children: [
               Expanded(child: _QueuePanel(controller: controller)),
-              const SizedBox(height: 16),
+              SizedBox(height: gap),
               SizedBox(
-                height: 360,
+                height: AppResponsive.debugPanelHeight(context),
                 child: DebugConsolePanel(controller: controller),
               ),
             ],
@@ -109,26 +156,38 @@ class _WideLayout extends StatelessWidget {
   }
 }
 
-class _CompactLayout extends StatelessWidget {
-  const _CompactLayout({required this.controller});
+class _LargeLayout extends StatelessWidget {
+  const _LargeLayout({required this.controller});
 
   final HomeController controller;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _ControlsPanel(controller: controller),
-          const SizedBox(height: 20),
-          SizedBox(height: 420, child: _QueuePanel(controller: controller)),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 420,
-            child: DebugConsolePanel(controller: controller),
+    final gap = AppResponsive.cardGap(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: AppResponsive.sidebarWidth(context),
+          child: SingleChildScrollView(
+            child: _ControlsPanel(controller: controller),
           ),
-        ],
-      ),
+        ),
+        SizedBox(width: gap),
+        Expanded(
+          child: Column(
+            children: [
+              Expanded(child: _QueuePanel(controller: controller)),
+              SizedBox(height: gap),
+              SizedBox(
+                height: AppResponsive.debugPanelHeight(context),
+                child: DebugConsolePanel(controller: controller),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -140,86 +199,99 @@ class _ControlsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gap = AppResponsive.cardGap(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           'Batch audio replacement',
-          style: Theme.of(context).textTheme.headlineMedium,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontSize: AppResponsive.titleSize(context),
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: gap / 2),
         Text(
           'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: AppResponsive.bodySize(context),
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: gap),
         FfmpegSettingsPanel(controller: controller),
-        const SizedBox(height: 12),
+        SizedBox(height: gap),
         FolderSelectorCard(
           title: 'Video folder',
           path: controller.videoFolderPath,
           icon: Icons.movie_creation_outlined,
           onPressed: controller.pickVideoFolder,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: gap),
         FolderSelectorCard(
           title: 'Audio folder',
           path: controller.audioFolderPath,
           icon: Icons.library_music_outlined,
           onPressed: controller.pickAudioFolder,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: gap),
         FolderSelectorCard(
           title: 'Output folder',
           path: controller.outputFolderPath,
           icon: Icons.drive_folder_upload_outlined,
           onPressed: controller.pickOutputFolder,
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: gap),
         ProgressPanel(controller: controller),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: MetricCard(
-                label: 'Videos',
-                value: '${controller.videos.length}',
-                icon: Icons.video_file,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: MetricCard(
-                label: 'Audio',
-                value: '${controller.audios.length}',
-                icon: Icons.audio_file,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: MetricCard(
-                label: 'Success',
-                value: '${controller.successCount}',
-                icon: Icons.check_circle_outline,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: MetricCard(
-                label: 'Failed',
-                value: '${controller.failedCount}',
-                icon: Icons.error_outline,
-              ),
-            ),
-          ],
-        ),
+        SizedBox(height: gap),
+        _MetricsGrid(controller: controller),
       ],
+    );
+  }
+}
+
+class _MetricsGrid extends StatelessWidget {
+  const _MetricsGrid({required this.controller});
+
+  final HomeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = AppResponsive.cardGap(context);
+    final metrics = [
+      MetricCard(
+        label: 'Videos',
+        value: '${controller.videos.length}',
+        icon: Icons.video_file,
+      ),
+      MetricCard(
+        label: 'Audio',
+        value: '${controller.audios.length}',
+        icon: Icons.audio_file,
+      ),
+      MetricCard(
+        label: 'Success',
+        value: '${controller.successCount}',
+        icon: Icons.check_circle_outline,
+      ),
+      MetricCard(
+        label: 'Failed',
+        value: '${controller.failedCount}',
+        icon: Icons.error_outline,
+      ),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: AppResponsive.isSmall(context) ? 1 : 2,
+        crossAxisSpacing: gap,
+        mainAxisSpacing: gap,
+        childAspectRatio: AppResponsive.metricAspectRatio(context),
+      ),
+      itemCount: metrics.length,
+      itemBuilder: (context, index) => metrics[index],
     );
   }
 }
@@ -239,18 +311,21 @@ class _QueuePanel extends StatelessWidget {
             Expanded(
               child: Text(
                 'Queue',
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontSize: AppResponsive.titleSize(context) - 4,
+                ),
               ),
             ),
             Text(
               '${controller.jobs.length} files',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: AppResponsive.bodySize(context),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: AppResponsive.cardGap(context)),
         Expanded(child: QueueTable(jobs: controller.jobs)),
       ],
     );
