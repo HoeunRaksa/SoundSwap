@@ -7,14 +7,14 @@ videos with audio files from a selected folder.
 
 - Select a video folder, audio folder, and output folder.
 - Local FFmpeg binaries (`ffmpeg.exe` and `ffprobe.exe`) resolved from `tools/ffmpeg/`.
-- Scan videos with `.mp4`, `.mov`, and `.mkv` extensions.
-- Scan audio with `.mp3`, `.wav`, and `.m4a` extensions.
+- Scan videos with `.mp4`, `.mov`, `.mkv`, and `.avi` extensions.
+- Scan audio with `.mp3`, `.wav`, `.m4a`, and `.aac` extensions.
 - Randomly choose an audio file for each video.
 - Use a random audio start time when the audio is longer than the video.
 - Loop shorter audio files so the replacement audio can cover the video.
 - Export MP4 files named `original_name_soundswap.mp4`.
 - Show current progress, success count, failed count, and a queue table.
-- Business screens for branding, text overlay prep, project templates, folder watching, effects prep, and CSV product import.
+- Business screens for branding, text overlay prep, project templates, smart folder watching, result history, effects prep, and CSV product import.
 
 ## Business tools
 
@@ -23,8 +23,9 @@ without changing the current batch audio replacement flow:
 
 - **Branding Tools**: save a logo path, phone number, Telegram, and Facebook page name, with prepared FFmpeg overlay preview text.
 - **Text Overlay**: save title, subtitle, promotion text, and position, with prepared `drawtext` preview text.
-- **Templates**: save and load video/audio/output folders, output prefix, branding settings, and text overlay settings.
-- **Folder Watcher**: watch a folder and list newly detected videos without auto-processing.
+- **Templates**: save, load, rename, and delete video/audio/output folder templates, output prefix, branding settings, and text overlay settings.
+- **Folder Watcher**: remember source video, source audio, and result folders, then auto-process new videos after copying finishes.
+- **Result History**: review watcher results, open result folders, remove records, delete result files, clear result folders, and remove duplicate results safely.
 - **Effects**: prepare optional random audio/effect toggles. Defaults are off.
 - **Product Import**: import CSV rows with `name`, `price`, `description`, and `phone` columns.
 

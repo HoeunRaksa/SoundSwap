@@ -10,6 +10,8 @@ import 'package:soundswap/features/home/presentation/screens/home_screen.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/product_import/presentation/screens/product_import_screen.dart';
 import 'package:soundswap/features/product_import/presentation/state/product_import_controller.dart';
+import 'package:soundswap/features/result_history/presentation/screens/result_history_screen.dart';
+import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
 import 'package:soundswap/features/templates/presentation/screens/templates_screen.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
 import 'package:soundswap/features/text_overlay/presentation/screens/text_overlay_screen.dart';
@@ -28,6 +30,7 @@ class _AppShellState extends State<AppShell> {
   final _textOverlayController = TextOverlayController();
   final _templatesController = TemplatesController();
   final _folderWatcherController = FolderWatcherController();
+  final _resultHistoryController = ResultHistoryController();
   final _effectsController = EffectsController();
   final _productImportController = ProductImportController();
   var _selectedIndex = 0;
@@ -66,7 +69,19 @@ class _AppShellState extends State<AppShell> {
       label: 'Folder Watcher',
       icon: Icons.visibility_outlined,
       selectedIcon: Icons.visibility,
-      child: FolderWatcherScreen(controller: _folderWatcherController),
+      child: FolderWatcherScreen(
+        controller: _folderWatcherController,
+        historyController: _resultHistoryController,
+      ),
+    ),
+    _NavigationItem(
+      label: 'Result History',
+      icon: Icons.history_outlined,
+      selectedIcon: Icons.history,
+      child: ResultHistoryScreen(
+        controller: _resultHistoryController,
+        folderWatcherController: _folderWatcherController,
+      ),
     ),
     _NavigationItem(
       label: 'Effects',
@@ -89,6 +104,8 @@ class _AppShellState extends State<AppShell> {
     _brandingController.load();
     _textOverlayController.load();
     _templatesController.load();
+    _folderWatcherController.load();
+    _resultHistoryController.load();
     _effectsController.load();
     _productImportController.load();
   }
@@ -100,6 +117,7 @@ class _AppShellState extends State<AppShell> {
     _textOverlayController.dispose();
     _templatesController.dispose();
     _folderWatcherController.dispose();
+    _resultHistoryController.dispose();
     _effectsController.dispose();
     _productImportController.dispose();
     super.dispose();

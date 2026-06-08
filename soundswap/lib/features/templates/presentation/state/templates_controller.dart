@@ -58,4 +58,39 @@ class TemplatesController extends ChangeNotifier {
     message = 'Template loaded.';
     notifyListeners();
   }
+
+  Future<void> renameTemplate({
+    required ProjectTemplate template,
+    required String name,
+  }) async {
+    final updatedName = name.trim();
+    if (updatedName.isEmpty) return;
+    templates = [
+      for (final item in templates)
+        if (item.id == template.id)
+          ProjectTemplate(
+            id: item.id,
+            name: updatedName,
+            createdAt: item.createdAt,
+            videoFolder: item.videoFolder,
+            audioFolder: item.audioFolder,
+            outputFolder: item.outputFolder,
+            outputPrefix: item.outputPrefix,
+            branding: item.branding,
+            textOverlay: item.textOverlay,
+          )
+        else
+          item,
+    ];
+    await _service.saveAll(templates);
+    message = 'Template renamed.';
+    notifyListeners();
+  }
+
+  Future<void> deleteTemplate(ProjectTemplate template) async {
+    templates = templates.where((item) => item.id != template.id).toList();
+    await _service.saveAll(templates);
+    message = 'Template deleted.';
+    notifyListeners();
+  }
 }

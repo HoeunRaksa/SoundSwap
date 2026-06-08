@@ -4,17 +4,66 @@ import 'package:soundswap/features/text_overlay/data/models/text_overlay_setting
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
 import 'package:soundswap/shared/widgets/feature_page.dart';
 
-class TextOverlayScreen extends StatelessWidget {
+class TextOverlayScreen extends StatefulWidget {
   const TextOverlayScreen({required this.controller, super.key});
 
   final TextOverlayController controller;
 
   @override
+  State<TextOverlayScreen> createState() => _TextOverlayScreenState();
+}
+
+class _TextOverlayScreenState extends State<TextOverlayScreen> {
+  final _titleController = TextEditingController();
+  final _subtitleController = TextEditingController();
+  final _promotionController = TextEditingController();
+  final _titleFocus = FocusNode();
+  final _subtitleFocus = FocusNode();
+  final _promotionFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_syncFromState);
+    _syncFromState();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncFromState);
+    _titleController.dispose();
+    _subtitleController.dispose();
+    _promotionController.dispose();
+    _titleFocus.dispose();
+    _subtitleFocus.dispose();
+    _promotionFocus.dispose();
+    super.dispose();
+  }
+
+  void _syncFromState() {
+    if (_titleFocus.hasFocus ||
+        _subtitleFocus.hasFocus ||
+        _promotionFocus.hasFocus) {
+      return;
+    }
+    final settings = widget.controller.settings;
+    _setTextIfChanged(_titleController, settings.title);
+    _setTextIfChanged(_subtitleController, settings.subtitle);
+    _setTextIfChanged(_promotionController, settings.promotionText);
+  }
+
+  void _setTextIfChanged(TextEditingController controller, String value) {
+    if (controller.text != value) {
+      controller.text = value;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller,
+      listenable: widget.controller,
       builder: (context, _) {
-        final settings = controller.settings;
+        final settings = widget.controller.settings;
         return FeaturePage(
           title: 'Text Overlay',
           subtitle:
@@ -26,20 +75,27 @@ class TextOverlayScreen extends StatelessWidget {
               children: [
                 _OverlayField(
                   label: 'Title',
-                  value: settings.title,
+                  controller: _titleController,
+                  focusNode: _titleFocus,
+                  maxLines: 2,
                   onChanged: (value) =>
-                      controller.update(settings.copyWith(title: value)),
+                      widget.controller.update(settings.copyWith(title: value)),
                 ),
                 _OverlayField(
                   label: 'Subtitle',
-                  value: settings.subtitle,
-                  onChanged: (value) =>
-                      controller.update(settings.copyWith(subtitle: value)),
+                  controller: _subtitleController,
+                  focusNode: _subtitleFocus,
+                  maxLines: 3,
+                  onChanged: (value) => widget.controller.update(
+                    settings.copyWith(subtitle: value),
+                  ),
                 ),
                 _OverlayField(
                   label: 'Price / promotion text',
-                  value: settings.promotionText,
-                  onChanged: (value) => controller.update(
+                  controller: _promotionController,
+                  focusNode: _promotionFocus,
+                  maxLines: 3,
+                  onChanged: (value) => widget.controller.update(
                     settings.copyWith(promotionText: value),
                   ),
                 ),
@@ -59,7 +115,7 @@ class TextOverlayScreen extends StatelessWidget {
                     ),
                   ],
                   selected: {settings.position},
-                  onSelectionChanged: (selection) => controller.update(
+                  onSelectionChanged: (selection) => widget.controller.update(
                     settings.copyWith(position: selection.first),
                   ),
                 ),
@@ -88,20 +144,26 @@ class TextOverlayScreen extends StatelessWidget {
 class _OverlayField extends StatelessWidget {
   const _OverlayField({
     required this.label,
-    required this.value,
+    required this.controller,
+    required this.focusNode,
     required this.onChanged,
+    required this.maxLines,
   });
 
   final String label;
-  final String value;
+  final TextEditingController controller;
+  final FocusNode focusNode;
   final ValueChanged<String> onChanged;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      key: ValueKey('$label$value'),
-      initialValue: value,
+      controller: controller,
+      focusNode: focusNode,
       onChanged: onChanged,
+      minLines: 1,
+      maxLines: maxLines,
       decoration: InputDecoration(labelText: label),
       style: TextStyle(fontSize: AppResponsive.bodySize(context)),
     );

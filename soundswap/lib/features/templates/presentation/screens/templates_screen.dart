@@ -91,6 +91,8 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
                         branding: widget.brandingController,
                         textOverlay: widget.textOverlayController,
                       ),
+                      onRename: () => _renameTemplate(template),
+                      onDelete: () => _confirmDeleteTemplate(template),
                     ),
               ],
             ),
@@ -99,13 +101,72 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
       },
     );
   }
+
+  Future<void> _renameTemplate(ProjectTemplate template) async {
+    final controller = TextEditingController(text: template.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename template'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Template name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newName != null) {
+      await widget.controller.renameTemplate(template: template, name: newName);
+    }
+  }
+
+  Future<void> _confirmDeleteTemplate(ProjectTemplate template) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete template?'),
+        content: Text('Delete "${template.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await widget.controller.deleteTemplate(template);
+    }
+  }
 }
 
 class _TemplateTile extends StatelessWidget {
-  const _TemplateTile({required this.template, required this.onLoad});
+  const _TemplateTile({
+    required this.template,
+    required this.onLoad,
+    required this.onRename,
+    required this.onDelete,
+  });
 
   final ProjectTemplate template;
   final VoidCallback onLoad;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +183,22 @@ class _TemplateTile extends StatelessWidget {
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: OutlinedButton(onPressed: onLoad, child: const Text('Load')),
+      trailing: Wrap(
+        spacing: AppResponsive.cardGap(context) / 2,
+        children: [
+          OutlinedButton(onPressed: onLoad, child: const Text('Load')),
+          IconButton(
+            tooltip: 'Rename',
+            onPressed: onRename,
+            icon: const Icon(Icons.edit),
+          ),
+          IconButton(
+            tooltip: 'Delete',
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
+      ),
     );
   }
 }
