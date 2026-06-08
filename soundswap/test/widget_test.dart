@@ -5,7 +5,8 @@ void main() {
   testWidgets('renders SoundSwap shell', (WidgetTester tester) async {
     await tester.pumpWidget(const SoundSwapApp());
 
-    expect(find.text('SoundSwap'), findsOneWidget);
-    expect(find.text('FFmpeg CLI'), findsOneWidget);
+    expect(find.text('SoundSwap'), findsWidgets);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Branding Tools'), findsOneWidget);
   });
 }

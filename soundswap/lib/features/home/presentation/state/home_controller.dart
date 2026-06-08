@@ -48,6 +48,20 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> applyTemplateFolders({
+    required String? videoFolder,
+    required String? audioFolder,
+    required String? outputFolder,
+    required String outputPrefix,
+  }) async {
+    videoFolderPath = videoFolder;
+    audioFolderPath = audioFolder;
+    outputFolderPath = outputFolder;
+    outputNamePrefix = outputPrefix;
+    await scanAndBuildQueue();
+    notifyListeners();
+  }
+
   int retryCount = 0;
   bool isScanning = false;
   bool isProcessing = false;
@@ -95,11 +109,15 @@ class HomeController extends ChangeNotifier {
     final documents = await getApplicationDocumentsDirectory();
     outputFolderPath = p.join(documents.path, AppConstants.appName);
     await Directory(outputFolderPath!).create(recursive: true);
-    
+
     // Log whether FFmpeg binaries are ready
     if (!_ffmpegService.isReady) {
-      await _logError('FFmpeg binaries not found at tools/ffmpeg/');
-      stderr.writeln('[ERROR] FFmpeg binaries not found at tools/ffmpeg/');
+      const message =
+          'FFmpeg files are missing in tools/ffmpeg. Please add ffmpeg.exe and ffprobe.exe.';
+      statusMessage = message;
+      latestError = message;
+      await _logError(message);
+      stderr.writeln('[ERROR] $message');
     } else {
       await _logInfo('FFmpeg binaries found.');
     }
@@ -236,7 +254,9 @@ class HomeController extends ChangeNotifier {
       return [];
     }
 
-    final prefix = outputNamePrefix.trim().isEmpty ? 'soundswap' : outputNamePrefix.trim();
+    final prefix = outputNamePrefix.trim().isEmpty
+        ? 'soundswap'
+        : outputNamePrefix.trim();
     final allocatedPaths = <String>{};
     final jobsList = <SoundSwapJob>[];
 
@@ -246,7 +266,8 @@ class HomeController extends ChangeNotifier {
       while (true) {
         final fileName = '$prefix-$currentNum.mp4';
         candidatePath = p.join(outputFolderPath!, fileName);
-        if (!File(candidatePath).existsSync() && !allocatedPaths.contains(candidatePath)) {
+        if (!File(candidatePath).existsSync() &&
+            !allocatedPaths.contains(candidatePath)) {
           allocatedPaths.add(candidatePath);
           currentNum++;
           break;
@@ -288,7 +309,7 @@ class HomeController extends ChangeNotifier {
 
     if (!isFfmpegReady) {
       throw const BatchValidationException(
-        'FFmpeg executables are missing. Check Debug Console for details.',
+        'FFmpeg files are missing in tools/ffmpeg. Please add ffmpeg.exe and ffprobe.exe.',
       );
     }
 

@@ -16,8 +16,12 @@ class FfmpegService {
 
   void _locateExecutables() {
     // 1. Check relative to current working directory (dev)
-    final devFfmpeg = p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffmpeg.exe'));
-    final devFfprobe = p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffprobe.exe'));
+    final devFfmpeg = p.normalize(
+      p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffmpeg.exe'),
+    );
+    final devFfprobe = p.normalize(
+      p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffprobe.exe'),
+    );
 
     if (File(devFfmpeg).existsSync() && File(devFfprobe).existsSync()) {
       _resolvedFfmpegPath = devFfmpeg;
@@ -27,8 +31,12 @@ class FfmpegService {
 
     // 2. Check relative to executable directory (prod)
     final exeDir = p.dirname(Platform.resolvedExecutable);
-    final prodFfmpeg = p.normalize(p.join(exeDir, 'tools', 'ffmpeg', 'ffmpeg.exe'));
-    final prodFfprobe = p.normalize(p.join(exeDir, 'tools', 'ffmpeg', 'ffprobe.exe'));
+    final prodFfmpeg = p.normalize(
+      p.join(exeDir, 'tools', 'ffmpeg', 'ffmpeg.exe'),
+    );
+    final prodFfprobe = p.normalize(
+      p.join(exeDir, 'tools', 'ffmpeg', 'ffprobe.exe'),
+    );
 
     if (File(prodFfmpeg).existsSync() && File(prodFfprobe).existsSync()) {
       _resolvedFfmpegPath = prodFfmpeg;
@@ -37,10 +45,19 @@ class FfmpegService {
     }
   }
 
-  bool get isReady => _resolvedFfmpegPath != null && _resolvedFfprobePath != null;
+  bool get isReady =>
+      _resolvedFfmpegPath != null && _resolvedFfprobePath != null;
 
-  String get ffmpegPath => _resolvedFfmpegPath ?? p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffmpeg.exe'));
-  String get ffprobePath => _resolvedFfprobePath ?? p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffprobe.exe'));
+  String get ffmpegPath =>
+      _resolvedFfmpegPath ??
+      p.normalize(
+        p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffmpeg.exe'),
+      );
+  String get ffprobePath =>
+      _resolvedFfprobePath ??
+      p.normalize(
+        p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffprobe.exe'),
+      );
 
   Future<bool> isExecutableAvailable(String executable) async {
     try {

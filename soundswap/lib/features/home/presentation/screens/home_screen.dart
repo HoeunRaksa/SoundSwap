@@ -10,7 +10,9 @@ import 'package:soundswap/features/home/presentation/widgets/queue_table.dart';
 import 'package:soundswap/shared/widgets/empty_state.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({this.controller, super.key});
+
+  final HomeController? controller;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -18,17 +20,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final HomeController _controller;
+  late final bool _ownsController;
 
   @override
   void initState() {
     super.initState();
-    _controller = HomeController();
-    _controller.initializeOutputFolder();
+    _controller = widget.controller ?? HomeController();
+    _ownsController = widget.controller == null;
+    if (_ownsController) {
+      _controller.initializeOutputFolder();
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -109,7 +117,9 @@ class _SmallLayout extends StatelessWidget {
             child: Text(
               'Copyright by Hoeun Raksa',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 fontSize: AppResponsive.bodySize(context) - 2,
               ),
             ),
@@ -162,9 +172,7 @@ class _MediumLayout extends StatelessWidget {
               SizedBox(height: gap),
               ProgressPanel(controller: controller),
               SizedBox(height: gap),
-              Expanded(
-                child: _QueuePanel(controller: controller),
-              ),
+              Expanded(child: _QueuePanel(controller: controller)),
             ],
           ),
         ),
@@ -214,9 +222,7 @@ class _LargeLayout extends StatelessWidget {
               SizedBox(height: gap),
               ProgressPanel(controller: controller),
               SizedBox(height: gap),
-              Expanded(
-                child: _QueuePanel(controller: controller),
-              ),
+              Expanded(child: _QueuePanel(controller: controller)),
             ],
           ),
         ),
@@ -226,10 +232,7 @@ class _LargeLayout extends StatelessWidget {
 }
 
 class _ControlsPanel extends StatefulWidget {
-  const _ControlsPanel({
-    required this.controller,
-    this.showFooter = true,
-  });
+  const _ControlsPanel({required this.controller, this.showFooter = true});
 
   final HomeController controller;
   final bool showFooter;
@@ -244,7 +247,9 @@ class _ControlsPanelState extends State<_ControlsPanel> {
   @override
   void initState() {
     super.initState();
-    _prefixController = TextEditingController(text: widget.controller.outputNamePrefix);
+    _prefixController = TextEditingController(
+      text: widget.controller.outputNamePrefix,
+    );
   }
 
   @override
@@ -361,7 +366,9 @@ class _ControlsPanelState extends State<_ControlsPanel> {
             SizedBox(
               height: AppResponsive.buttonHeight(context) + 8,
               child: OutlinedButton.icon(
-                onPressed: widget.controller.isProcessing || widget.controller.isScanning
+                onPressed:
+                    widget.controller.isProcessing ||
+                        widget.controller.isScanning
                     ? null
                     : widget.controller.scanAndBuildQueue,
                 icon: Icon(
@@ -370,9 +377,7 @@ class _ControlsPanelState extends State<_ControlsPanel> {
                 ),
                 label: Text(
                   'Rescan',
-                  style: TextStyle(
-                    fontSize: AppResponsive.bodySize(context),
-                  ),
+                  style: TextStyle(fontSize: AppResponsive.bodySize(context)),
                 ),
               ),
             ),

@@ -6,7 +6,7 @@ videos with audio files from a selected folder.
 ## Features
 
 - Select a video folder, audio folder, and output folder.
-- Bundled FFmpeg (`ffmpeg.exe` and `ffprobe.exe`) automatically resolved from `tools/ffmpeg/`.
+- Local FFmpeg binaries (`ffmpeg.exe` and `ffprobe.exe`) resolved from `tools/ffmpeg/`.
 - Scan videos with `.mp4`, `.mov`, and `.mkv` extensions.
 - Scan audio with `.mp3`, `.wav`, and `.m4a` extensions.
 - Randomly choose an audio file for each video.
@@ -14,21 +14,37 @@ videos with audio files from a selected folder.
 - Loop shorter audio files so the replacement audio can cover the video.
 - Export MP4 files named `original_name_soundswap.mp4`.
 - Show current progress, success count, failed count, and a queue table.
+- Business screens for branding, text overlay prep, project templates, folder watching, effects prep, and CSV product import.
+
+## Business tools
+
+SoundSwap includes separate feature screens that prepare business metadata
+without changing the current batch audio replacement flow:
+
+- **Branding Tools**: save a logo path, phone number, Telegram, and Facebook page name, with prepared FFmpeg overlay preview text.
+- **Text Overlay**: save title, subtitle, promotion text, and position, with prepared `drawtext` preview text.
+- **Templates**: save and load video/audio/output folders, output prefix, branding settings, and text overlay settings.
+- **Folder Watcher**: watch a folder and list newly detected videos without auto-processing.
+- **Effects**: prepare optional random audio/effect toggles. Defaults are off.
+- **Product Import**: import CSV rows with `name`, `price`, `description`, and `phone` columns.
 
 ## FFmpeg setup on Windows
 
 SoundSwap runs FFmpeg silently from the project's `tools/ffmpeg/` directory.
+It does not use the global Windows `PATH` and does not ask users to install
+FFmpeg from inside the app.
 
 ### Development Setup
-Before running the application in development, download the required FFmpeg binaries:
+Before running the application in development, download the required Gyan FFmpeg
+release essentials binaries:
 
 ```powershell
 dart run tools/download_ffmpeg.dart
 ```
 
 This helper script will:
-- Download the FFmpeg release zip.
-- Extract `ffmpeg.exe` and `ffprobe.exe` into `tools/ffmpeg/`.
+- Download `ffmpeg-release-essentials.zip` from Gyan FFmpeg Builds.
+- Extract only `ffmpeg.exe` and `ffprobe.exe` into `tools/ffmpeg/`.
 - Clean up temporary zip files.
 
 ### Release Build Bundling

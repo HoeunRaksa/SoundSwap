@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soundswap/core/theme/app_theme.dart';
-import 'package:soundswap/features/home/presentation/screens/home_screen.dart';
+import 'package:soundswap/features/navigation/presentation/screens/app_shell.dart';
 
 class SoundSwapApp extends StatelessWidget {
   const SoundSwapApp({super.key});
@@ -13,7 +13,7 @@ class SoundSwapApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      home: const AppShell(),
     );
   }
 }

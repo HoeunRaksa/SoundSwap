@@ -4,7 +4,8 @@ import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
 
-const downloadUrl = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip';
+const downloadUrl =
+    'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip';
 
 void main() async {
   final projectDir = Directory.current.path;
@@ -20,12 +21,14 @@ void main() async {
   try {
     print('Downloading FFmpeg release essentials...');
     print('URL: $downloadUrl');
-    
+
     final request = await client.getUrl(Uri.parse(downloadUrl));
     final response = await request.close();
-    
+
     if (response.statusCode != HttpStatus.ok) {
-      throw HttpException('Download failed with status code ${response.statusCode}');
+      throw HttpException(
+        'Download failed with status code ${response.statusCode}',
+      );
     }
 
     final sink = zipFile.openWrite();
@@ -37,7 +40,9 @@ void main() async {
       sink.add(chunk);
       if (totalBytes > 0) {
         final percent = (bytesDownloaded / totalBytes * 100).toStringAsFixed(1);
-        stdout.write('\rDownloading: $percent% ($bytesDownloaded / $totalBytes bytes)');
+        stdout.write(
+          '\rDownloading: $percent% ($bytesDownloaded / $totalBytes bytes)',
+        );
       } else {
         stdout.write('\rDownloading: $bytesDownloaded bytes');
       }
@@ -55,7 +60,7 @@ void main() async {
 
     for (final file in archive.files) {
       if (!file.isFile) continue;
-      
+
       final baseName = p.basename(file.name).toLowerCase();
       if (baseName == 'ffmpeg.exe') {
         final destPath = p.join(toolsDir.path, 'ffmpeg.exe');
@@ -81,7 +86,9 @@ void main() async {
     await inputStream.close();
 
     if (!ffmpegExtracted || !ffprobeExtracted) {
-      throw Exception('Failed to locate ffmpeg.exe and/or ffprobe.exe in the downloaded archive.');
+      throw Exception(
+        'Failed to locate ffmpeg.exe and/or ffprobe.exe in the downloaded archive.',
+      );
     }
 
     print('Cleaning up temporary files...');

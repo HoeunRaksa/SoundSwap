@@ -47,10 +47,11 @@ class MetricCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       value,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontSize: AppResponsive.titleSize(context) - 9,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontSize: AppResponsive.titleSize(context) - 9,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),

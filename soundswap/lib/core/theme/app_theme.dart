@@ -14,7 +14,9 @@ class AppTheme {
       onSurface: const Color(0xFF1E1A18), // Muted dark text
       onSurfaceVariant: const Color(0xFF6B6058), // Muted dark variant text
       surfaceContainerLow: const Color(0xFFFFFFFF), // Pure white cards
-      surfaceContainerHighest: const Color(0xFFF3EFE9), // Soft warm grey for headers
+      surfaceContainerHighest: const Color(
+        0xFFF3EFE9,
+      ), // Soft warm grey for headers
       outline: const Color(0xFFD6CBC0), // Muted outline
       outlineVariant: const Color(0xFFE8E2D9), // Very soft card border
       error: const Color(0xFF991B1B),
@@ -76,18 +78,25 @@ class AppTheme {
         ),
         filled: true,
         fillColor: colorScheme.surfaceContainerLow,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           side: BorderSide(color: colorScheme.primary),
         ),
