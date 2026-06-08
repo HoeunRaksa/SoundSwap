@@ -131,7 +131,7 @@ class _ControlsPanel extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Match videos and audio files by order, then export MP4 files with the original video stream preserved.',
+          'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),

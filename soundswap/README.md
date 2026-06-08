@@ -8,7 +8,9 @@ videos with audio files from a selected folder.
 - Select a video folder, audio folder, and output folder.
 - Scan videos with `.mp4`, `.mov`, and `.mkv` extensions.
 - Scan audio with `.mp3`, `.wav`, and `.m4a` extensions.
-- Match media by order and loop audio files when there are more videos.
+- Randomly choose an audio file for each video.
+- Use a random audio start time when the audio is longer than the video.
+- Loop shorter audio files so the replacement audio can cover the video.
 - Export MP4 files named `original_name_soundswap.mp4`.
 - Show current progress, success count, failed count, and a queue table.
 
@@ -40,8 +42,18 @@ flutter build windows
 
 ## FFmpeg command
 
-For each queued pair, SoundSwap runs the equivalent of:
+SoundSwap first reads video and audio durations with `ffprobe`.
+
+When the selected audio is longer than the video, SoundSwap uses a random start
+position:
 
 ```powershell
-ffmpeg -i "video.mp4" -i "audio.mp3" -map 0:v -map 1:a -c:v copy -shortest "output.mp4"
+ffmpeg -y -i "video.mp4" -ss RANDOM_START -i "audio.mp3" -map 0:v -map 1:a -c:v copy -t VIDEO_DURATION -shortest "output.mp4"
+```
+
+When the selected audio is shorter than or equal to the video, SoundSwap loops
+the audio:
+
+```powershell
+ffmpeg -y -i "video.mp4" -stream_loop -1 -i "audio.mp3" -map 0:v -map 1:a -c:v copy -t VIDEO_DURATION "output.mp4"
 ```

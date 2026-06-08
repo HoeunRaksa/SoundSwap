@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
@@ -23,6 +24,7 @@ class HomeController extends ChangeNotifier {
   final FolderPickerService _folderPickerService;
   final MediaScannerService _mediaScannerService;
   final FfmpegService _ffmpegService;
+  final Random _random = Random();
 
   String? videoFolderPath;
   String? audioFolderPath;
@@ -126,9 +128,7 @@ class HomeController extends ChangeNotifier {
     isProcessing = true;
     currentIndex = 0;
     statusMessage = 'Starting FFmpeg batch...';
-    jobs = [
-      for (final job in jobs) job.copyWith(status: SoundSwapStatus.queued),
-    ];
+    jobs = _buildJobs();
     notifyListeners();
 
     for (var i = 0; i < jobs.length; i++) {
@@ -163,7 +163,7 @@ class HomeController extends ChangeNotifier {
       for (var i = 0; i < videos.length; i++)
         SoundSwapJob(
           video: videos[i],
-          audio: audios[i % audios.length],
+          audio: audios[_random.nextInt(audios.length)],
           outputPath: p.join(
             outputFolderPath!,
             FileNameUtils.outputFileName(videos[i].path),
