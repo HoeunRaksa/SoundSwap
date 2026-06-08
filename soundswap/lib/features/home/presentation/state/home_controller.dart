@@ -12,7 +12,6 @@ import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
 import 'package:soundswap/features/home/data/services/media_scanner_service.dart';
 import 'package:soundswap/shared/services/debug_log_service.dart';
-import 'package:soundswap/shared/services/ffmpeg_setup_service.dart';
 import 'package:soundswap/shared/services/folder_picker_service.dart';
 
 class HomeController extends ChangeNotifier {
@@ -21,18 +20,15 @@ class HomeController extends ChangeNotifier {
     MediaScannerService? mediaScannerService,
     FfmpegService? ffmpegService,
     DebugLogService? debugLogService,
-    FfmpegSetupService? ffmpegSetupService,
   }) : _folderPickerService = folderPickerService ?? FolderPickerService(),
        _mediaScannerService = mediaScannerService ?? MediaScannerService(),
        _ffmpegService = ffmpegService ?? FfmpegService(),
-       _debugLogService = debugLogService ?? DebugLogService(),
-       _ffmpegSetupService = ffmpegSetupService ?? FfmpegSetupService();
+       _debugLogService = debugLogService ?? DebugLogService();
 
   final FolderPickerService _folderPickerService;
   final MediaScannerService _mediaScannerService;
   final FfmpegService _ffmpegService;
   final DebugLogService _debugLogService;
-  final FfmpegSetupService _ffmpegSetupService;
   final Random _random = Random();
   static const int _maxRetries = 3;
 
@@ -45,11 +41,7 @@ class HomeController extends ChangeNotifier {
   String? currentFfmpegCommand;
   String? latestError;
   String? latestStackTrace;
-  String? ffmpegPath;
-  String? ffprobePath;
-  String ffmpegSetupMessage = 'FFmpeg is not installed for SoundSwap.';
-  FfmpegSetupStep ffmpegSetupStep = FfmpegSetupStep.idle;
-  double? ffmpegSetupProgress;
+
   int retryCount = 0;
   bool isScanning = false;
   bool isProcessing = false;
@@ -74,16 +66,7 @@ class HomeController extends ChangeNotifier {
 
   bool get canStart => !isProcessing && !isScanning;
 
-  bool get isFfmpegReady =>
-      ffmpegPath != null &&
-      ffprobePath != null &&
-      File(ffmpegPath!).existsSync() &&
-      File(ffprobePath!).existsSync();
-
-  bool get isInstallingFfmpeg =>
-      ffmpegSetupStep == FfmpegSetupStep.downloading ||
-      ffmpegSetupStep == FfmpegSetupStep.extracting ||
-      ffmpegSetupStep == FfmpegSetupStep.validating;
+  bool get isFfmpegReady => _ffmpegService.isReady;
 
   String get errorReport {
     final parts = [
@@ -106,62 +89,15 @@ class HomeController extends ChangeNotifier {
     final documents = await getApplicationDocumentsDirectory();
     outputFolderPath = p.join(documents.path, AppConstants.appName);
     await Directory(outputFolderPath!).create(recursive: true);
-    await loadFfmpegSetup();
-    notifyListeners();
-  }
-
-  Future<void> loadFfmpegSetup() async {
-    try {
-      final paths = await _ffmpegSetupService.loadSavedPaths();
-      if (paths == null) {
-        _ffmpegService.configureExecutables();
-        ffmpegPath = null;
-        ffprobePath = null;
-        ffmpegSetupStep = FfmpegSetupStep.idle;
-        ffmpegSetupMessage = 'FFmpeg is not installed for SoundSwap.';
-      } else {
-        ffmpegPath = paths.ffmpegPath;
-        ffprobePath = paths.ffprobePath;
-        _ffmpegService.configureExecutables(
-          ffmpegPath: ffmpegPath,
-          ffprobePath: ffprobePath,
-        );
-        ffmpegSetupStep = FfmpegSetupStep.ready;
-        ffmpegSetupMessage = 'FFmpeg is ready.';
-      }
-    } catch (error, stackTrace) {
-      await _recordException(error, stackTrace);
-      ffmpegSetupStep = FfmpegSetupStep.failed;
-      ffmpegSetupMessage = 'Could not load saved FFmpeg setup.';
+    
+    // Log whether FFmpeg binaries are ready
+    if (!_ffmpegService.isReady) {
+      await _logError('FFmpeg binaries not found at tools/ffmpeg/');
+      stderr.writeln('[ERROR] FFmpeg binaries not found at tools/ffmpeg/');
+    } else {
+      await _logInfo('FFmpeg binaries found.');
     }
     notifyListeners();
-  }
-
-  Future<void> installFfmpeg() async {
-    try {
-      await _logInfo('Starting automatic FFmpeg setup...');
-      await for (final progress in _ffmpegSetupService.install()) {
-        ffmpegSetupStep = progress.step;
-        ffmpegSetupMessage = progress.message;
-        ffmpegSetupProgress = progress.progress;
-        await _logInfo(progress.message);
-        notifyListeners();
-      }
-      await loadFfmpegSetup();
-      if (!isFfmpegReady) {
-        throw const BatchValidationException(
-          'FFmpeg setup finished but ffmpeg.exe or ffprobe.exe was not found.',
-        );
-      }
-      await _logInfo('ffmpeg.exe path:\n$ffmpegPath');
-      await _logInfo('ffprobe.exe path:\n$ffprobePath');
-    } catch (error, stackTrace) {
-      ffmpegSetupStep = FfmpegSetupStep.failed;
-      ffmpegSetupMessage = 'FFmpeg setup failed. See Debug Console.';
-      await _recordException(error, stackTrace);
-    } finally {
-      notifyListeners();
-    }
   }
 
   Future<void> pickVideoFolder() async {
@@ -328,10 +264,9 @@ class HomeController extends ChangeNotifier {
       throw const BatchValidationException('No supported audios found.');
     }
 
-    await loadFfmpegSetup();
     if (!isFfmpegReady) {
       throw const BatchValidationException(
-        'FFmpeg is not installed for SoundSwap. Click Install FFmpeg in Settings.',
+        'FFmpeg executables are missing. Check Debug Console for details.',
       );
     }
 
@@ -340,7 +275,7 @@ class HomeController extends ChangeNotifier {
     );
     if (!ffmpegAvailable) {
       throw const BatchValidationException(
-        'Saved ffmpeg.exe is missing or cannot run. Click Install FFmpeg in Settings.',
+        'ffmpeg.exe is missing or cannot run. Check Debug Console for details.',
       );
     }
     await _logInfo('ffmpeg available');
@@ -350,7 +285,7 @@ class HomeController extends ChangeNotifier {
     );
     if (!ffprobeAvailable) {
       throw const BatchValidationException(
-        'Saved ffprobe.exe is missing or cannot run. Click Install FFmpeg in Settings.',
+        'ffprobe.exe is missing or cannot run. Check Debug Console for details.',
       );
     }
     await _logInfo('ffprobe available');

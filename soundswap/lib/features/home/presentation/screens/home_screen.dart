@@ -5,7 +5,6 @@ import 'package:soundswap/core/constants/app_constants.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/home/presentation/widgets/debug_console_panel.dart';
-import 'package:soundswap/features/home/presentation/widgets/ffmpeg_settings_panel.dart';
 import 'package:soundswap/features/home/presentation/widgets/folder_selector_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/metric_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/progress_panel.dart';
@@ -140,15 +139,38 @@ class _MediumLayout extends StatelessWidget {
         ),
         SizedBox(width: gap),
         Expanded(
-          child: Column(
-            children: [
-              Expanded(child: _QueuePanel(controller: controller)),
-              SizedBox(height: gap),
-              SizedBox(
-                height: AppResponsive.debugPanelHeight(context),
-                child: DebugConsolePanel(controller: controller),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final debugHeight = AppResponsive.debugPanelHeight(context);
+              final minHeight = 250.0 + debugHeight + gap;
+              if (constraints.maxHeight < minHeight) {
+                return SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 350.0,
+                        child: _QueuePanel(controller: controller),
+                      ),
+                      SizedBox(height: gap),
+                      SizedBox(
+                        height: debugHeight,
+                        child: DebugConsolePanel(controller: controller),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  Expanded(child: _QueuePanel(controller: controller)),
+                  SizedBox(height: gap),
+                  SizedBox(
+                    height: debugHeight,
+                    child: DebugConsolePanel(controller: controller),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -176,15 +198,38 @@ class _LargeLayout extends StatelessWidget {
         ),
         SizedBox(width: gap),
         Expanded(
-          child: Column(
-            children: [
-              Expanded(child: _QueuePanel(controller: controller)),
-              SizedBox(height: gap),
-              SizedBox(
-                height: AppResponsive.debugPanelHeight(context),
-                child: DebugConsolePanel(controller: controller),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final debugHeight = AppResponsive.debugPanelHeight(context);
+              final minHeight = 250.0 + debugHeight + gap;
+              if (constraints.maxHeight < minHeight) {
+                return SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 350.0,
+                        child: _QueuePanel(controller: controller),
+                      ),
+                      SizedBox(height: gap),
+                      SizedBox(
+                        height: debugHeight,
+                        child: DebugConsolePanel(controller: controller),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  Expanded(child: _QueuePanel(controller: controller)),
+                  SizedBox(height: gap),
+                  SizedBox(
+                    height: debugHeight,
+                    child: DebugConsolePanel(controller: controller),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -218,8 +263,6 @@ class _ControlsPanel extends StatelessWidget {
             fontSize: AppResponsive.bodySize(context),
           ),
         ),
-        SizedBox(height: gap),
-        FfmpegSettingsPanel(controller: controller),
         SizedBox(height: gap),
         FolderSelectorCard(
           title: 'Video folder',
