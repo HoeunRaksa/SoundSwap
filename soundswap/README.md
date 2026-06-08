@@ -6,7 +6,7 @@ videos with audio files from a selected folder.
 ## Features
 
 - Select a video folder, audio folder, and output folder.
-- Install FFmpeg automatically into the SoundSwap app data folder.
+- Bundled FFmpeg (`ffmpeg.exe` and `ffprobe.exe`) automatically resolved from `tools/ffmpeg/`.
 - Scan videos with `.mp4`, `.mov`, and `.mkv` extensions.
 - Scan audio with `.mp3`, `.wav`, and `.m4a` extensions.
 - Randomly choose an audio file for each video.
@@ -17,17 +17,22 @@ videos with audio files from a selected folder.
 
 ## FFmpeg setup on Windows
 
-SoundSwap does not require a manual FFmpeg install and does not require the
-global Windows `PATH`.
+SoundSwap runs FFmpeg silently from the project's `tools/ffmpeg/` directory.
 
-Use the app's Settings / FFmpeg panel and click **Install FFmpeg**. The app will:
+### Development Setup
+Before running the application in development, download the required FFmpeg binaries:
 
-- Download `ffmpeg-release-essentials.zip` from [Gyan FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/).
-- Extract it into the app data folder under `SoundSwap/tools/ffmpeg/`.
-- Find `ffmpeg.exe` and `ffprobe.exe`.
-- Save their local paths and use those paths for all batch processing.
+```powershell
+dart run tools/download_ffmpeg.dart
+```
 
-SoundSwap does not modify system `PATH`.
+This helper script will:
+- Download the FFmpeg release zip.
+- Extract `ffmpeg.exe` and `ffprobe.exe` into `tools/ffmpeg/`.
+- Clean up temporary zip files.
+
+### Release Build Bundling
+When building the app using `flutter build windows`, the CMake script automatically copies the `tools/ffmpeg/` directory to the release folder alongside the executable. The app resolves these paths automatically without depending on system `PATH`.
 
 ## Run
 

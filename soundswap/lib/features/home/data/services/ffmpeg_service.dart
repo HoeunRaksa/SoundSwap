@@ -1,18 +1,46 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:path/path.dart' as p;
 
 import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 
 class FfmpegService {
   final Random _random = Random();
-  String? _ffmpegPath;
-  String? _ffprobePath;
+  String? _resolvedFfmpegPath;
+  String? _resolvedFfprobePath;
 
-  void configureExecutables({String? ffmpegPath, String? ffprobePath}) {
-    _ffmpegPath = ffmpegPath;
-    _ffprobePath = ffprobePath;
+  FfmpegService() {
+    _locateExecutables();
   }
+
+  void _locateExecutables() {
+    // 1. Check relative to current working directory (dev)
+    final devFfmpeg = p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffmpeg.exe'));
+    final devFfprobe = p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffprobe.exe'));
+
+    if (File(devFfmpeg).existsSync() && File(devFfprobe).existsSync()) {
+      _resolvedFfmpegPath = devFfmpeg;
+      _resolvedFfprobePath = devFfprobe;
+      return;
+    }
+
+    // 2. Check relative to executable directory (prod)
+    final exeDir = p.dirname(Platform.resolvedExecutable);
+    final prodFfmpeg = p.normalize(p.join(exeDir, 'tools', 'ffmpeg', 'ffmpeg.exe'));
+    final prodFfprobe = p.normalize(p.join(exeDir, 'tools', 'ffmpeg', 'ffprobe.exe'));
+
+    if (File(prodFfmpeg).existsSync() && File(prodFfprobe).existsSync()) {
+      _resolvedFfmpegPath = prodFfmpeg;
+      _resolvedFfprobePath = prodFfprobe;
+      return;
+    }
+  }
+
+  bool get isReady => _resolvedFfmpegPath != null && _resolvedFfprobePath != null;
+
+  String get ffmpegPath => _resolvedFfmpegPath ?? p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffmpeg.exe'));
+  String get ffprobePath => _resolvedFfprobePath ?? p.normalize(p.join(Directory.current.path, 'tools', 'ffmpeg', 'ffprobe.exe'));
 
   Future<bool> isExecutableAvailable(String executable) async {
     try {
@@ -195,7 +223,7 @@ class FfmpegService {
       process = await Process.start(executable, arguments);
     } on ProcessException catch (error) {
       throw FfmpegException(
-        'Could not start $executable. Make sure FFmpeg is installed and available on PATH.\n${error.message}',
+        'Could not start $executable. Make sure FFmpeg is installed and available under tools/ffmpeg/.\n${error.message}',
       );
     }
 
@@ -221,16 +249,16 @@ class FfmpegService {
 
   String _formatSeconds(double seconds) => seconds.toStringAsFixed(3);
 
-  String get _ffmpegExecutable => _ffmpegPath ?? 'ffmpeg';
+  String get _ffmpegExecutable => ffmpegPath;
 
-  String get _ffprobeExecutable => _ffprobePath ?? 'ffprobe';
+  String get _ffprobeExecutable => ffprobePath;
 
   String _resolveExecutable(String executable) {
     if (executable == 'ffmpeg') {
-      return _ffmpegExecutable;
+      return ffmpegPath;
     }
     if (executable == 'ffprobe') {
-      return _ffprobeExecutable;
+      return ffprobePath;
     }
     return executable;
   }
