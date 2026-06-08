@@ -138,9 +138,9 @@ class AppResponsive {
 
   static double metricAspectRatio(BuildContext context) {
     return switch (windowSize(context)) {
-      AppWindowSize.small => 5.2,
-      AppWindowSize.medium => 2.25,
-      AppWindowSize.large => 2.55,
+      AppWindowSize.small => 4.5,
+      AppWindowSize.medium => 1.8,
+      AppWindowSize.large => 2.1,
     };
   }
 }

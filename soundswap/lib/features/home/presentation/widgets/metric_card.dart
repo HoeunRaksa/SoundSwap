@@ -20,7 +20,7 @@ class MetricCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(gap),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
             Icon(
@@ -30,24 +30,30 @@ class MetricCard extends StatelessWidget {
             ),
             SizedBox(width: gap),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: AppResponsive.bodySize(context) - 1,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: AppResponsive.bodySize(context) - 1,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: gap / 3),
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontSize: AppResponsive.titleSize(context) - 9,
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontSize: AppResponsive.titleSize(context) - 9,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
