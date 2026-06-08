@@ -6,6 +6,7 @@ videos with audio files from a selected folder.
 ## Features
 
 - Select a video folder, audio folder, and output folder.
+- Install FFmpeg automatically into the SoundSwap app data folder.
 - Scan videos with `.mp4`, `.mov`, and `.mkv` extensions.
 - Scan audio with `.mp3`, `.wav`, and `.m4a` extensions.
 - Randomly choose an audio file for each video.
@@ -16,16 +17,17 @@ videos with audio files from a selected folder.
 
 ## FFmpeg setup on Windows
 
-SoundSwap calls the `ffmpeg` CLI from your system `PATH`.
+SoundSwap does not require a manual FFmpeg install and does not require the
+global Windows `PATH`.
 
-1. Download a Windows FFmpeg build from [ffmpeg.org](https://ffmpeg.org/download.html).
-2. Extract the archive, for example to `C:\ffmpeg`.
-3. Add `C:\ffmpeg\bin` to your Windows `PATH`.
-4. Open a new PowerShell window and verify:
+Use the app's Settings / FFmpeg panel and click **Install FFmpeg**. The app will:
 
-   ```powershell
-   ffmpeg -version
-   ```
+- Download `ffmpeg-release-essentials.zip` from [Gyan FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/).
+- Extract it into the app data folder under `SoundSwap/tools/ffmpeg/`.
+- Find `ffmpeg.exe` and `ffprobe.exe`.
+- Save their local paths and use those paths for all batch processing.
+
+SoundSwap does not modify system `PATH`.
 
 ## Run
 

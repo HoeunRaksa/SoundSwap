@@ -6,10 +6,22 @@ import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 
 class FfmpegService {
   final Random _random = Random();
+  String? _ffmpegPath;
+  String? _ffprobePath;
+
+  void configureExecutables({String? ffmpegPath, String? ffprobePath}) {
+    _ffmpegPath = ffmpegPath;
+    _ffprobePath = ffprobePath;
+  }
 
   Future<bool> isExecutableAvailable(String executable) async {
     try {
-      final result = await Process.run(executable, ['-version']);
+      final resolvedExecutable = _resolveExecutable(executable);
+      if (resolvedExecutable.endsWith('.exe') &&
+          !File(resolvedExecutable).existsSync()) {
+        return false;
+      }
+      final result = await Process.run(resolvedExecutable, ['-version']);
       return result.exitCode == 0;
     } on Object {
       return false;
@@ -51,7 +63,7 @@ class FfmpegService {
   }
 
   Future<ProcessRunOutput> runReplacement(FfmpegReplacementPlan plan) async {
-    final result = await _runProcess('ffmpeg', plan.arguments);
+    final result = await _runProcess(_ffmpegExecutable, plan.arguments);
     if (result.exitCode != 0) {
       throw FfmpegFailure(
         command: plan.command,
@@ -64,7 +76,8 @@ class FfmpegService {
   }
 
   Future<double> probeDuration(String inputPath) async {
-    final result = await _runProcess('ffprobe', [
+    final ffprobeExecutable = _ffprobeExecutable;
+    final result = await _runProcess(ffprobeExecutable, [
       '-v',
       'error',
       '-show_entries',
@@ -76,7 +89,7 @@ class FfmpegService {
 
     if (result.exitCode != 0) {
       throw FfmpegFailure(
-        command: _formatCommand('ffprobe', [
+        command: _formatCommand(ffprobeExecutable, [
           '-v',
           'error',
           '-show_entries',
@@ -138,7 +151,7 @@ class FfmpegService {
 
       return FfmpegCommandPlan(
         arguments: arguments,
-        command: _formatCommand('ffmpeg', arguments),
+        command: _formatCommand(_ffmpegExecutable, arguments),
         randomStart: randomStart,
       );
     }
@@ -168,7 +181,7 @@ class FfmpegService {
 
     return FfmpegCommandPlan(
       arguments: arguments,
-      command: _formatCommand('ffmpeg', arguments),
+      command: _formatCommand(_ffmpegExecutable, arguments),
       randomStart: 0,
     );
   }
@@ -207,6 +220,20 @@ class FfmpegService {
   }
 
   String _formatSeconds(double seconds) => seconds.toStringAsFixed(3);
+
+  String get _ffmpegExecutable => _ffmpegPath ?? 'ffmpeg';
+
+  String get _ffprobeExecutable => _ffprobePath ?? 'ffprobe';
+
+  String _resolveExecutable(String executable) {
+    if (executable == 'ffmpeg') {
+      return _ffmpegExecutable;
+    }
+    if (executable == 'ffprobe') {
+      return _ffprobeExecutable;
+    }
+    return executable;
+  }
 
   String _formatCommand(String executable, List<String> arguments) {
     return [executable, ...arguments.map(_quoteArgument)].join(' ');

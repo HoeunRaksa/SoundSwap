@@ -5,6 +5,7 @@ import 'package:soundswap/core/constants/app_constants.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/home/presentation/widgets/debug_console_panel.dart';
+import 'package:soundswap/features/home/presentation/widgets/ffmpeg_settings_panel.dart';
 import 'package:soundswap/features/home/presentation/widgets/folder_selector_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/metric_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/progress_panel.dart';
@@ -154,6 +155,8 @@ class _ControlsPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
+        FfmpegSettingsPanel(controller: controller),
+        const SizedBox(height: 12),
         FolderSelectorCard(
           title: 'Video folder',
           path: controller.videoFolderPath,
