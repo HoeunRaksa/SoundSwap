@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 
 class ProgressPanel extends StatelessWidget {
@@ -11,10 +12,11 @@ class ProgressPanel extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final total = controller.jobs.length;
     final current = total == 0 ? 0 : controller.currentIndex;
+    final gap = AppResponsive.cardGap(context);
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(gap),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -23,48 +25,76 @@ class ProgressPanel extends StatelessWidget {
                 Expanded(
                   child: Text(
                     controller.statusMessage ?? 'Select folders to begin.',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontSize: AppResponsive.bodySize(context) + 2,
+                    ),
                   ),
                 ),
                 Text(
                   '$current / $total',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                    fontSize: AppResponsive.bodySize(context),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: gap),
             LinearProgressIndicator(
               value: controller.isProcessing ? controller.progress : null,
               minHeight: 8,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(
+                AppResponsive.cardRadius(context),
+              ),
             ),
-            const SizedBox(height: 16),
-            Row(
+            SizedBox(height: gap),
+            Wrap(
+              spacing: gap,
+              runSpacing: gap,
               children: [
-                FilledButton.icon(
-                  onPressed: controller.canStart
-                      ? controller.startProcessing
-                      : null,
-                  icon: controller.isProcessing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.play_arrow),
-                  label: Text(
-                    controller.isProcessing ? 'Running' : 'Start Batch',
+                SizedBox(
+                  height: AppResponsive.buttonHeight(context),
+                  child: FilledButton.icon(
+                    onPressed: controller.canStart
+                        ? controller.startProcessing
+                        : null,
+                    icon: controller.isProcessing
+                        ? SizedBox(
+                            width: AppResponsive.iconSize(context),
+                            height: AppResponsive.iconSize(context),
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Icon(
+                            Icons.play_arrow,
+                            size: AppResponsive.iconSize(context),
+                          ),
+                    label: Text(
+                      controller.isProcessing ? 'Running' : 'Start Batch',
+                      style: TextStyle(
+                        fontSize: AppResponsive.bodySize(context),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: controller.isProcessing || controller.isScanning
-                      ? null
-                      : controller.scanAndBuildQueue,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Rescan'),
+                SizedBox(
+                  height: AppResponsive.buttonHeight(context),
+                  child: OutlinedButton.icon(
+                    onPressed: controller.isProcessing || controller.isScanning
+                        ? null
+                        : controller.scanAndBuildQueue,
+                    icon: Icon(
+                      Icons.refresh,
+                      size: AppResponsive.iconSize(context),
+                    ),
+                    label: Text(
+                      'Rescan',
+                      style: TextStyle(
+                        fontSize: AppResponsive.bodySize(context),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

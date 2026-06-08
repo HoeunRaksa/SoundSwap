@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 import 'package:soundswap/shared/widgets/empty_state.dart';
 
@@ -20,11 +21,12 @@ class QueueTable extends StatelessWidget {
 
     return Card(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SingleChildScrollView(
             child: DataTable(
+              columnSpacing: AppResponsive.cardGap(context),
               columns: const [
                 DataColumn(label: Text('Video')),
                 DataColumn(label: Text('Audio')),
@@ -62,9 +64,20 @@ class _FileCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = AppResponsive.isSmall(context)
+        ? 180.0
+        : AppResponsive.isMedium(context)
+        ? 220.0
+        : 280.0;
+
     return SizedBox(
-      width: 260,
-      child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis),
+      width: width,
+      child: Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: AppResponsive.bodySize(context)),
+      ),
     );
   }
 }
@@ -101,17 +114,26 @@ class _StatusChip extends StatelessWidget {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppResponsive.cardGap(context) * 0.7,
+        vertical: AppResponsive.cardGap(context) * 0.4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: color)),
+          Icon(icon, size: AppResponsive.iconSize(context) - 4, color: color),
+          SizedBox(width: AppResponsive.cardGap(context) / 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: AppResponsive.bodySize(context) - 1,
+            ),
+          ),
         ],
       ),
     );
