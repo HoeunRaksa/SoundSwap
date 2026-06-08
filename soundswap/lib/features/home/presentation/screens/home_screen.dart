@@ -1,10 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:soundswap/core/constants/app_constants.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
-import 'package:soundswap/features/home/presentation/widgets/debug_console_panel.dart';
 import 'package:soundswap/features/home/presentation/widgets/folder_selector_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/metric_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/progress_panel.dart';
@@ -50,29 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
       listenable: _controller,
       builder: (context, _) {
         return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              AppConstants.appName,
-              style: TextStyle(fontSize: AppResponsive.titleSize(context)),
-            ),
-            actions: [
-              Padding(
-                padding: EdgeInsets.only(
-                  right: AppResponsive.horizontalPadding(context),
-                ),
-                child: Chip(
-                  avatar: Icon(
-                    Icons.terminal,
-                    size: AppResponsive.iconSize(context),
-                  ),
-                  label: Text(
-                    'FFmpeg CLI',
-                    style: TextStyle(fontSize: AppResponsive.bodySize(context)),
-                  ),
-                ),
-              ),
-            ],
-          ),
           body: SafeArea(
             child: ResponsivePadding(
               child: ResponsiveCenter(
@@ -101,18 +76,45 @@ class _SmallLayout extends StatelessWidget {
 
     return SingleChildScrollView(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ControlsPanel(controller: controller),
+          _ControlsPanel(controller: controller, showFooter: false),
+          SizedBox(height: gap),
+          const Divider(),
+          SizedBox(height: gap),
+          Text(
+            'Batch audio replacement',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontSize: AppResponsive.titleSize(context),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: gap / 2),
+          Text(
+            'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: AppResponsive.bodySize(context),
+            ),
+          ),
+          SizedBox(height: gap),
+          ProgressPanel(controller: controller),
           SizedBox(height: gap),
           SizedBox(
             height: AppResponsive.queuePanelHeight(context),
             child: _QueuePanel(controller: controller),
           ),
-          SizedBox(height: gap),
-          SizedBox(
-            height: AppResponsive.debugPanelHeight(context),
-            child: DebugConsolePanel(controller: controller),
+          SizedBox(height: gap * 2),
+          Center(
+            child: Text(
+              'Copyright by Hoeun Raksa',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                fontSize: AppResponsive.bodySize(context) - 2,
+              ),
+            ),
           ),
+          SizedBox(height: gap),
         ],
       ),
     );
@@ -134,43 +136,36 @@ class _MediumLayout extends StatelessWidget {
         SizedBox(
           width: AppResponsive.sidebarWidth(context),
           child: SingleChildScrollView(
-            child: _ControlsPanel(controller: controller),
+            child: _ControlsPanel(controller: controller, showFooter: true),
           ),
         ),
         SizedBox(width: gap),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final debugHeight = AppResponsive.debugPanelHeight(context);
-              final minHeight = 250.0 + debugHeight + gap;
-              if (constraints.maxHeight < minHeight) {
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: 350.0,
-                        child: _QueuePanel(controller: controller),
-                      ),
-                      SizedBox(height: gap),
-                      SizedBox(
-                        height: debugHeight,
-                        child: DebugConsolePanel(controller: controller),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return Column(
-                children: [
-                  Expanded(child: _QueuePanel(controller: controller)),
-                  SizedBox(height: gap),
-                  SizedBox(
-                    height: debugHeight,
-                    child: DebugConsolePanel(controller: controller),
-                  ),
-                ],
-              );
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Batch audio replacement',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontSize: AppResponsive.titleSize(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: gap / 2),
+              Text(
+                'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: AppResponsive.bodySize(context),
+                ),
+              ),
+              SizedBox(height: gap),
+              ProgressPanel(controller: controller),
+              SizedBox(height: gap),
+              Expanded(
+                child: _QueuePanel(controller: controller),
+              ),
+            ],
           ),
         ),
       ],
@@ -193,43 +188,36 @@ class _LargeLayout extends StatelessWidget {
         SizedBox(
           width: AppResponsive.sidebarWidth(context),
           child: SingleChildScrollView(
-            child: _ControlsPanel(controller: controller),
+            child: _ControlsPanel(controller: controller, showFooter: true),
           ),
         ),
         SizedBox(width: gap),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final debugHeight = AppResponsive.debugPanelHeight(context);
-              final minHeight = 250.0 + debugHeight + gap;
-              if (constraints.maxHeight < minHeight) {
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: 350.0,
-                        child: _QueuePanel(controller: controller),
-                      ),
-                      SizedBox(height: gap),
-                      SizedBox(
-                        height: debugHeight,
-                        child: DebugConsolePanel(controller: controller),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return Column(
-                children: [
-                  Expanded(child: _QueuePanel(controller: controller)),
-                  SizedBox(height: gap),
-                  SizedBox(
-                    height: debugHeight,
-                    child: DebugConsolePanel(controller: controller),
-                  ),
-                ],
-              );
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Batch audio replacement',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontSize: AppResponsive.titleSize(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: gap / 2),
+              Text(
+                'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: AppResponsive.bodySize(context),
+                ),
+              ),
+              SizedBox(height: gap),
+              ProgressPanel(controller: controller),
+              SizedBox(height: gap),
+              Expanded(
+                child: _QueuePanel(controller: controller),
+              ),
+            ],
           ),
         ),
       ],
@@ -238,9 +226,13 @@ class _LargeLayout extends StatelessWidget {
 }
 
 class _ControlsPanel extends StatefulWidget {
-  const _ControlsPanel({required this.controller});
+  const _ControlsPanel({
+    required this.controller,
+    this.showFooter = true,
+  });
 
   final HomeController controller;
+  final bool showFooter;
 
   @override
   State<_ControlsPanel> createState() => _ControlsPanelState();
@@ -264,23 +256,37 @@ class _ControlsPanelState extends State<_ControlsPanel> {
   @override
   Widget build(BuildContext context) {
     final gap = AppResponsive.cardGap(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Batch audio replacement',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontSize: AppResponsive.titleSize(context),
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          children: [
+            Icon(
+              Icons.swap_horizontal_circle_outlined,
+              size: AppResponsive.titleSize(context) + 4,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'SoundSwap',
+              style: TextStyle(
+                fontSize: AppResponsive.titleSize(context) + 2,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
         ),
-        SizedBox(height: gap / 2),
+        SizedBox(height: gap / 4),
         Text(
-          'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: AppResponsive.bodySize(context),
+          'Automated Audio Replacement',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: colorScheme.secondary,
+            fontWeight: FontWeight.w600,
+            fontSize: AppResponsive.bodySize(context) - 2,
           ),
         ),
         SizedBox(height: gap),
@@ -319,9 +325,75 @@ class _ControlsPanelState extends State<_ControlsPanel> {
           ),
         ),
         SizedBox(height: gap),
-        ProgressPanel(controller: widget.controller),
-        SizedBox(height: gap),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: AppResponsive.buttonHeight(context) + 8,
+                child: FilledButton.icon(
+                  onPressed: widget.controller.canStart
+                      ? widget.controller.startProcessing
+                      : null,
+                  icon: widget.controller.isProcessing
+                      ? SizedBox(
+                          width: AppResponsive.iconSize(context) - 4,
+                          height: AppResponsive.iconSize(context) - 4,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : Icon(
+                          Icons.play_arrow_rounded,
+                          size: AppResponsive.iconSize(context) + 2,
+                        ),
+                  label: Text(
+                    widget.controller.isProcessing ? 'Running' : 'Start Batch',
+                    style: TextStyle(
+                      fontSize: AppResponsive.bodySize(context),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: gap / 2),
+            SizedBox(
+              height: AppResponsive.buttonHeight(context) + 8,
+              child: OutlinedButton.icon(
+                onPressed: widget.controller.isProcessing || widget.controller.isScanning
+                    ? null
+                    : widget.controller.scanAndBuildQueue,
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  size: AppResponsive.iconSize(context),
+                ),
+                label: Text(
+                  'Rescan',
+                  style: TextStyle(
+                    fontSize: AppResponsive.bodySize(context),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: gap * 1.5),
         _MetricsGrid(controller: widget.controller),
+        if (widget.showFooter) ...[
+          Padding(
+            padding: EdgeInsets.only(top: gap * 3, bottom: gap),
+            child: Center(
+              child: Text(
+                'Copyright by Hoeun Raksa',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  fontSize: AppResponsive.bodySize(context) - 2,
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -390,6 +462,7 @@ class _QueuePanel extends StatelessWidget {
                 'Queue',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontSize: AppResponsive.titleSize(context) - 4,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
