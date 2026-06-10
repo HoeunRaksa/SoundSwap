@@ -126,6 +126,20 @@ class OverlayToolsController extends ChangeNotifier {
     await updateItem(item.copyWith(width: width));
   }
 
+  Future<void> bringForward(String id) async {
+    final item = _itemById(id);
+    if (item == null) return;
+    final maxOrder = settings.items.fold(0, (max, e) => e.layerOrder > max ? e.layerOrder : max);
+    await updateItem(item.copyWith(layerOrder: maxOrder + 1));
+  }
+
+  Future<void> sendBackward(String id) async {
+    final item = _itemById(id);
+    if (item == null) return;
+    final minOrder = settings.items.fold(0, (min, e) => e.layerOrder < min ? e.layerOrder : min);
+    await updateItem(item.copyWith(layerOrder: minOrder - 1));
+  }
+
   Future<void> removeSelected() async {
     final id = selectedItemId;
     if (id == null) return;

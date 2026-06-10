@@ -39,12 +39,14 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
   final _fontSizeController = TextEditingController();
   final _colorController = TextEditingController();
   final _widthController = TextEditingController();
+  final _opacityController = TextEditingController();
   final _templateNameController = TextEditingController();
   final _nameFocus = FocusNode();
   final _textFocus = FocusNode();
   final _fontSizeFocus = FocusNode();
   final _colorFocus = FocusNode();
   final _widthFocus = FocusNode();
+  final _opacityFocus = FocusNode();
   VideoOutputSize _previewSize = VideoOutputSize.vertical1080;
 
   @override
@@ -62,12 +64,14 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
     _fontSizeController.dispose();
     _colorController.dispose();
     _widthController.dispose();
+    _opacityController.dispose();
     _templateNameController.dispose();
     _nameFocus.dispose();
     _textFocus.dispose();
     _fontSizeFocus.dispose();
     _colorFocus.dispose();
     _widthFocus.dispose();
+    _opacityFocus.dispose();
     super.dispose();
   }
 
@@ -76,7 +80,8 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
         _textFocus.hasFocus ||
         _fontSizeFocus.hasFocus ||
         _colorFocus.hasFocus ||
-        _widthFocus.hasFocus) {
+        _widthFocus.hasFocus ||
+        _opacityFocus.hasFocus) {
       return;
     }
     final item = widget.controller.selectedItem;
@@ -86,6 +91,7 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
       _setText(_fontSizeController, '');
       _setText(_colorController, '');
       _setText(_widthController, '');
+      _setText(_opacityController, '');
       return;
     }
     _setText(_nameController, item.name);
@@ -93,6 +99,7 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
     _setText(_fontSizeController, item.fontSize.toStringAsFixed(0));
     _setText(_colorController, item.colorHex);
     _setText(_widthController, (item.width * 100).toStringAsFixed(0));
+    _setText(_opacityController, (item.opacity * 100).toStringAsFixed(0));
   }
 
   void _setText(TextEditingController controller, String value) {
@@ -157,6 +164,10 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
           backgroundBox: item.backgroundBox,
           shadow: item.shadow,
           selected: item.id == controller.selectedItemId,
+          opacity: item.opacity,
+          layerOrder: item.layerOrder,
+          textAlignment: item.textAlignment,
+          imageFitMode: item.imageFitMode,
         ),
     ];
 
@@ -264,6 +275,23 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 widget.controller.updateSelected(item.copyWith(text: value)),
           ),
           DropdownButtonFormField<String>(
+            initialValue: item.textAlignment,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Alignment'),
+            items: const [
+              DropdownMenuItem(value: 'left', child: Text('Left')),
+              DropdownMenuItem(value: 'center', child: Text('Center')),
+              DropdownMenuItem(value: 'right', child: Text('Right')),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                widget.controller.updateSelected(
+                  item.copyWith(textAlignment: value),
+                );
+              }
+            },
+          ),
+          DropdownButtonFormField<String>(
             initialValue: item.fontFamily,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Font'),
@@ -340,6 +368,23 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          DropdownButtonFormField<String>(
+            initialValue: item.imageFitMode,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Fit mode'),
+            items: const [
+              DropdownMenuItem(value: 'contain', child: Text('Contain')),
+              DropdownMenuItem(value: 'cover', child: Text('Cover')),
+              DropdownMenuItem(value: 'stretch', child: Text('Stretch')),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                widget.controller.updateSelected(
+                  item.copyWith(imageFitMode: value),
+                );
+              }
+            },
+          ),
         ],
         TextField(
           controller: _widthController,
@@ -350,11 +395,45 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
             final width = double.tryParse(value);
             if (width != null) {
               widget.controller.updateSelected(
-                item.copyWith(width: (width / 100).clamp(0.08, 1).toDouble()),
+                item.copyWith(width: width / 100),
               );
             }
           },
         ),
+        TextField(
+          controller: _opacityController,
+          focusNode: _opacityFocus,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Opacity percent'),
+          onChanged: (value) {
+            final opacity = double.tryParse(value);
+            if (opacity != null) {
+              widget.controller.updateSelected(
+                item.copyWith(opacity: (opacity / 100).clamp(0, 1).toDouble()),
+              );
+            }
+          },
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => widget.controller.bringForward(item.id),
+                icon: const Icon(Icons.arrow_upward),
+                label: const Text('Forward'),
+              ),
+            ),
+            SizedBox(width: AppResponsive.cardGap(context) / 2),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => widget.controller.sendBackward(item.id),
+                icon: const Icon(Icons.arrow_downward),
+                label: const Text('Backward'),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppResponsive.cardGap(context)),
         OutlinedButton.icon(
           onPressed: widget.controller.removeSelected,
           icon: const Icon(Icons.delete_outline),

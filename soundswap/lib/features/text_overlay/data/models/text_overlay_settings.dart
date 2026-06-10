@@ -14,6 +14,9 @@ class TextOverlaySettings {
     this.textColor = '#FFFFFF',
     this.shadow = true,
     this.backgroundBox = false,
+    this.opacity = 1.0,
+    this.layerOrder = 0,
+    this.textAlignment = 'left',
     this.titlePosition = const NormalizedPosition(x: 0.08, y: 0.12),
     this.subtitlePosition = const NormalizedPosition(x: 0.08, y: 0.20),
     this.promotionPosition = const NormalizedPosition(x: 0.08, y: 0.72),
@@ -30,6 +33,9 @@ class TextOverlaySettings {
   final String textColor;
   final bool shadow;
   final bool backgroundBox;
+  final double opacity;
+  final int layerOrder;
+  final String textAlignment;
   final NormalizedPosition titlePosition;
   final NormalizedPosition subtitlePosition;
   final NormalizedPosition promotionPosition;
@@ -46,6 +52,9 @@ class TextOverlaySettings {
     'textColor': textColor,
     'shadow': shadow,
     'backgroundBox': backgroundBox,
+    'opacity': opacity,
+    'layerOrder': layerOrder,
+    'textAlignment': textAlignment,
     'titlePosition': titlePosition.toJson(),
     'subtitlePosition': subtitlePosition.toJson(),
     'promotionPosition': promotionPosition.toJson(),
@@ -68,6 +77,9 @@ class TextOverlaySettings {
       textColor: json['textColor'] as String? ?? '#FFFFFF',
       shadow: json['shadow'] as bool? ?? true,
       backgroundBox: json['backgroundBox'] as bool? ?? false,
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      layerOrder: json['layerOrder'] as int? ?? 0,
+      textAlignment: json['textAlignment'] as String? ?? 'left',
       titlePosition: NormalizedPosition.fromJson(
         json['titlePosition'],
         fallback: const NormalizedPosition(x: 0.08, y: 0.12),
@@ -98,6 +110,9 @@ class TextOverlaySettings {
     String? textColor,
     bool? shadow,
     bool? backgroundBox,
+    double? opacity,
+    int? layerOrder,
+    String? textAlignment,
     NormalizedPosition? titlePosition,
     NormalizedPosition? subtitlePosition,
     NormalizedPosition? promotionPosition,
@@ -114,6 +129,9 @@ class TextOverlaySettings {
       textColor: textColor ?? this.textColor,
       shadow: shadow ?? this.shadow,
       backgroundBox: backgroundBox ?? this.backgroundBox,
+      opacity: opacity ?? this.opacity,
+      layerOrder: layerOrder ?? this.layerOrder,
+      textAlignment: textAlignment ?? this.textAlignment,
       titlePosition: titlePosition ?? this.titlePosition,
       subtitlePosition: subtitlePosition ?? this.subtitlePosition,
       promotionPosition: promotionPosition ?? this.promotionPosition,

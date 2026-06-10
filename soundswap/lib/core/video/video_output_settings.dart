@@ -22,15 +22,15 @@ class NormalizedPosition {
     final x = (value['x'] as num?)?.toDouble() ?? fallback.x;
     final y = (value['y'] as num?)?.toDouble() ?? fallback.y;
     return NormalizedPosition(
-      x: x.clamp(0, 1).toDouble(),
-      y: y.clamp(0, 1).toDouble(),
+      x: x,
+      y: y,
     );
   }
 
   NormalizedPosition copyWith({double? x, double? y}) {
     return NormalizedPosition(
-      x: (x ?? this.x).clamp(0, 1).toDouble(),
-      y: (y ?? this.y).clamp(0, 1).toDouble(),
+      x: x ?? this.x,
+      y: y ?? this.y,
     );
   }
 }

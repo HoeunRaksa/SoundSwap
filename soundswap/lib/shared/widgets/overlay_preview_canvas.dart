@@ -20,6 +20,10 @@ class PreviewOverlayItem {
     this.backgroundBox = false,
     this.shadow = false,
     this.selected = false,
+    this.opacity = 1.0,
+    this.layerOrder = 0,
+    this.textAlignment = 'left',
+    this.imageFitMode = 'contain',
   });
 
   final String id;
@@ -34,6 +38,10 @@ class PreviewOverlayItem {
   final bool backgroundBox;
   final bool shadow;
   final bool selected;
+  final double opacity;
+  final int layerOrder;
+  final String textAlignment;
+  final String imageFitMode;
 }
 
 class OverlayPreviewCanvas extends StatelessWidget {
@@ -97,7 +105,7 @@ class OverlayPreviewCanvas extends StatelessWidget {
                             Positioned.fill(
                               child: _PreviewFrame(outputSize: outputSize),
                             ),
-                            for (final item in items)
+                            for (final item in [...items]..sort((a, b) => a.layerOrder.compareTo(b.layerOrder)))
                               _DraggablePreviewItem(
                                 item: item,
                                 size: preview.biggest,
@@ -176,7 +184,10 @@ class _DraggablePreviewItem extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              _PreviewItemSurface(item: item, previewSize: size),
+              Opacity(
+                opacity: item.opacity,
+                child: _PreviewItemSurface(item: item, previewSize: size),
+              ),
               if (item.selected) _SelectionFrame(item: item),
               if (item.selected && onWidthChanged != null)
                 Positioned(
@@ -188,7 +199,7 @@ class _DraggablePreviewItem extends StatelessWidget {
                           item.width + details.delta.dx / size.width;
                       onWidthChanged!(
                         item.id,
-                        nextWidth.clamp(0.08, 1).toDouble(),
+                        nextWidth.clamp(0.01, double.infinity).toDouble(),
                       );
                     },
                     child: const DecoratedBox(
@@ -252,7 +263,14 @@ class _LogoPreview extends StatelessWidget {
         width: previewWidth,
         height: previewWidth,
         child: imageFile != null && imageFile.existsSync()
-            ? Image.file(imageFile, fit: BoxFit.contain)
+            ? Image.file(
+                imageFile,
+                fit: switch (item.imageFitMode) {
+                  'cover' => BoxFit.cover,
+                  'stretch' => BoxFit.fill,
+                  _ => BoxFit.contain,
+                },
+              )
             : Icon(
                 Icons.image_outlined,
                 size: logoWidth * 0.5,
@@ -292,6 +310,11 @@ class _TextPreview extends StatelessWidget {
           text,
           maxLines: 6,
           overflow: TextOverflow.ellipsis,
+          textAlign: switch (item.textAlignment) {
+            'center' => TextAlign.center,
+            'right' => TextAlign.right,
+            _ => TextAlign.left,
+          },
           style: TextStyle(
             color: color,
             fontSize: previewFontSize,

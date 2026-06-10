@@ -17,6 +17,14 @@ class OverlayItem {
     this.width = 0.3,
     this.shadow = true,
     this.backgroundBox = false,
+    this.customWidth,
+    this.customHeight,
+    this.scale,
+    this.lockAspectRatio = true,
+    this.opacity = 1.0,
+    this.layerOrder = 0,
+    this.textAlignment = 'left',
+    this.imageFitMode = 'contain',
   });
 
   final String id;
@@ -32,6 +40,14 @@ class OverlayItem {
   final bool shadow;
   final bool backgroundBox;
   final NormalizedPosition position;
+  final double? customWidth;
+  final double? customHeight;
+  final double? scale;
+  final bool lockAspectRatio;
+  final double opacity;
+  final int layerOrder;
+  final String textAlignment;
+  final String imageFitMode;
 
   bool get hasContent {
     return switch (type) {
@@ -54,6 +70,14 @@ class OverlayItem {
     'shadow': shadow,
     'backgroundBox': backgroundBox,
     'position': position.toJson(),
+    'customWidth': customWidth,
+    'customHeight': customHeight,
+    'scale': scale,
+    'lockAspectRatio': lockAspectRatio,
+    'opacity': opacity,
+    'layerOrder': layerOrder,
+    'textAlignment': textAlignment,
+    'imageFitMode': imageFitMode,
   };
 
   factory OverlayItem.fromJson(Map<String, Object?> json) {
@@ -70,12 +94,18 @@ class OverlayItem {
       fontPath: json['fontPath'] as String?,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 46,
       colorHex: json['colorHex'] as String? ?? '#FFFFFF',
-      width: ((json['width'] as num?)?.toDouble() ?? 0.3)
-          .clamp(0.08, 1)
-          .toDouble(),
+      width: (json['width'] as num?)?.toDouble() ?? 0.3,
       shadow: json['shadow'] as bool? ?? true,
       backgroundBox: json['backgroundBox'] as bool? ?? false,
       position: NormalizedPosition.fromJson(json['position']),
+      customWidth: (json['customWidth'] as num?)?.toDouble(),
+      customHeight: (json['customHeight'] as num?)?.toDouble(),
+      scale: (json['scale'] as num?)?.toDouble(),
+      lockAspectRatio: json['lockAspectRatio'] as bool? ?? true,
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      layerOrder: json['layerOrder'] as int? ?? 0,
+      textAlignment: json['textAlignment'] as String? ?? 'left',
+      imageFitMode: json['imageFitMode'] as String? ?? 'contain',
     );
   }
 
@@ -91,6 +121,14 @@ class OverlayItem {
     bool? shadow,
     bool? backgroundBox,
     NormalizedPosition? position,
+    double? customWidth,
+    double? customHeight,
+    double? scale,
+    bool? lockAspectRatio,
+    double? opacity,
+    int? layerOrder,
+    String? textAlignment,
+    String? imageFitMode,
   }) {
     return OverlayItem(
       id: id,
@@ -102,10 +140,18 @@ class OverlayItem {
       fontPath: fontPath ?? this.fontPath,
       fontSize: fontSize ?? this.fontSize,
       colorHex: colorHex ?? this.colorHex,
-      width: (width ?? this.width).clamp(0.08, 1).toDouble(),
+      width: width ?? this.width,
       shadow: shadow ?? this.shadow,
       backgroundBox: backgroundBox ?? this.backgroundBox,
       position: position ?? this.position,
+      customWidth: customWidth ?? this.customWidth,
+      customHeight: customHeight ?? this.customHeight,
+      scale: scale ?? this.scale,
+      lockAspectRatio: lockAspectRatio ?? this.lockAspectRatio,
+      opacity: opacity ?? this.opacity,
+      layerOrder: layerOrder ?? this.layerOrder,
+      textAlignment: textAlignment ?? this.textAlignment,
+      imageFitMode: imageFitMode ?? this.imageFitMode,
     );
   }
 }
