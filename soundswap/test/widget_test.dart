@@ -7,6 +7,6 @@ void main() {
 
     expect(find.text('SoundSwap'), findsWidgets);
     expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Branding Tools'), findsOneWidget);
+    expect(find.text('Overlay & Templates'), findsOneWidget);
   });
 }

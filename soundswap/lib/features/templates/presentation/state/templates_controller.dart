@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:soundswap/features/branding/presentation/state/branding_controller.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
+import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
 import 'package:soundswap/features/templates/data/models/project_template.dart';
 import 'package:soundswap/features/templates/data/services/templates_service.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
@@ -23,7 +24,9 @@ class TemplatesController extends ChangeNotifier {
     required HomeController home,
     required BrandingController branding,
     required TextOverlayController textOverlay,
+    required OverlayToolsController overlay,
   }) async {
+    final overlaySettings = overlay.settings;
     final template = ProjectTemplate(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: name.trim().isEmpty ? 'Untitled template' : name.trim(),
@@ -32,8 +35,14 @@ class TemplatesController extends ChangeNotifier {
       audioFolder: home.audioFolderPath,
       outputFolder: home.outputFolderPath,
       outputPrefix: home.outputNamePrefix,
-      branding: branding.settings,
-      textOverlay: textOverlay.settings,
+      branding: home.activeBrandingSettings ?? branding.settings,
+      textOverlay: home.activeTextOverlaySettings ?? textOverlay.settings,
+      overlaySettings: overlaySettings,
+      useBranding: home.useBranding,
+      useTextOverlay: home.useTextOverlay,
+      useOverlay: home.useOverlay || overlaySettings.hasContent,
+      outputSize: home.outputSize,
+      fitMode: home.fitMode,
     );
     templates = [template, ...templates];
     await _service.saveAll(templates);
@@ -46,6 +55,7 @@ class TemplatesController extends ChangeNotifier {
     required HomeController home,
     required BrandingController branding,
     required TextOverlayController textOverlay,
+    required OverlayToolsController overlay,
   }) async {
     await home.applyTemplateFolders(
       videoFolder: template.videoFolder,
@@ -55,6 +65,17 @@ class TemplatesController extends ChangeNotifier {
     );
     await branding.update(template.branding);
     await textOverlay.update(template.textOverlay);
+    await overlay.applySettings(template.overlaySettings);
+    home.applyGeneratorSettings(
+      useBranding: template.useBranding,
+      useTextOverlay: template.useTextOverlay,
+      useOverlay: template.useOverlay,
+      outputSize: template.outputSize,
+      fitMode: template.fitMode,
+      brandingSettings: template.branding,
+      textOverlaySettings: template.textOverlay,
+      overlaySettings: template.overlaySettings,
+    );
     message = 'Template loaded.';
     notifyListeners();
   }
@@ -78,6 +99,12 @@ class TemplatesController extends ChangeNotifier {
             outputPrefix: item.outputPrefix,
             branding: item.branding,
             textOverlay: item.textOverlay,
+            overlaySettings: item.overlaySettings,
+            useBranding: item.useBranding,
+            useTextOverlay: item.useTextOverlay,
+            useOverlay: item.useOverlay,
+            outputSize: item.outputSize,
+            fitMode: item.fitMode,
           )
         else
           item,

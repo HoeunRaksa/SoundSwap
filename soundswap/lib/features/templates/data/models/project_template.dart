@@ -1,4 +1,6 @@
+import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/branding/data/models/branding_settings.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
 
 class ProjectTemplate {
@@ -12,6 +14,12 @@ class ProjectTemplate {
     this.outputPrefix = '',
     this.branding = const BrandingSettings(),
     this.textOverlay = const TextOverlaySettings(),
+    this.overlaySettings = const OverlaySettings(),
+    this.useBranding = false,
+    this.useTextOverlay = false,
+    this.useOverlay = false,
+    this.outputSize = VideoOutputSize.original,
+    this.fitMode = VideoFitMode.keepOriginal,
   });
 
   final String id;
@@ -23,6 +31,12 @@ class ProjectTemplate {
   final String outputPrefix;
   final BrandingSettings branding;
   final TextOverlaySettings textOverlay;
+  final OverlaySettings overlaySettings;
+  final bool useBranding;
+  final bool useTextOverlay;
+  final bool useOverlay;
+  final VideoOutputSize outputSize;
+  final VideoFitMode fitMode;
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -34,6 +48,12 @@ class ProjectTemplate {
     'outputPrefix': outputPrefix,
     'branding': branding.toJson(),
     'textOverlay': textOverlay.toJson(),
+    'overlaySettings': overlaySettings.toJson(),
+    'useBranding': useBranding,
+    'useTextOverlay': useTextOverlay,
+    'useOverlay': useOverlay,
+    'outputSize': outputSize.name,
+    'fitMode': fitMode.name,
   };
 
   factory ProjectTemplate.fromJson(Map<String, Object?> json) {
@@ -52,6 +72,20 @@ class ProjectTemplate {
       ),
       textOverlay: TextOverlaySettings.fromJson(
         (json['textOverlay'] as Map?)?.cast<String, Object?>() ?? {},
+      ),
+      overlaySettings: OverlaySettings.fromJson(
+        (json['overlaySettings'] as Map?)?.cast<String, Object?>() ?? {},
+      ),
+      useBranding: json['useBranding'] as bool? ?? false,
+      useTextOverlay: json['useTextOverlay'] as bool? ?? false,
+      useOverlay: json['useOverlay'] as bool? ?? false,
+      outputSize: VideoOutputSize.values.firstWhere(
+        (value) => value.name == json['outputSize'],
+        orElse: () => VideoOutputSize.original,
+      ),
+      fitMode: VideoFitMode.values.firstWhere(
+        (value) => value.name == json['fitMode'],
+        orElse: () => VideoFitMode.keepOriginal,
       ),
     );
   }

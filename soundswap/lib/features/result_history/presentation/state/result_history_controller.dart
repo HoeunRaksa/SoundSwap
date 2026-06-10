@@ -12,7 +12,41 @@ class ResultHistoryController extends ChangeNotifier {
 
   final ResultHistoryService _service;
   List<ResultHistoryRecord> records = [];
+  ResultProcessType? processFilter;
+  String? resultFolderFilter;
   String? message;
+
+  List<ResultHistoryRecord> get filteredRecords {
+    final filter = processFilter;
+    final folder = resultFolderFilter;
+    return records.where((record) {
+      final processMatches = filter == null || record.processType == filter;
+      final folderMatches =
+          folder == null ||
+          p.equals(p.normalize(record.resultFolderPath), p.normalize(folder));
+      return processMatches && folderMatches;
+    }).toList();
+  }
+
+  List<String> get resultFolders {
+    final folders = <String>{};
+    for (final record in records) {
+      if (record.resultFolderPath.trim().isNotEmpty) {
+        folders.add(p.normalize(record.resultFolderPath));
+      }
+    }
+    return folders.toList()..sort();
+  }
+
+  void setProcessFilter(ResultProcessType? filter) {
+    processFilter = filter;
+    notifyListeners();
+  }
+
+  void setResultFolderFilter(String? folder) {
+    resultFolderFilter = folder;
+    notifyListeners();
+  }
 
   Future<void> load() async {
     records = await _service.load();
@@ -60,6 +94,60 @@ class ResultHistoryController extends ChangeNotifier {
         .toList();
     await _service.saveAll(records);
     message = 'Result folder cleared.';
+    notifyListeners();
+  }
+
+  Future<void> removeHistoryByFilter(ResultProcessType? filter) async {
+    final before = records.length;
+    records = records.where((record) {
+      if (filter == null) return false;
+      return record.processType != filter;
+    }).toList();
+    await _service.saveAll(records);
+    final removed = before - records.length;
+    message = 'Removed $removed history records.';
+    notifyListeners();
+  }
+
+  Future<void> removeHistoryForFolder(String resultFolderPath) async {
+    final before = records.length;
+    records = records
+        .where(
+          (record) => !p.equals(
+            p.normalize(record.resultFolderPath),
+            p.normalize(resultFolderPath),
+          ),
+        )
+        .toList();
+    if (resultFolderFilter != null &&
+        p.equals(
+          p.normalize(resultFolderFilter!),
+          p.normalize(resultFolderPath),
+        )) {
+      resultFolderFilter = null;
+    }
+    await _service.saveAll(records);
+    final removed = before - records.length;
+    message = 'Removed $removed history records for the selected folder.';
+    notifyListeners();
+  }
+
+  Future<void> removeFilesForFolder(String resultFolderPath) async {
+    var deleted = 0;
+    for (final record in records) {
+      if (!p.equals(
+        p.normalize(record.resultFolderPath),
+        p.normalize(resultFolderPath),
+      )) {
+        continue;
+      }
+      final file = File(record.outputPath);
+      if (_isRecordedOutputInsideResultFolder(record) && file.existsSync()) {
+        await file.delete();
+        deleted++;
+      }
+    }
+    message = 'Deleted $deleted result files from the selected folder.';
     notifyListeners();
   }
 

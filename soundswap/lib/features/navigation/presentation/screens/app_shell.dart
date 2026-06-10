@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
-import 'package:soundswap/features/branding/presentation/screens/branding_tools_screen.dart';
 import 'package:soundswap/features/branding/presentation/state/branding_controller.dart';
 import 'package:soundswap/features/effects/presentation/screens/effects_screen.dart';
 import 'package:soundswap/features/effects/presentation/state/effects_controller.dart';
@@ -8,13 +7,15 @@ import 'package:soundswap/features/folder_watcher/presentation/screens/folder_wa
 import 'package:soundswap/features/folder_watcher/presentation/state/folder_watcher_controller.dart';
 import 'package:soundswap/features/home/presentation/screens/home_screen.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
+import 'package:soundswap/features/long_video/presentation/screens/long_video_screen.dart';
+import 'package:soundswap/features/long_video/presentation/state/long_video_controller.dart';
+import 'package:soundswap/features/overlay_tools/presentation/screens/overlay_tools_screen.dart';
+import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
 import 'package:soundswap/features/product_import/presentation/screens/product_import_screen.dart';
 import 'package:soundswap/features/product_import/presentation/state/product_import_controller.dart';
 import 'package:soundswap/features/result_history/presentation/screens/result_history_screen.dart';
 import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
-import 'package:soundswap/features/templates/presentation/screens/templates_screen.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
-import 'package:soundswap/features/text_overlay/presentation/screens/text_overlay_screen.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
 
 class AppShell extends StatefulWidget {
@@ -25,14 +26,16 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  final _homeController = HomeController();
-  final _brandingController = BrandingController();
-  final _textOverlayController = TextOverlayController();
-  final _templatesController = TemplatesController();
-  final _folderWatcherController = FolderWatcherController();
-  final _resultHistoryController = ResultHistoryController();
-  final _effectsController = EffectsController();
-  final _productImportController = ProductImportController();
+  late final HomeController _homeController;
+  late final BrandingController _brandingController;
+  late final TextOverlayController _textOverlayController;
+  late final OverlayToolsController _overlayController;
+  late final TemplatesController _templatesController;
+  late final FolderWatcherController _folderWatcherController;
+  late final ResultHistoryController _resultHistoryController;
+  late final EffectsController _effectsController;
+  late final ProductImportController _productImportController;
+  late final LongVideoController _longVideoController;
   var _selectedIndex = 0;
 
   late final List<_NavigationItem> _items = [
@@ -40,26 +43,19 @@ class _AppShellState extends State<AppShell> {
       label: 'Home',
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
-      child: HomeScreen(controller: _homeController),
+      child: HomeScreen(
+        controller: _homeController,
+        overlayController: _overlayController,
+        templatesController: _templatesController,
+      ),
     ),
     _NavigationItem(
-      label: 'Branding Tools',
-      icon: Icons.workspace_premium_outlined,
-      selectedIcon: Icons.workspace_premium,
-      child: BrandingToolsScreen(controller: _brandingController),
-    ),
-    _NavigationItem(
-      label: 'Text Overlay',
-      icon: Icons.text_fields,
-      selectedIcon: Icons.title,
-      child: TextOverlayScreen(controller: _textOverlayController),
-    ),
-    _NavigationItem(
-      label: 'Templates',
-      icon: Icons.dashboard_customize_outlined,
-      selectedIcon: Icons.dashboard_customize,
-      child: TemplatesScreen(
-        controller: _templatesController,
+      label: 'Overlay & Templates',
+      icon: Icons.layers_outlined,
+      selectedIcon: Icons.layers,
+      child: OverlayToolsScreen(
+        controller: _overlayController,
+        templatesController: _templatesController,
         homeController: _homeController,
         brandingController: _brandingController,
         textOverlayController: _textOverlayController,
@@ -72,7 +68,15 @@ class _AppShellState extends State<AppShell> {
       child: FolderWatcherScreen(
         controller: _folderWatcherController,
         historyController: _resultHistoryController,
+        templatesController: _templatesController,
+        homeController: _homeController,
       ),
+    ),
+    _NavigationItem(
+      label: 'Long Video Generator',
+      icon: Icons.video_stable_outlined,
+      selectedIcon: Icons.video_stable,
+      child: LongVideoScreen(controller: _longVideoController),
     ),
     _NavigationItem(
       label: 'Result History',
@@ -100,9 +104,22 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    _homeController.initializeOutputFolder();
+    _resultHistoryController = ResultHistoryController();
+    _homeController = HomeController(
+      resultHistoryController: _resultHistoryController,
+    );
+    _brandingController = BrandingController();
+    _textOverlayController = TextOverlayController();
+    _overlayController = OverlayToolsController();
+    _templatesController = TemplatesController();
+    _folderWatcherController = FolderWatcherController();
+    _effectsController = EffectsController();
+    _productImportController = ProductImportController();
+    _longVideoController = LongVideoController();
+    _homeController.initialize();
     _brandingController.load();
     _textOverlayController.load();
+    _overlayController.load();
     _templatesController.load();
     _folderWatcherController.load();
     _resultHistoryController.load();
@@ -115,11 +132,13 @@ class _AppShellState extends State<AppShell> {
     _homeController.dispose();
     _brandingController.dispose();
     _textOverlayController.dispose();
+    _overlayController.dispose();
     _templatesController.dispose();
     _folderWatcherController.dispose();
     _resultHistoryController.dispose();
     _effectsController.dispose();
     _productImportController.dispose();
+    _longVideoController.dispose();
     super.dispose();
   }
 

@@ -158,6 +158,47 @@ class FfmpegService {
     return duration;
   }
 
+  Future<VideoDimensions> probeVideoDimensions(String inputPath) async {
+    final ffprobeExecutable = _ffprobeExecutable;
+    final arguments = [
+      '-v',
+      'error',
+      '-select_streams',
+      'v:0',
+      '-show_entries',
+      'stream=width,height',
+      '-of',
+      'csv=p=0:s=x',
+      inputPath,
+    ];
+    final result = await _runProcess(ffprobeExecutable, arguments);
+
+    if (result.exitCode != 0) {
+      throw FfmpegFailure(
+        command: _formatCommand(ffprobeExecutable, arguments),
+        exitCode: result.exitCode,
+        stderr: result.stderr,
+        stdout: result.stdout,
+      );
+    }
+
+    final parts = result.stdout.trim().split('x');
+    if (parts.length != 2) {
+      throw FfmpegException(
+        'Could not read video dimensions with ffprobe.\nInput: $inputPath\nOutput: ${result.stdout}',
+      );
+    }
+
+    final width = int.tryParse(parts[0]);
+    final height = int.tryParse(parts[1]);
+    if (width == null || height == null || width <= 0 || height <= 0) {
+      throw FfmpegException(
+        'Invalid video dimensions from ffprobe.\nInput: $inputPath\nOutput: ${result.stdout}',
+      );
+    }
+    return VideoDimensions(width: width, height: height);
+  }
+
   FfmpegCommandPlan buildReplaceAudioPlan({
     required String videoPath,
     required String audioPath,
@@ -348,6 +389,13 @@ class ProcessRunOutput {
   final int exitCode;
   final String stdout;
   final String stderr;
+}
+
+class VideoDimensions {
+  const VideoDimensions({required this.width, required this.height});
+
+  final int width;
+  final int height;
 }
 
 class FfmpegException implements Exception {
