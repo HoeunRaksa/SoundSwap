@@ -29,6 +29,7 @@ class SoundSwapJob {
   String get outputName => p.basename(outputPath);
 
   SoundSwapJob copyWith({
+    MediaFile? video,
     MediaFile? audio,
     SoundSwapStatus? status,
     int? retryCount,
@@ -38,7 +39,7 @@ class SoundSwapJob {
     String? errorMessage,
   }) {
     return SoundSwapJob(
-      video: video,
+      video: video ?? this.video,
       audio: audio ?? this.audio,
       outputPath: outputPath,
       status: status ?? this.status,

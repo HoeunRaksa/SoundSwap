@@ -7,12 +7,15 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:soundswap/core/constants/app_constants.dart';
+import 'package:soundswap/core/video/duration_mode.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/branding/data/models/branding_preset.dart';
 import 'package:soundswap/features/branding/data/models/branding_settings.dart';
 import 'package:soundswap/features/generator/data/services/ffmpeg_overlay_service.dart';
+import 'package:soundswap/features/home/data/models/audio_settings.dart';
 import 'package:soundswap/features/home/data/models/batch_profile.dart';
 import 'package:soundswap/features/home/data/models/batch_queue.dart';
+import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 import 'package:soundswap/features/home/data/services/batch_profiles_service.dart';
@@ -93,8 +96,13 @@ class HomeController extends ChangeNotifier {
   VideoOutputSize outputSize = VideoOutputSize.original;
   VideoFitMode fitMode = VideoFitMode.keepOriginal;
   String? upscaleWarning;
+  AudioSettings audioSettings = const AudioSettings();
+  DurationMode durationMode = DurationMode.trimAudioToVideo;
+  ImageToVideoSettings imageToVideoSettings = const ImageToVideoSettings();
+  int detectedImageCount = 0;
 
   void setOutputNamePrefix(String value) {
+    if (outputNamePrefix == value) return;
     outputNamePrefix = value;
     if (jobs.isNotEmpty) {
       jobs = _rebuildJobsFromCurrentQueue();
@@ -119,6 +127,7 @@ class HomeController extends ChangeNotifier {
   }
 
   void setUseBranding(bool value) {
+    if (useBranding == value) return;
     useBranding = value;
     if (!value) {
       selectedBrandingPresetId = null;
@@ -137,6 +146,7 @@ class HomeController extends ChangeNotifier {
   }
 
   void setUseTextOverlay(bool value) {
+    if (useTextOverlay == value) return;
     useTextOverlay = value;
     if (!value) {
       selectedTextPresetId = null;
@@ -147,6 +157,7 @@ class HomeController extends ChangeNotifier {
   }
 
   void setUseOverlay(bool value) {
+    if (useOverlay == value) return;
     useOverlay = value;
     if (!value) {
       selectedOverlayPresetId = null;
@@ -181,6 +192,7 @@ class HomeController extends ChangeNotifier {
   }
 
   void setUseTemplate(bool value) {
+    if (useTemplate == value) return;
     useTemplate = value;
     if (!value) {
       selectedTemplateId = null;
@@ -215,6 +227,7 @@ class HomeController extends ChangeNotifier {
   }
 
   void setOutputSize(VideoOutputSize value) {
+    if (outputSize == value) return;
     outputSize = value;
     upscaleWarning = value == VideoOutputSize.original
         ? null
@@ -224,7 +237,27 @@ class HomeController extends ChangeNotifier {
   }
 
   void setFitMode(VideoFitMode value) {
+    if (fitMode == value) return;
     fitMode = value;
+    unawaited(_persistLastState());
+    notifyListeners();
+  }
+
+  void setAudioSettings(AudioSettings value) {
+    audioSettings = value;
+    unawaited(_persistLastState());
+    notifyListeners();
+  }
+
+  void setDurationMode(DurationMode value) {
+    if (durationMode == value) return;
+    durationMode = value;
+    unawaited(_persistLastState());
+    notifyListeners();
+  }
+
+  void setImageToVideoSettings(ImageToVideoSettings value) {
+    imageToVideoSettings = value;
     unawaited(_persistLastState());
     notifyListeners();
   }
@@ -428,11 +461,19 @@ class HomeController extends ChangeNotifier {
     try {
       if (videoFolderPath != null) {
         await _logInfo('Scanning video folder...');
+        // Scan both videos and images
+        final allVideoExts = [
+          ...AppConstants.supportedVideoExtensions,
+          ...AppConstants.supportedImageExtensions,
+        ];
         videos = await _mediaScannerService.scanFolder(
           folderPath: videoFolderPath!,
-          extensions: AppConstants.supportedVideoExtensions,
+          extensions: allVideoExts,
         );
-        await _logInfo('Found ${videos.length} videos');
+        detectedImageCount = videos.where((f) => f.isImage).length;
+        await _logInfo(
+          'Found ${videos.length} media files ($detectedImageCount images)',
+        );
       }
       if (audioFolderPath != null) {
         await _logInfo('Scanning audio folder...');
@@ -442,6 +483,7 @@ class HomeController extends ChangeNotifier {
         );
         await _logInfo('Found ${audios.length} audios');
       }
+
 
       if (buildQueue) {
         jobs = _buildJobs();
@@ -690,7 +732,49 @@ class HomeController extends ChangeNotifier {
         await _logInfo('Processing video: ${originalJob.video.name}');
         await _logInfo('Selected audio: ${selectedAudio.name}');
 
-        final plan = await _ffmpegService.prepareReplacement(jobs[jobIndex]);
+        // If the source is an image, convert it to a temporary video first
+        String effectiveVideoPath = originalJob.video.path;
+        String? tempImageVideoPath;
+        if (originalJob.video.isImage) {
+          tempImageVideoPath = _temporaryGeneratorOutputPath(
+            originalJob.outputPath,
+          ).replaceAll('.generator.', '.img2vid.');
+          await _logInfo(
+            'Converting image to video: ${originalJob.video.name}',
+          );
+          var targetW = outputSize.width ?? 1080;
+          var targetH = outputSize.height ?? 1920;
+          if (outputSize == VideoOutputSize.original) {
+            try {
+              final dims = await _ffmpegService.probeVideoDimensions(originalJob.video.path);
+              targetW = dims.width;
+              targetH = dims.height;
+              if (targetW % 2 != 0) targetW += 1;
+              if (targetH % 2 != 0) targetH += 1;
+            } catch (_) {}
+          }
+          await _ffmpegService.convertImageToVideo(
+            imagePath: originalJob.video.path,
+            outputPath: tempImageVideoPath,
+            settings: imageToVideoSettings,
+            width: targetW,
+            height: targetH,
+          );
+          effectiveVideoPath = tempImageVideoPath;
+          await _logInfo('Image converted to video: $tempImageVideoPath');
+        }
+
+        final effectiveJob = tempImageVideoPath == null
+            ? jobs[jobIndex]
+            : jobs[jobIndex].copyWith(
+                video: MediaFile(path: effectiveVideoPath),
+              );
+
+        final plan = await _ffmpegService.prepareReplacement(
+          effectiveJob,
+          audioSettings: audioSettings,
+          durationMode: durationMode,
+        );
         currentFfmpegCommand = plan.command;
         await _logInfo(
           'Random start position: ${plan.randomStart.toStringAsFixed(2)}',
@@ -709,6 +793,12 @@ class HomeController extends ChangeNotifier {
         await _logInfo('FFmpeg completed successfully.');
         if (output.stderr.trim().isNotEmpty) {
           await _logInfo('FFmpeg STDERR:\n${output.stderr}');
+        }
+
+        // Clean up temp image-to-video file
+        if (tempImageVideoPath != null) {
+          final tempFile = File(tempImageVideoPath);
+          if (tempFile.existsSync()) await tempFile.delete();
         }
 
         final overlayOutput = await _applyOptionalGeneratorOutput(originalJob);
@@ -762,6 +852,7 @@ class HomeController extends ChangeNotifier {
     await _logError('All retries failed for ${originalJob.video.name}.');
     notifyListeners();
   }
+
 
   MediaFile _randomAudio() => audios[_random.nextInt(audios.length)];
 
@@ -929,7 +1020,7 @@ class HomeController extends ChangeNotifier {
     final textOverlay = useTextOverlay ? activeTextOverlaySettings : null;
     final overlaySettings = useOverlay ? activeOverlaySettings : null;
     final tempPath = _temporaryGeneratorOutputPath(job.outputPath);
-    final overlayPlan = _overlayService.prepareOverlay(
+    final overlayPlan = await _overlayService.prepareOverlay(
       inputPath: job.outputPath,
       outputPath: tempPath,
       outputSize: outputSize,
@@ -1223,6 +1314,9 @@ class HomeController extends ChangeNotifier {
       selectedTemplateId: selectedTemplateId,
       outputSize: outputSize,
       fitMode: fitMode,
+      audioSettings: audioSettings,
+      durationMode: durationMode,
+      imageToVideoSettings: imageToVideoSettings,
     );
   }
 
@@ -1238,6 +1332,9 @@ class HomeController extends ChangeNotifier {
     selectedTemplateId = profile.selectedTemplateId;
     outputSize = profile.outputSize;
     fitMode = profile.fitMode;
+    audioSettings = profile.audioSettings;
+    durationMode = profile.durationMode;
+    imageToVideoSettings = profile.imageToVideoSettings;
     upscaleWarning = outputSize == VideoOutputSize.original
         ? null
         : 'Upscaling may not improve quality.';

@@ -3,6 +3,9 @@ import 'dart:io';
 import 'dart:math';
 import 'package:path/path.dart' as p;
 
+import 'package:soundswap/core/video/duration_mode.dart';
+import 'package:soundswap/features/home/data/models/audio_settings.dart';
+import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 
 class FfmpegService {
@@ -73,8 +76,16 @@ class FfmpegService {
     }
   }
 
-  Future<FfmpegRunResult> replaceAudio(SoundSwapJob job) async {
-    final plan = await prepareReplacement(job);
+  Future<FfmpegRunResult> replaceAudio(
+    SoundSwapJob job, {
+    AudioSettings audioSettings = const AudioSettings(),
+    DurationMode durationMode = DurationMode.trimAudioToVideo,
+  }) async {
+    final plan = await prepareReplacement(
+      job,
+      audioSettings: audioSettings,
+      durationMode: durationMode,
+    );
     final output = await runReplacement(plan);
 
     return FfmpegRunResult(
@@ -87,7 +98,11 @@ class FfmpegService {
     );
   }
 
-  Future<FfmpegReplacementPlan> prepareReplacement(SoundSwapJob job) async {
+  Future<FfmpegReplacementPlan> prepareReplacement(
+    SoundSwapJob job, {
+    AudioSettings audioSettings = const AudioSettings(),
+    DurationMode durationMode = DurationMode.trimAudioToVideo,
+  }) async {
     final videoDuration = await probeDuration(job.video.path);
     final audioDuration = await probeDuration(job.audio.path);
     final commandPlan = buildReplaceAudioPlan(
@@ -96,6 +111,8 @@ class FfmpegService {
       outputPath: job.outputPath,
       videoDuration: videoDuration,
       audioDuration: audioDuration,
+      audioSettings: audioSettings,
+      durationMode: durationMode,
     );
 
     return FfmpegReplacementPlan(
@@ -199,15 +216,153 @@ class FfmpegService {
     return VideoDimensions(width: width, height: height);
   }
 
+  /// Converts a still image into an MP4 video of the specified duration.
+  Future<ProcessRunOutput> convertImageToVideo({
+    required String imagePath,
+    required String outputPath,
+    required ImageToVideoSettings settings,
+    int width = 1080,
+    int height = 1920,
+    double? durationOverride,
+  }) async {
+    final durationSec = durationOverride ?? settings.durationSeconds;
+    final fitFilter = _imageVideoScaleFilter(settings.fitMode, width, height);
+
+    final arguments = [
+      '-y',
+      '-loop',
+      '1',
+      '-framerate',
+      '30',
+      '-i',
+      imagePath,
+      '-t',
+      _formatSeconds(durationSec),
+      '-vf',
+      fitFilter,
+      '-c:v',
+      'libx264',
+      '-preset',
+      'veryfast',
+      '-crf',
+      '18',
+      '-pix_fmt',
+      'yuv420p',
+      '-an',
+      outputPath,
+    ];
+
+    final result = await _runProcess(_ffmpegExecutable, arguments);
+    if (result.exitCode != 0) {
+      throw FfmpegFailure(
+        command: _formatCommand(_ffmpegExecutable, arguments),
+        exitCode: result.exitCode,
+        stderr: result.stderr,
+        stdout: result.stdout,
+      );
+    }
+    return result;
+  }
+
+  String _imageVideoScaleFilter(
+    ImageFitMode fitMode,
+    int width,
+    int height,
+  ) {
+    return switch (fitMode) {
+      ImageFitMode.contain =>
+        'scale=$width:$height:force_original_aspect_ratio=decrease,'
+        'pad=$width:$height:(ow-iw)/2:(oh-ih)/2:black',
+      ImageFitMode.cover =>
+        'scale=$width:$height:force_original_aspect_ratio=increase,'
+        'crop=$width:$height',
+      ImageFitMode.stretch => 'scale=$width:$height',
+      ImageFitMode.blurBackgroundFill =>
+        'split[fg][bg];'
+        '[bg]scale=$width:$height:force_original_aspect_ratio=increase,'
+        'crop=$width:$height,gblur=sigma=28[blur];'
+        '[fg]scale=$width:$height:force_original_aspect_ratio=decrease[fit];'
+        '[blur][fit]overlay=(W-w)/2:(H-h)/2',
+    };
+  }
+
   FfmpegCommandPlan buildReplaceAudioPlan({
     required String videoPath,
     required String audioPath,
     required String outputPath,
     required double videoDuration,
     required double audioDuration,
+    AudioSettings audioSettings = const AudioSettings(),
+    DurationMode durationMode = DurationMode.trimAudioToVideo,
   }) {
-    final formattedVideoDuration = _formatSeconds(videoDuration);
+    // Keep original only — just copy the video as-is (audio comes from video)
+    if (audioSettings.mode == AudioMode.keepOriginalOnly) {
+      final arguments = [
+        '-y',
+        '-i',
+        videoPath,
+        '-c',
+        'copy',
+        outputPath,
+      ];
+      return FfmpegCommandPlan(
+        arguments: arguments,
+        command: _formatCommand(_ffmpegExecutable, arguments),
+        randomStart: 0,
+      );
+    }
 
+    // Determine output duration flags based on mode
+    final outputDuration = _outputDuration(
+      videoDuration: videoDuration,
+      audioDuration: audioDuration,
+      durationMode: durationMode,
+    );
+
+    // Volume scalars
+    final origVol = (audioSettings.originalAudioVolume / 100.0).toStringAsFixed(3);
+    final newVol = (audioSettings.newAudioVolume / 100.0).toStringAsFixed(3);
+
+    // Whether to use stream_loop (audio shorter than video)
+    final needsLoop = audioDuration <= videoDuration;
+
+    if (audioSettings.mode == AudioMode.mixOriginalAndNew) {
+      // Mix mode: blend original video audio + replacement audio
+      final randomStart = needsLoop
+          ? 0.0
+          : _random.nextDouble() * (audioDuration - videoDuration);
+
+      final arguments = <String>[
+        '-y',
+        '-i',
+        videoPath,
+        if (!needsLoop) ...['-ss', _formatSeconds(randomStart)],
+        if (needsLoop) ...['-stream_loop', '-1'],
+        '-i',
+        audioPath,
+        '-filter_complex',
+        '[0:a]volume=$origVol[oa];[1:a]volume=$newVol[na];[oa][na]amix=inputs=2:duration=shortest[aout]',
+        '-map',
+        '0:v',
+        '-map',
+        '[aout]',
+        '-c:v',
+        'copy',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        ...outputDuration.flags,
+        outputPath,
+      ];
+      return FfmpegCommandPlan(
+        arguments: arguments,
+        command: _formatCommand(_ffmpegExecutable, arguments),
+        randomStart: randomStart,
+      );
+    }
+
+    // Replace mode (default): discard original audio, use replacement only
     if (audioDuration > videoDuration) {
       final maxStart = audioDuration - videoDuration;
       final randomStart = _random.nextDouble() * maxStart;
@@ -229,12 +384,10 @@ class FfmpegService {
         'aac',
         '-b:a',
         '192k',
-        '-t',
-        formattedVideoDuration,
-        '-shortest',
+        if (newVol != '1.000') ...['-filter:a', 'volume=$newVol'],
+        ...outputDuration.flags,
         outputPath,
       ];
-
       return FfmpegCommandPlan(
         arguments: arguments,
         command: _formatCommand(_ffmpegExecutable, arguments),
@@ -260,8 +413,8 @@ class FfmpegService {
       'aac',
       '-b:a',
       '192k',
-      '-t',
-      formattedVideoDuration,
+      if (newVol != '1.000') ...['-filter:a', 'volume=$newVol'],
+      ...outputDuration.flags,
       outputPath,
     ];
 
@@ -270,6 +423,29 @@ class FfmpegService {
       command: _formatCommand(_ffmpegExecutable, arguments),
       randomStart: 0,
     );
+  }
+
+  _DurationFlags _outputDuration({
+    required double videoDuration,
+    required double audioDuration,
+    required DurationMode durationMode,
+  }) {
+    return switch (durationMode) {
+      DurationMode.trimAudioToVideo =>
+        _DurationFlags(['-t', _formatSeconds(videoDuration)]),
+      DurationMode.trimVideoToAudio =>
+        _DurationFlags(['-t', _formatSeconds(audioDuration)]),
+      DurationMode.useShortest =>
+        _DurationFlags([
+          '-t',
+          _formatSeconds(videoDuration < audioDuration ? videoDuration : audioDuration),
+        ]),
+      DurationMode.useLongest =>
+        _DurationFlags([
+          '-t',
+          _formatSeconds(videoDuration > audioDuration ? videoDuration : audioDuration),
+        ]),
+    };
   }
 
   Future<ProcessRunOutput> _runProcess(
@@ -331,6 +507,11 @@ class FfmpegService {
     }
     return '"${argument.replaceAll('"', r'\"')}"';
   }
+}
+
+class _DurationFlags {
+  const _DurationFlags(this.flags);
+  final List<String> flags;
 }
 
 class FfmpegCommandPlan {

@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:soundswap/app.dart';
 import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/branding/presentation/state/branding_controller.dart';
@@ -17,6 +19,7 @@ import 'package:soundswap/features/result_history/presentation/screens/result_hi
 import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
+import 'package:soundswap/shared/widgets/custom_title_bar.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -36,13 +39,17 @@ class _AppShellState extends State<AppShell> {
   late final EffectsController _effectsController;
   late final ProductImportController _productImportController;
   late final LongVideoController _longVideoController;
+
   var _selectedIndex = 0;
 
+  // ── Flat list of items — index is authoritative for selection ──────────
   late final List<_NavigationItem> _items = [
+    // Processing group (index 0–3)
     _NavigationItem(
       label: 'Home',
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
+      group: _NavGroup.processing,
       child: HomeScreen(
         controller: _homeController,
         overlayController: _overlayController,
@@ -50,9 +57,30 @@ class _AppShellState extends State<AppShell> {
       ),
     ),
     _NavigationItem(
-      label: 'Overlay & Templates',
+      label: 'Folder Watcher',
+      icon: Icons.visibility_outlined,
+      selectedIcon: Icons.visibility,
+      group: _NavGroup.processing,
+      child: FolderWatcherScreen(
+        controller: _folderWatcherController,
+        historyController: _resultHistoryController,
+        templatesController: _templatesController,
+        homeController: _homeController,
+      ),
+    ),
+    _NavigationItem(
+      label: 'Long Video',
+      icon: Icons.video_stable_outlined,
+      selectedIcon: Icons.video_stable,
+      group: _NavGroup.processing,
+      child: LongVideoScreen(controller: _longVideoController),
+    ),
+    // Editing group (index 3–4)
+    _NavigationItem(
+      label: 'Overlays & Templates',
       icon: Icons.layers_outlined,
       selectedIcon: Icons.layers,
+      group: _NavGroup.editing,
       child: OverlayToolsScreen(
         controller: _overlayController,
         templatesController: _templatesController,
@@ -62,41 +90,43 @@ class _AppShellState extends State<AppShell> {
       ),
     ),
     _NavigationItem(
-      label: 'Folder Watcher',
-      icon: Icons.visibility_outlined,
-      selectedIcon: Icons.visibility,
-      child: FolderWatcherScreen(
-        controller: _folderWatcherController,
-        historyController: _resultHistoryController,
-        templatesController: _templatesController,
-        homeController: _homeController,
-      ),
+      label: 'Effects',
+      icon: Icons.auto_fix_high_outlined,
+      selectedIcon: Icons.auto_fix_high,
+      group: _NavGroup.editing,
+      child: EffectsScreen(controller: _effectsController),
     ),
-    _NavigationItem(
-      label: 'Long Video Generator',
-      icon: Icons.video_stable_outlined,
-      selectedIcon: Icons.video_stable,
-      child: LongVideoScreen(controller: _longVideoController),
-    ),
+    // Management group (index 5–6)
     _NavigationItem(
       label: 'Result History',
       icon: Icons.history_outlined,
       selectedIcon: Icons.history,
+      group: _NavGroup.management,
       child: ResultHistoryScreen(
         controller: _resultHistoryController,
         folderWatcherController: _folderWatcherController,
+        onStartBatch: () => setState(() => _selectedIndex = 0),
+        onOpenResultFolder: () async {
+          final paths = [
+            _homeController.outputFolderPath,
+            _folderWatcherController.resultFolderPath,
+            _longVideoController.outputFolderPath,
+          ].where((p) => p != null && p.isNotEmpty).cast<String>().toList();
+
+          if (paths.isNotEmpty) {
+            final folder = Directory(paths.first);
+            if (folder.existsSync()) {
+              await Process.start('explorer.exe', [folder.path]);
+            }
+          }
+        },
       ),
-    ),
-    _NavigationItem(
-      label: 'Effects',
-      icon: Icons.tune,
-      selectedIcon: Icons.tune,
-      child: EffectsScreen(controller: _effectsController),
     ),
     _NavigationItem(
       label: 'Product Import',
       icon: Icons.upload_file_outlined,
       selectedIcon: Icons.table_chart,
+      group: _NavGroup.management,
       child: ProductImportScreen(controller: _productImportController),
     ),
   ];
@@ -115,7 +145,9 @@ class _AppShellState extends State<AppShell> {
     _folderWatcherController = FolderWatcherController();
     _effectsController = EffectsController();
     _productImportController = ProductImportController();
-    _longVideoController = LongVideoController();
+    _longVideoController = LongVideoController(
+      resultHistoryController: _resultHistoryController,
+    );
     _homeController.initialize();
     _brandingController.load();
     _textOverlayController.load();
@@ -146,7 +178,20 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     if (AppResponsive.isSmall(context)) {
       return Scaffold(
-        body: SafeArea(child: _items[_selectedIndex].child),
+        body: Column(
+          children: [
+            CustomTitleBar(
+              homeController: _homeController,
+              folderWatcherController: _folderWatcherController,
+            ),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: [for (final item in _items) item.child],
+              ),
+            ),
+          ],
+        ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
           onDestinationSelected: (index) =>
@@ -164,21 +209,58 @@ class _AppShellState extends State<AppShell> {
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: Row(
-          children: [
-            _Sidebar(
-              items: _items,
-              selectedIndex: _selectedIndex,
-              onChanged: (index) => setState(() => _selectedIndex = index),
+      body: Column(
+        children: [
+          CustomTitleBar(
+            homeController: _homeController,
+            folderWatcherController: _folderWatcherController,
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                _Sidebar(
+                  items: _items,
+                  selectedIndex: _selectedIndex,
+                  onChanged: (index) => setState(() => _selectedIndex = index),
+                ),
+                // Vertical divider
+                VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                Expanded(
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: [for (final item in _items) item.child],
+                  ),
+                ),
+              ],
             ),
-            Expanded(child: _items[_selectedIndex].child),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+
+// ── Navigation groups ─────────────────────────────────────────────────────
+
+enum _NavGroup {
+  processing,
+  editing,
+  management,
+}
+
+extension _NavGroupLabel on _NavGroup {
+  String get label => switch (this) {
+        _NavGroup.processing => 'Processing',
+        _NavGroup.editing => 'Editing',
+        _NavGroup.management => 'Management',
+      };
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────
 
 class _Sidebar extends StatelessWidget {
   const _Sidebar({
@@ -195,57 +277,165 @@ class _Sidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final gap = AppResponsive.cardGap(context);
     final colorScheme = Theme.of(context).colorScheme;
+    final sidebarWidth = AppResponsive.isMedium(context) ? 220.0 : 244.0;
 
-    return Container(
-      width: AppResponsive.isMedium(context) ? 230 : 260,
-      padding: EdgeInsets.all(gap),
-      decoration: BoxDecoration(
+    // Group items by NavGroup
+    final groups = _NavGroup.values;
+
+    return SizedBox(
+      width: sidebarWidth,
+      child: Container(
         color: colorScheme.surfaceContainerLow,
-        border: Border(right: BorderSide(color: colorScheme.outlineVariant)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.swap_horizontal_circle_outlined,
-                size: AppResponsive.iconSize(context) + 8,
-                color: colorScheme.primary,
-              ),
-              SizedBox(width: gap / 2),
-              Expanded(
-                child: Text(
-                  'SoundSwap',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: AppResponsive.titleSize(context) - 4,
-                    fontWeight: FontWeight.bold,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── App logo / wordmark ────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(gap, gap, gap, gap * 0.75),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.swap_horizontal_circle,
+                      size: 20,
+                      color: colorScheme.onPrimary,
+                    ),
                   ),
-                ),
+                  SizedBox(width: gap / 2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SoundSwap',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          'Video Production Suite',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          SizedBox(height: gap * 1.5),
-          for (var i = 0; i < items.length; i++)
-            _SidebarButton(
-              item: items[i],
-              selected: i == selectedIndex,
-              onPressed: () => onChanged(i),
             ),
-          const Spacer(),
-          Text(
-            'Copyright by Hoeun Raksa',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+
+            Divider(height: 1, color: colorScheme.outlineVariant),
+            SizedBox(height: gap * 0.5),
+
+            // ── Nav groups ─────────────────────────────────────────────
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.symmetric(
+                    horizontal: gap * 0.6, vertical: gap * 0.25),
+                children: [
+                  for (final group in groups) ...[
+                    // Group label
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                          gap * 0.5, gap * 0.5, gap * 0.5, gap * 0.25),
+                      child: Text(
+                        group.label.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.6),
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    // Items in group
+                    for (var i = 0; i < items.length; i++)
+                      if (items[i].group == group)
+                        _SidebarButton(
+                          item: items[i],
+                          selected: i == selectedIndex,
+                          onPressed: () => onChanged(i),
+                        ),
+                    SizedBox(height: gap * 0.25),
+                  ],
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // ── Footer ─────────────────────────────────────────────────
+            Divider(height: 1, color: colorScheme.outlineVariant),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                  horizontal: gap * 0.75, vertical: gap * 0.5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '© Hoeun Raksa',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color:
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                  // Theme toggle
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: SoundSwapApp.themeNotifier,
+                    builder: (context, mode, _) {
+                      final isDark = mode == ThemeMode.dark ||
+                          (mode == ThemeMode.system &&
+                              MediaQuery.platformBrightnessOf(context) ==
+                                  Brightness.dark);
+                      return Tooltip(
+                        message: isDark
+                            ? 'Switch to light mode'
+                            : 'Switch to dark mode',
+                        child: InkWell(
+                          onTap: () {
+                            SoundSwapApp.themeNotifier.value =
+                                isDark ? ThemeMode.light : ThemeMode.dark;
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              isDark
+                                  ? Icons.light_mode_outlined
+                                  : Icons.dark_mode_outlined,
+                              size: 15,
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+
+// ── Sidebar button ────────────────────────────────────────────────────────
 
 class _SidebarButton extends StatelessWidget {
   const _SidebarButton({
@@ -264,20 +454,18 @@ class _SidebarButton extends StatelessWidget {
     final gap = AppResponsive.cardGap(context);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: gap / 3),
+      padding: EdgeInsets.only(bottom: 2),
       child: Material(
-        color: selected ? colorScheme.primaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
+        color: selected
+            ? colorScheme.primaryContainer
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(
-            AppResponsive.cardRadius(context),
-          ),
+          borderRadius: BorderRadius.circular(8),
+          hoverColor: colorScheme.onSurface.withValues(alpha: 0.06),
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: gap * 0.7,
-              vertical: gap * 0.6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Row(
               children: [
                 Icon(
@@ -285,9 +473,9 @@ class _SidebarButton extends StatelessWidget {
                   color: selected
                       ? colorScheme.onPrimaryContainer
                       : colorScheme.onSurfaceVariant,
-                  size: AppResponsive.iconSize(context),
+                  size: 18,
                 ),
-                SizedBox(width: gap / 2),
+                SizedBox(width: gap * 0.6),
                 Expanded(
                   child: Text(
                     item.label,
@@ -295,8 +483,10 @@ class _SidebarButton extends StatelessWidget {
                       color: selected
                           ? colorScheme.onPrimaryContainer
                           : colorScheme.onSurface,
-                      fontSize: AppResponsive.bodySize(context),
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 13,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
+                      letterSpacing: -0.1,
                     ),
                   ),
                 ),
@@ -309,16 +499,20 @@ class _SidebarButton extends StatelessWidget {
   }
 }
 
+// ── Data class ────────────────────────────────────────────────────────────
+
 class _NavigationItem {
   const _NavigationItem({
     required this.label,
     required this.icon,
     required this.selectedIcon,
     required this.child,
+    required this.group,
   });
 
   final String label;
   final IconData icon;
   final IconData selectedIcon;
   final Widget child;
+  final _NavGroup group;
 }

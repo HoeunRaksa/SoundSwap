@@ -14,7 +14,7 @@ class FfmpegOverlayService {
 
   final FfmpegService _ffmpegService;
 
-  FfmpegOverlayPlan? prepareOverlay({
+  Future<FfmpegOverlayPlan?> prepareOverlay({
     required String inputPath,
     required String outputPath,
     required VideoOutputSize outputSize,
@@ -22,7 +22,7 @@ class FfmpegOverlayService {
     BrandingSettings? branding,
     TextOverlaySettings? textOverlay,
     OverlaySettings? overlaySettings,
-  }) {
+  }) async {
     final hasBranding = branding?.hasContent ?? false;
     final hasText = textOverlay?.hasContent ?? false;
     final hasOverlayItems = overlaySettings?.hasContent ?? false;
@@ -30,6 +30,17 @@ class FfmpegOverlayService {
     if (!hasBranding && !hasText && !hasOverlayItems && !resizes) {
       return null;
     }
+
+    int videoWidth = 1080;
+    int videoHeight = 1920;
+    try {
+      final dims = await _ffmpegService.probeVideoDimensions(inputPath);
+      videoWidth = dims.width;
+      videoHeight = dims.height;
+    } catch (_) {}
+
+    final outW = outputSize.width ?? videoWidth;
+    final outH = outputSize.height ?? videoHeight;
 
     final arguments = <String>['-y', '-i', inputPath];
     var logoInputIndex = -1;
@@ -48,6 +59,8 @@ class FfmpegOverlayService {
     }
 
     final filterGraph = _buildFilterGraph(
+      outW: outW,
+      outH: outH,
       outputSize: outputSize,
       fitMode: fitMode,
       branding: branding,
@@ -98,6 +111,8 @@ class FfmpegOverlayService {
   }
 
   String _buildFilterGraph({
+    required int outW,
+    required int outH,
     required VideoOutputSize outputSize,
     required VideoFitMode fitMode,
     required BrandingSettings? branding,
@@ -111,7 +126,7 @@ class FfmpegOverlayService {
     var index = 0;
 
     if (branding?.hasLogo ?? false) {
-      final logoWidth = _logoWidth(outputSize);
+      final logoWidth = _logoWidth(outW);
       final logoLabel = 'logo$index';
       filters.add('[$logoInputIndex:v]scale=$logoWidth:-1[$logoLabel]');
       final next = 'v${++index}';
@@ -123,8 +138,9 @@ class FfmpegOverlayService {
 
     if (branding?.hasContactText ?? false) {
       final next = 'v${++index}';
+      final scaledFontSize = branding!.fontSize * (outH / 1920.0);
       filters.add(
-        '[$current]${_drawTextFilter(text: branding!.contactText, position: branding.textPosition, fontFamily: branding.fontFamily, fontPath: null, fontSize: branding.fontSize, colorHex: branding.textColor, shadow: true, backgroundBox: true)}[$next]',
+        '[$current]${_drawTextFilter(text: branding.contactText, position: branding.textPosition, fontFamily: branding.fontFamily, fontPath: null, fontSize: scaledFontSize, colorHex: branding.textColor, shadow: true, backgroundBox: true)}[$next]',
       );
       current = next;
     }
@@ -132,8 +148,9 @@ class FfmpegOverlayService {
     if (textOverlay != null) {
       for (final item in _textItems(textOverlay)) {
         final next = 'v${++index}';
+        final scaledFontSize = textOverlay.fontSize * (outH / 1920.0);
         filters.add(
-          '[$current]${_drawTextFilter(text: item.text, position: item.position, fontFamily: textOverlay.fontFamily, fontPath: null, fontSize: textOverlay.fontSize, colorHex: textOverlay.textColor, shadow: textOverlay.shadow, backgroundBox: textOverlay.backgroundBox)}[$next]',
+          '[$current]${_drawTextFilter(text: item.text, position: item.position, fontFamily: textOverlay.fontFamily, fontPath: null, fontSize: scaledFontSize, colorHex: textOverlay.textColor, shadow: textOverlay.shadow, backgroundBox: textOverlay.backgroundBox)}[$next]',
         );
         current = next;
       }
@@ -146,20 +163,43 @@ class FfmpegOverlayService {
         if (item.type == OverlayItemType.image) {
           final inputIndex = overlayImageInputIndexes[item.id];
           if (inputIndex == null) continue;
-          final overlayWidth = _overlayItemWidth(outputSize, item.width);
+          final overlayWidth = _overlayItemWidth(outW, item.width);
           final imageLabel = 'image${++index}';
-          filters.add('[$inputIndex:v]scale=$overlayWidth:-1[$imageLabel]');
+          
+          var scaleFilter = 'loop=loop=-1:size=1:start=0,scale=$overlayWidth:-1';
+          if (item.animationEntrance == 'fade' || item.animationExit == 'fade') {
+            final st = item.startTime;
+            final ed = item.animationEntranceDuration;
+            if (item.animationEntrance == 'fade') {
+              scaleFilter = '$scaleFilter,fade=t=in:st=${st.toStringAsFixed(3)}:d=${ed.toStringAsFixed(3)}:alpha=1';
+            }
+            if (item.animationExit == 'fade' && item.endTime != null) {
+              final et = item.endTime!;
+              final exd = item.animationExitDuration;
+              scaleFilter = '$scaleFilter,fade=t=out:st=${(et - exd).toStringAsFixed(3)}:d=${exd.toStringAsFixed(3)}:alpha=1';
+            }
+          }
+          
+          filters.add('[$inputIndex:v]$scaleFilter[$imageLabel]');
+          
           final next = 'v${++index}';
-          filters.add(
-            '[$current][$imageLabel]overlay=x=main_w*${item.position.x.toStringAsFixed(5)}:y=main_h*${item.position.y.toStringAsFixed(5)}[$next]',
-          );
+          final xVal = _getPosXExpression(item, 'main_w', 'overlay_w');
+          final yVal = _getPosYExpression(item, 'main_h', 'overlay_h');
+          
+          var overlayOpts = 'x=$xVal:y=$yVal';
+          if (item.startTime > 0 || item.endTime != null) {
+            overlayOpts = '$overlayOpts:enable=\'between(t,${item.startTime.toStringAsFixed(3)},${(item.endTime ?? 99999).toStringAsFixed(3)})\'';
+          }
+          
+          filters.add('[$current][$imageLabel]overlay=$overlayOpts[$next]');
           current = next;
           continue;
         }
 
         final next = 'v${++index}';
+        final scaledFontSize = item.fontSize * (outH / 1920.0);
         filters.add(
-          '[$current]${_drawTextFilter(text: item.text, position: item.position, fontFamily: item.fontFamily, fontPath: item.fontPath ?? overlaySettings.defaultFontPath, fontSize: item.fontSize, colorHex: item.colorHex, shadow: item.shadow, backgroundBox: item.backgroundBox)}[$next]',
+          '[$current]${_drawTextFilter(text: item.text, position: item.position, fontFamily: item.fontFamily, fontPath: item.fontPath ?? overlaySettings.defaultFontPath, fontSize: scaledFontSize, colorHex: item.colorHex, shadow: item.shadow, backgroundBox: item.backgroundBox, item: item)}[$next]',
         );
         current = next;
       }
@@ -224,7 +264,20 @@ class FfmpegOverlayService {
     required String colorHex,
     required bool shadow,
     required bool backgroundBox,
+    OverlayItem? item,
   }) {
+    final xVal = item != null 
+        ? _getPosXExpression(item, 'w', 'text_w') 
+        : 'w*${position.x.toStringAsFixed(5)}';
+    final yVal = item != null 
+        ? _getPosYExpression(item, 'h', 'text_h') 
+        : 'h*${position.y.toStringAsFixed(5)}';
+
+    String colorStr = _ffmpegColor(colorHex);
+    if (item != null && (item.animationEntrance == 'fade' || item.animationExit == 'fade')) {
+      colorStr = '$colorStr@${_buildAlphaExpression(item)}';
+    }
+
     final options = [
       'drawtext=text=\'${_escapeDrawText(text)}\'',
       if (fontPath != null && fontPath.trim().isNotEmpty)
@@ -232,21 +285,87 @@ class FfmpegOverlayService {
       else
         'font=\'${_escapeDrawText(fontFamily)}\'',
       'fontsize=${fontSize.toStringAsFixed(0)}',
-      'fontcolor=${_ffmpegColor(colorHex)}',
-      'x=w*${position.x.toStringAsFixed(5)}',
-      'y=h*${position.y.toStringAsFixed(5)}',
+      'fontcolor=$colorStr',
+      'x=$xVal',
+      'y=$yVal',
       if (shadow) 'shadowcolor=black@0.65:shadowx=2:shadowy=2',
       if (backgroundBox) 'box=1:boxcolor=black@0.42:boxborderw=16',
+      if (item != null && (item.startTime > 0 || item.endTime != null))
+        'enable=\'between(t,${item.startTime.toStringAsFixed(3)},${(item.endTime ?? 99999).toStringAsFixed(3)})\'',
     ];
     return options.join(':');
   }
 
-  int _logoWidth(VideoOutputSize outputSize) {
-    return ((outputSize.width ?? 1080) * 0.18).round();
+  String _buildAlphaExpression(OverlayItem item) {
+    final st = item.startTime;
+    final ed = item.animationEntranceDuration;
+    final et = item.endTime;
+    final exd = item.animationExitDuration;
+
+    if (item.animationEntrance == 'fade' && item.animationExit == 'fade' && et != null) {
+      return "if(lt(t,${st + ed}),(t-$st)/$ed,if(gt(t,${et - exd}),($et-t)/$exd,1))";
+    } else if (item.animationEntrance == 'fade') {
+      return "if(lt(t,${st + ed}),(t-$st)/$ed,1)";
+    } else if (item.animationExit == 'fade' && et != null) {
+      return "if(gt(t,${et - exd}),($et-t)/$exd,1)";
+    }
+    return "1";
   }
 
-  int _overlayItemWidth(VideoOutputSize outputSize, double width) {
-    return ((outputSize.width ?? 1080) * width.clamp(0.08, 1)).round();
+  String _getPosXExpression(OverlayItem item, String parentWVar, String selfWVar) {
+    final st = item.startTime;
+    final ed = item.animationEntranceDuration;
+    final targetX = '$parentWVar*${item.position.x.toStringAsFixed(5)}';
+
+    String expr = targetX;
+    if (item.animationEntrance == 'slide_left') {
+      expr = "if(lt(t,${st + ed}),-$selfWVar+($targetX+$selfWVar)*(t-$st)/$ed,$expr)";
+    } else if (item.animationEntrance == 'slide_right') {
+      expr = "if(lt(t,${st + ed}),$parentWVar+($targetX-$parentWVar)*(t-$st)/$ed,$expr)";
+    }
+
+    if (item.endTime != null) {
+      final et = item.endTime!;
+      final exd = item.animationExitDuration;
+      if (item.animationExit == 'slide_left') {
+        expr = "if(gt(t,${et - exd}),$targetX-($targetX+$selfWVar)*(t-($et-$exd))/$exd,$expr)";
+      } else if (item.animationExit == 'slide_right') {
+        expr = "if(gt(t,${et - exd}),$targetX+($parentWVar-$targetX)*(t-($et-$exd))/$exd,$expr)";
+      }
+    }
+    return expr;
+  }
+
+  String _getPosYExpression(OverlayItem item, String parentHVar, String selfHVar) {
+    final st = item.startTime;
+    final ed = item.animationEntranceDuration;
+    final targetY = '$parentHVar*${item.position.y.toStringAsFixed(5)}';
+
+    String expr = targetY;
+    if (item.animationEntrance == 'slide_down') {
+      expr = "if(lt(t,${st + ed}),-$selfHVar+($targetY+$selfHVar)*(t-$st)/$ed,$expr)";
+    } else if (item.animationEntrance == 'slide_up') {
+      expr = "if(lt(t,${st + ed}),$parentHVar+($targetY-$parentHVar)*(t-$st)/$ed,$expr)";
+    }
+
+    if (item.endTime != null) {
+      final et = item.endTime!;
+      final exd = item.animationExitDuration;
+      if (item.animationExit == 'slide_down') {
+        expr = "if(gt(t,${et - exd}),$targetY-($targetY+$selfHVar)*(t-($et-$exd))/$exd,$expr)";
+      } else if (item.animationExit == 'slide_up') {
+        expr = "if(gt(t,${et - exd}),$targetY+($parentHVar-$targetY)*(t-($et-$exd))/$exd,$expr)";
+      }
+    }
+    return expr;
+  }
+
+  int _logoWidth(int outW) {
+    return (outW * 0.18).round();
+  }
+
+  int _overlayItemWidth(int outW, double width) {
+    return (outW * width.clamp(0.01, 5.0)).round();
   }
 
   String _ffmpegColor(String value) {

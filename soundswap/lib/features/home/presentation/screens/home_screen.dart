@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/core/responsive/app_responsive.dart';
+import 'package:soundswap/core/video/duration_mode.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
+import 'package:soundswap/features/home/data/models/audio_settings.dart';
 import 'package:soundswap/features/home/data/models/batch_profile.dart';
+import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/home/presentation/widgets/folder_selector_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/metric_card.dart';
@@ -129,7 +133,7 @@ class _SmallLayout extends StatelessWidget {
           const Divider(),
           SizedBox(height: gap),
           Text(
-            'Batch audio replacement',
+            'Batch Audio Processor',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontSize: AppResponsive.titleSize(context),
               fontWeight: FontWeight.bold,
@@ -137,7 +141,7 @@ class _SmallLayout extends StatelessWidget {
           ),
           SizedBox(height: gap / 2),
           Text(
-            'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
+            'Randomly select audio and timing for each video, then export MP4 files with the original video stream preserved.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: AppResponsive.bodySize(context),
@@ -185,16 +189,20 @@ class _MediumLayout extends StatelessWidget {
     final gap = AppResponsive.cardGap(context);
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
           width: AppResponsive.sidebarWidth(context),
-          child: SingleChildScrollView(
-            child: _ControlsPanel(
-              controller: controller,
-              overlayController: overlayController,
-              templatesController: templatesController,
-              showFooter: true,
+          child: ScrollConfiguration(
+            behavior: _NoScrollbarBehavior(),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: gap * 2),
+              child: _ControlsPanel(
+                controller: controller,
+                overlayController: overlayController,
+                templatesController: templatesController,
+                showFooter: false,
+              ),
             ),
           ),
         ),
@@ -204,7 +212,7 @@ class _MediumLayout extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Batch audio replacement',
+                'Batch Audio Processor',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontSize: AppResponsive.titleSize(context),
                   fontWeight: FontWeight.bold,
@@ -212,7 +220,7 @@ class _MediumLayout extends StatelessWidget {
               ),
               SizedBox(height: gap / 2),
               Text(
-                'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
+                'Randomly select audio and timing for each video, then export MP4 files with the original video stream preserved.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: AppResponsive.bodySize(context),
@@ -230,6 +238,7 @@ class _MediumLayout extends StatelessWidget {
   }
 }
 
+
 class _LargeLayout extends StatelessWidget {
   const _LargeLayout({
     required this.controller,
@@ -246,16 +255,21 @@ class _LargeLayout extends StatelessWidget {
     final gap = AppResponsive.cardGap(context);
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
           width: AppResponsive.sidebarWidth(context),
-          child: SingleChildScrollView(
-            child: _ControlsPanel(
-              controller: controller,
-              overlayController: overlayController,
-              templatesController: templatesController,
-              showFooter: true,
+          // Hide the scrollbar — the left panel scrolls silently
+          child: ScrollConfiguration(
+            behavior: _NoScrollbarBehavior(),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: gap * 2),
+              child: _ControlsPanel(
+                controller: controller,
+                overlayController: overlayController,
+                templatesController: templatesController,
+                showFooter: false,
+              ),
             ),
           ),
         ),
@@ -265,7 +279,7 @@ class _LargeLayout extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Batch audio replacement',
+                'Batch Audio Processor',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontSize: AppResponsive.titleSize(context),
                   fontWeight: FontWeight.bold,
@@ -273,7 +287,7 @@ class _LargeLayout extends StatelessWidget {
               ),
               SizedBox(height: gap / 2),
               Text(
-                'Randomly choose audio and timing for each video, then export MP4 files with the original video stream preserved.',
+                'Randomly select audio and timing for each video, then export MP4 files with the original video stream preserved.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: AppResponsive.bodySize(context),
@@ -312,6 +326,7 @@ class _ControlsPanelState extends State<_ControlsPanel> {
   late final TextEditingController _prefixController;
   final _dialogFolderPicker = FolderPickerService();
   final _prefixFocus = FocusNode();
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -324,6 +339,7 @@ class _ControlsPanelState extends State<_ControlsPanel> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     widget.controller.removeListener(_syncPrefixController);
     _prefixController.dispose();
     _prefixFocus.dispose();
@@ -408,7 +424,12 @@ class _ControlsPanelState extends State<_ControlsPanel> {
         TextField(
           controller: _prefixController,
           focusNode: _prefixFocus,
-          onChanged: widget.controller.setOutputNamePrefix,
+          onChanged: (value) {
+            if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+            _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+              widget.controller.setOutputNamePrefix(value);
+            });
+          },
           style: TextStyle(fontSize: AppResponsive.bodySize(context)),
           decoration: InputDecoration(
             labelText: 'Output Name Prefix',
@@ -422,56 +443,63 @@ class _ControlsPanelState extends State<_ControlsPanel> {
         if (widget.overlayController != null &&
             widget.templatesController != null) ...[
           SizedBox(height: gap),
-          _GeneratorOptionsPanel(
-            controller: widget.controller,
-            overlayController: widget.overlayController!,
-            templatesController: widget.templatesController!,
+          Card(
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            elevation: 0,
+            child: ExpansionTile(
+              title: Text(
+                'Advanced settings',
+                style: TextStyle(
+                  fontSize: AppResponsive.bodySize(context),
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              leading: Icon(
+                Icons.settings_suggest_outlined,
+                color: colorScheme.primary,
+                size: AppResponsive.iconSize(context),
+              ),
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(gap, 0, gap, gap),
+                  child: _GeneratorOptionsPanel(
+                    controller: widget.controller,
+                    overlayController: widget.overlayController!,
+                    templatesController: widget.templatesController!,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
         SizedBox(height: gap),
         SizedBox(
           height: AppResponsive.buttonHeight(context) + 8,
-          child: OutlinedButton.icon(
+          child: _AnimatedOutlinedButton(
             onPressed: widget.controller.canGenerateQueue
                 ? widget.controller.generateQueue
                 : null,
-            icon: Icon(
-              Icons.playlist_add_check,
-              size: AppResponsive.iconSize(context),
-            ),
-            label: Text(
-              'Generate Queue',
-              style: TextStyle(fontSize: AppResponsive.bodySize(context)),
-            ),
+            icon: Icons.playlist_add_check,
+            label: 'Prepare Queue',
+            bodySize: AppResponsive.bodySize(context),
+            iconSize: AppResponsive.iconSize(context),
           ),
         ),
         SizedBox(height: gap / 2),
         SizedBox(
           height: AppResponsive.buttonHeight(context) + 8,
-          child: FilledButton.icon(
+          child: _AnimatedFilledButton(
             onPressed: widget.controller.canStart
                 ? () => _confirmStartBatch(context)
                 : null,
-            icon: widget.controller.isProcessing
-                ? SizedBox(
-                    width: AppResponsive.iconSize(context) - 4,
-                    height: AppResponsive.iconSize(context) - 4,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colorScheme.onPrimary,
-                    ),
-                  )
-                : Icon(
-                    Icons.play_arrow_rounded,
-                    size: AppResponsive.iconSize(context) + 2,
-                  ),
-            label: Text(
-              widget.controller.isProcessing ? 'Running' : 'Start Batch',
-              style: TextStyle(
-                fontSize: AppResponsive.bodySize(context),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            isRunning: widget.controller.isProcessing,
+            bodySize: AppResponsive.bodySize(context),
+            iconSize: AppResponsive.iconSize(context),
           ),
         ),
         SizedBox(height: gap * 1.5),
@@ -495,12 +523,111 @@ class _ControlsPanelState extends State<_ControlsPanel> {
   }
 
   Future<void> _confirmStartBatch(BuildContext context) async {
+    final ctrl = widget.controller;
+    final gap = AppResponsive.cardGap(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final videoCount = ctrl.videos.length;
+    final imageCount = ctrl.detectedImageCount;
+    final audioCount = ctrl.audios.length;
+    final outputSizeLabel = ctrl.outputSize.label;
+
     final removeOldResults = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Start Batch'),
-        content: Text(
-          'Result folder:\n${widget.controller.outputFolderPath ?? 'Not selected'}\n\nChoose how to handle existing numbered results.',
+        title: Row(
+          children: [
+            Icon(Icons.preview_outlined, color: colorScheme.primary),
+            const SizedBox(width: 10),
+            const Text('Export Preview'),
+          ],
+        ),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ExportSummaryRow(
+                  icon: Icons.video_library_outlined,
+                  label: 'Media',
+                  value:
+                      '$videoCount files${imageCount > 0 ? ' ($imageCount images)' : ''}',
+                ),
+                _ExportSummaryRow(
+                  icon: Icons.library_music_outlined,
+                  label: 'Audio',
+                  value: '$audioCount tracks',
+                ),
+                _ExportSummaryRow(
+                  icon: Icons.style,
+                  label: 'Template',
+                  value: ctrl.useTemplate
+                      ? (ctrl.selectedTemplateId ?? 'Current settings')
+                      : 'None',
+                ),
+                _ExportSummaryRow(
+                  icon: Icons.folder_copy_outlined,
+                  label: 'Output Folder',
+                  value: ctrl.outputFolderPath ?? 'Not selected',
+                ),
+                _ExportSummaryRow(
+                  icon: Icons.aspect_ratio,
+                  label: 'Output Size',
+                  value: outputSizeLabel,
+                ),
+                _ExportSummaryRow(
+                  icon: Icons.audiotrack,
+                  label: 'Audio Mode',
+                  value: ctrl.audioSettings.mode.label,
+                ),
+                _ExportSummaryRow(
+                  icon: Icons.volume_up,
+                  label: 'New Audio Vol',
+                  value: '${ctrl.audioSettings.newAudioVolume}%',
+                ),
+                if (ctrl.audioSettings.mode == AudioMode.mixOriginalAndNew)
+                  _ExportSummaryRow(
+                    icon: Icons.volume_down,
+                    label: 'Original Vol',
+                    value: '${ctrl.audioSettings.originalAudioVolume}%',
+                  ),
+                _ExportSummaryRow(
+                  icon: Icons.timer_outlined,
+                  label: 'Duration Mode',
+                  value: ctrl.durationMode.label,
+                ),
+                if (ctrl.useOverlay)
+                  const _ExportSummaryRow(
+                    icon: Icons.layers,
+                    label: 'Overlays',
+                    value: 'Enabled',
+                  ),
+                if (imageCount > 0) ...[
+                  _ExportSummaryRow(
+                    icon: Icons.image,
+                    label: 'Image Duration',
+                    value:
+                        '${ctrl.imageToVideoSettings.durationValue} ${ctrl.imageToVideoSettings.durationUnit.label}',
+                  ),
+                  _ExportSummaryRow(
+                    icon: Icons.crop,
+                    label: 'Image Fit',
+                    value: ctrl.imageToVideoSettings.fitMode.label,
+                  ),
+                ],
+                SizedBox(height: gap),
+                Text(
+                  'Choose how to handle existing numbered results:',
+                  style: TextStyle(
+                    fontSize: AppResponsive.bodySize(context) - 1,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -509,11 +636,11 @@ class _ControlsPanelState extends State<_ControlsPanel> {
           ),
           OutlinedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove old results and start fresh'),
+            child: const Text('Remove old & start fresh'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep old results and continue numbering'),
+            child: const Text('Keep old & continue'),
           ),
         ],
       ),
@@ -711,7 +838,7 @@ class _BatchProfilesPanel extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      color: Colors.white,
+      color: colorScheme.surfaceContainerLow,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
@@ -732,7 +859,7 @@ class _BatchProfilesPanel extends StatelessWidget {
                 SizedBox(width: gap / 2),
                 Expanded(
                   child: Text(
-                    'Recent Batch Profiles',
+                    'Projects',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontSize: AppResponsive.bodySize(context) + 2,
                       fontWeight: FontWeight.w800,
@@ -903,11 +1030,12 @@ class _BatchProfileServiceCard extends StatelessWidget {
     final prefix = profile.outputPrefix.trim().isEmpty
         ? 'soundswap'
         : profile.outputPrefix.trim();
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: width,
       child: Card(
         elevation: selected ? 2 : 0,
-        color: Colors.white,
+        color: colorScheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(
             AppResponsive.cardRadius(context),
@@ -1156,33 +1284,9 @@ class _GeneratorOptionsPanel extends StatelessWidget {
         templatesController,
       ]),
       builder: (context, _) {
-        return Card(
-          child: Padding(
-            padding: EdgeInsets.all(gap),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_motion,
-                      color: colorScheme.primary,
-                      size: AppResponsive.iconSize(context),
-                    ),
-                    SizedBox(width: gap * 0.6),
-                    Expanded(
-                      child: Text(
-                        'Generator options',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontSize: AppResponsive.bodySize(context) + 2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: gap),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
 
                 CheckboxListTile(
                   contentPadding: EdgeInsets.symmetric(
@@ -1278,6 +1382,229 @@ class _GeneratorOptionsPanel extends StatelessWidget {
                   },
                 ),
 
+                SizedBox(height: gap),
+                const Divider(),
+                SizedBox(height: gap * 0.5),
+                Text(
+                  'Audio Settings',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppResponsive.bodySize(context) - 1,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: gap * 0.5),
+
+                DropdownButtonFormField<AudioMode>(
+                  key: ValueKey(controller.audioSettings.mode),
+                  initialValue: controller.audioSettings.mode,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Audio mode',
+                  ),
+                  items: [
+                    for (final mode in AudioMode.values)
+                      DropdownMenuItem(
+                        value: mode,
+                        child: Text(mode.label),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      controller.setAudioSettings(
+                        controller.audioSettings.copyWith(mode: value),
+                      );
+                    }
+                  },
+                ),
+
+                if (controller.audioSettings.mode == AudioMode.mixOriginalAndNew) ...[
+                  SizedBox(height: gap * 0.5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Original Audio Volume',
+                        style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2),
+                      ),
+                      Text(
+                        '${controller.audioSettings.originalAudioVolume}%',
+                        style: TextStyle(
+                          fontSize: AppResponsive.bodySize(context) - 2,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Slider(
+                    value: controller.audioSettings.originalAudioVolume.toDouble(),
+                    min: 0,
+                    max: 100,
+                    divisions: 100,
+                    onChanged: (value) {
+                      controller.setAudioSettings(
+                        controller.audioSettings.copyWith(
+                          originalAudioVolume: value.round(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+
+                if (controller.audioSettings.mode != AudioMode.keepOriginalOnly) ...[
+                  SizedBox(height: gap * 0.5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'New Audio Volume',
+                        style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2),
+                      ),
+                      Text(
+                        '${controller.audioSettings.newAudioVolume}%',
+                        style: TextStyle(
+                          fontSize: AppResponsive.bodySize(context) - 2,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Slider(
+                    value: controller.audioSettings.newAudioVolume.toDouble(),
+                    min: 0,
+                    max: 300,
+                    divisions: 300,
+                    onChanged: (value) {
+                      controller.setAudioSettings(
+                        controller.audioSettings.copyWith(
+                          newAudioVolume: value.round(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+
+                SizedBox(height: gap),
+                const Divider(),
+                SizedBox(height: gap * 0.5),
+                Text(
+                  'Duration Settings',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppResponsive.bodySize(context) - 1,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: gap * 0.5),
+
+                DropdownButtonFormField<DurationMode>(
+                  key: ValueKey(controller.durationMode),
+                  initialValue: controller.durationMode,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Duration mode',
+                  ),
+                  items: [
+                    for (final mode in DurationMode.values)
+                      DropdownMenuItem(
+                        value: mode,
+                        child: Text(mode.label),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      controller.setDurationMode(value);
+                    }
+                  },
+                ),
+
+                if (controller.detectedImageCount > 0) ...[
+                  SizedBox(height: gap),
+                  const Divider(),
+                  SizedBox(height: gap * 0.5),
+                  Text(
+                    'Image to Video Settings',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppResponsive.bodySize(context) - 1,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: gap * 0.5),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          key: ValueKey(controller.imageToVideoSettings.durationValue),
+                          initialValue: controller.imageToVideoSettings.durationValue.toString(),
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Duration',
+                          ),
+                          onChanged: (val) {
+                            final intValue = int.tryParse(val) ?? 10;
+                            controller.setImageToVideoSettings(
+                              controller.imageToVideoSettings.copyWith(
+                                durationValue: intValue,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(width: gap / 2),
+                      Expanded(
+                        child: DropdownButtonFormField<ImageDurationUnit>(
+                          key: ValueKey(controller.imageToVideoSettings.durationUnit),
+                          initialValue: controller.imageToVideoSettings.durationUnit,
+                          decoration: const InputDecoration(
+                            labelText: 'Unit',
+                          ),
+                          items: [
+                            for (final unit in ImageDurationUnit.values)
+                              DropdownMenuItem(
+                                value: unit,
+                                child: Text(unit.label),
+                              ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              controller.setImageToVideoSettings(
+                                controller.imageToVideoSettings.copyWith(
+                                  durationUnit: val,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: gap),
+                  DropdownButtonFormField<ImageFitMode>(
+                    key: ValueKey(controller.imageToVideoSettings.fitMode),
+                    initialValue: controller.imageToVideoSettings.fitMode,
+                    decoration: const InputDecoration(
+                      labelText: 'Image fit mode',
+                    ),
+                    items: [
+                      for (final mode in ImageFitMode.values)
+                        DropdownMenuItem(
+                          value: mode,
+                          child: Text(mode.label),
+                        ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        controller.setImageToVideoSettings(
+                          controller.imageToVideoSettings.copyWith(
+                            fitMode: val,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+
                 if (controller.upscaleWarning != null) ...[
                   SizedBox(height: gap),
                   Container(
@@ -1312,13 +1639,11 @@ class _GeneratorOptionsPanel extends StatelessWidget {
                   ),
                 ],
               ],
-            ),
-          ),
+            );
+          },
         );
-      },
-    );
-  }
-}
+      }
+    }
 
 class _OverlayPresetDropdown extends StatelessWidget {
   const _OverlayPresetDropdown({
@@ -1439,6 +1764,11 @@ class _MetricsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gap = AppResponsive.cardGap(context);
+    final totalFinished = controller.successCount + controller.failedCount;
+    final successRate = totalFinished > 0
+        ? '${(controller.successCount / totalFinished * 100).toStringAsFixed(1)}%'
+        : '0.0%';
+
     final metrics = [
       MetricCard(
         label: 'Videos',
@@ -1451,14 +1781,26 @@ class _MetricsGrid extends StatelessWidget {
         icon: Icons.audio_file,
       ),
       MetricCard(
+        label: 'Queue size',
+        value: '${controller.jobs.length}',
+        icon: Icons.playlist_play_outlined,
+      ),
+      MetricCard(
+        label: 'Success Rate',
+        value: successRate,
+        icon: Icons.percent,
+      ),
+      MetricCard(
         label: 'Success',
         value: '${controller.successCount}',
         icon: Icons.check_circle_outline,
+        iconColor: Colors.green.shade700,
       ),
       MetricCard(
         label: 'Failed',
         value: '${controller.failedCount}',
         icon: Icons.error_outline,
+        iconColor: Theme.of(context).colorScheme.error,
       ),
     ];
 
@@ -1466,10 +1808,14 @@ class _MetricsGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: AppResponsive.isSmall(context) ? 1 : 2,
+        crossAxisCount: AppResponsive.isSmall(context)
+            ? 2
+            : AppResponsive.isMedium(context)
+                ? 2
+                : 3,
         crossAxisSpacing: gap,
         mainAxisSpacing: gap,
-        childAspectRatio: AppResponsive.metricAspectRatio(context),
+        mainAxisExtent: 80,
       ),
       itemCount: metrics.length,
       itemBuilder: (context, index) => metrics[index],
@@ -1579,6 +1925,205 @@ class _QueuePanel extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _ExportSummaryRow extends StatelessWidget {
+  const _ExportSummaryRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final gap = AppResponsive.cardGap(context);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: gap / 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: AppResponsive.iconSize(context) - 4,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          SizedBox(width: gap / 2),
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: AppResponsive.bodySize(context) - 1,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: AppResponsive.bodySize(context) - 1,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Layout helpers ────────────────────────────────────────────────────────────────────
+
+/// A [ScrollBehavior] that hides the scrollbar thumb entirely.
+/// Used on the left controls panel so the scrollbar doesn’t appear
+/// in the middle of the home layout.
+class _NoScrollbarBehavior extends ScrollBehavior {
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) =>
+      child; // no scrollbar
+}
+
+// ── Animated action buttons ─────────────────────────────────────────────────────
+
+/// Outlined button with a subtle hover scale animation.
+class _AnimatedOutlinedButton extends StatefulWidget {
+  const _AnimatedOutlinedButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    required this.bodySize,
+    required this.iconSize,
+  });
+
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+  final double bodySize;
+  final double iconSize;
+
+  @override
+  State<_AnimatedOutlinedButton> createState() =>
+      _AnimatedOutlinedButtonState();
+}
+
+class _AnimatedOutlinedButtonState extends State<_AnimatedOutlinedButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: _hovered && widget.onPressed != null ? 1.015 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: widget.onPressed,
+            icon: Icon(widget.icon, size: widget.iconSize),
+            label: Text(
+              widget.label,
+              style: TextStyle(fontSize: widget.bodySize),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Filled primary button with scale + glow animation on hover.
+/// Shows a spinner + ‘Running’ when [isRunning] is true.
+class _AnimatedFilledButton extends StatefulWidget {
+  const _AnimatedFilledButton({
+    required this.onPressed,
+    required this.isRunning,
+    required this.bodySize,
+    required this.iconSize,
+  });
+
+  final VoidCallback? onPressed;
+  final bool isRunning;
+  final double bodySize;
+  final double iconSize;
+
+  @override
+  State<_AnimatedFilledButton> createState() => _AnimatedFilledButtonState();
+}
+
+class _AnimatedFilledButtonState extends State<_AnimatedFilledButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final canPress = widget.onPressed != null;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: _hovered && canPress ? 1.015 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: (_hovered && canPress)
+                ? [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: widget.onPressed,
+              icon: widget.isRunning
+                  ? SizedBox(
+                      width: widget.iconSize - 4,
+                      height: widget.iconSize - 4,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.onPrimary,
+                      ),
+                    )
+                  : Icon(
+                      Icons.play_arrow_rounded,
+                      size: widget.iconSize + 2,
+                    ),
+              label: Text(
+                widget.isRunning ? 'Running…' : 'Start Processing',
+                style: TextStyle(
+                  fontSize: widget.bodySize,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

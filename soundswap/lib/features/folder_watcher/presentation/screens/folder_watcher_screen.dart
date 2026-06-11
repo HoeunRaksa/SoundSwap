@@ -10,6 +10,7 @@ import 'package:soundswap/features/home/presentation/state/home_controller.dart'
 import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
 import 'package:soundswap/features/templates/data/models/project_template.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
+import 'package:soundswap/shared/services/folder_picker_service.dart';
 import 'package:soundswap/shared/services/output_naming_service.dart';
 import 'package:soundswap/shared/widgets/empty_state.dart';
 import 'package:soundswap/shared/widgets/feature_page.dart';
@@ -42,31 +43,6 @@ class FolderWatcherScreen extends StatelessWidget {
           subtitle:
               'Create watcher profiles that auto-process new videos into separate result folders.',
           children: [
-            SettingsSection(
-              title: 'Start from batch profile',
-              icon: Icons.folder_special_outlined,
-              children: [
-                if (homeController.batchProfiles.isEmpty)
-                  const SizedBox(
-                    height: 130,
-                    child: EmptyState(
-                      icon: Icons.folder_off_outlined,
-                      title: 'No batch profiles',
-                      message:
-                          'Run a successful Home batch or add a batch profile on Home first.',
-                    ),
-                  )
-                else
-                  _BatchProfileWatcherStarter(
-                    controller: controller,
-                    historyController: historyController,
-                    profiles: homeController.batchProfiles,
-                    onDuplicate: (path) => _confirmProcessAgain(context, path),
-                    onPermissionError: (folder) =>
-                        _showPermissionError(context, folder),
-                  ),
-              ],
-            ),
             SettingsSection(
               title: 'Watcher profiles',
               icon: Icons.visibility_outlined,
@@ -182,91 +158,103 @@ class FolderWatcherScreen extends StatelessWidget {
 
   Future<void> _createProfile(BuildContext context) async {
     final nameController = TextEditingController(text: 'New watcher');
-    final name = await showDialog<String>(
+    String? selectedBatchProfileId;
+
+    final result = await showDialog<({String name, BatchProfile? importProfile})>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create watcher profile'),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Profile name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, nameController.text),
-            child: const Text('Create'),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final gap = AppResponsive.cardGap(context);
+          return AlertDialog(
+            title: const Text('Create watcher profile'),
+            content: SizedBox(
+              width: 450,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Profile name',
+                      hintText: 'e.g. Auto Watcher PVC',
+                    ),
+                  ),
+                  SizedBox(height: gap),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedBatchProfileId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Import settings from Batch Profile',
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('None (Start empty)'),
+                      ),
+                      for (final profile in homeController.batchProfiles)
+                        DropdownMenuItem(
+                          value: profile.id,
+                          child: Text(profile.name),
+                        ),
+                    ],
+                    onChanged: (val) {
+                      setDialogState(() {
+                        selectedBatchProfileId = val;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final name = nameController.text.trim();
+                  final importProfile = selectedBatchProfileId == null
+                      ? null
+                      : homeController.batchProfiles.firstWhere((p) => p.id == selectedBatchProfileId);
+                  Navigator.pop(context, (
+                    name: name.isEmpty ? 'Watcher profile' : name,
+                    importProfile: importProfile,
+                  ));
+                },
+                child: const Text('Create'),
+              ),
+            ],
+          );
+        },
       ),
     );
+
     nameController.dispose();
-    if (name != null) await controller.createProfile(name);
+    if (result != null) {
+      await controller.createProfile(
+        result.name,
+        importBatchProfile: result.importProfile,
+      );
+    }
   }
 
   Future<void> _editProfile(
-      BuildContext context,
-      FolderWatcherProfile profile,
-      ) async {
-    final nameController = TextEditingController(text: profile.name);
-    final prefixController = TextEditingController(text: profile.outputPrefix);
-    final gap = AppResponsive.cardGap(context);
-
-    final result = await showDialog<({String name, String prefix})>(
+    BuildContext context,
+    FolderWatcherProfile profile,
+  ) async {
+    final result = await showDialog<FolderWatcherProfile>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit watcher profile'),
-        contentPadding: EdgeInsets.fromLTRB(gap * 1.5, gap, gap * 1.5, gap / 2),
-        actionsPadding: EdgeInsets.fromLTRB(gap, gap / 2, gap, gap),
-        content: SizedBox(
-          width: 420,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Profile name'),
-              ),
-              SizedBox(height: gap),
-              TextField(
-                controller: prefixController,
-                decoration: const InputDecoration(
-                  labelText: 'Output prefix',
-                  hintText: OutputNamingService.defaultPrefix,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, (
-            name: nameController.text,
-            prefix: prefixController.text,
-            )),
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (context) => _EditProfileDialog(
+        profile: profile,
+        templatesController: templatesController,
       ),
     );
 
-    nameController.dispose();
-    prefixController.dispose();
-
     if (result != null) {
-      await controller.updateProfileDetails(
-        profileId: profile.id,
-        name: result.name,
-        outputPrefix: result.prefix,
-      );
+      await controller.saveProfile(result);
     }
   }
 
@@ -386,79 +374,7 @@ class FolderWatcherScreen extends StatelessWidget {
   }
 }
 
-class _BatchProfileWatcherStarter extends StatelessWidget {
-  const _BatchProfileWatcherStarter({
-    required this.controller,
-    required this.historyController,
-    required this.profiles,
-    required this.onDuplicate,
-    required this.onPermissionError,
-  });
 
-  final FolderWatcherController controller;
-  final ResultHistoryController historyController;
-  final List<BatchProfile> profiles;
-  final DuplicateConfirmCallback onDuplicate;
-  final PermissionErrorCallback onPermissionError;
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = _selectedProfile;
-    final prefix = selected == null
-        ? OutputNamingService.defaultPrefix
-        : selected.outputPrefix.trim().isEmpty
-        ? OutputNamingService.defaultPrefix
-        : selected.outputPrefix.trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DropdownButtonFormField<String>(
-          initialValue: selected?.id,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Batch profile'),
-          items: [
-            for (final profile in profiles)
-              DropdownMenuItem(value: profile.id, child: Text(profile.name)),
-          ],
-          hint: const Text('Select batch profile'),
-          onChanged: controller.setSelectedBatchProfile,
-        ),
-        if (selected != null) ...[
-          Text(
-            [
-              'Video: ${selected.videoFolderPath ?? 'Not selected'}',
-              'Audio: ${selected.audioFolderPath ?? 'Not selected'}',
-              'Result: ${selected.outputFolderPath ?? 'Not selected'}',
-              'Prefix: $prefix',
-            ].join('\n'),
-            style: TextStyle(fontSize: AppResponsive.bodySize(context) - 1),
-          ),
-          SizedBox(height: AppResponsive.cardGap(context) / 2),
-        ],
-        FilledButton.icon(
-          onPressed: selected == null
-              ? null
-              : () => controller.startBatchProfileWatch(
-                  batchProfile: selected,
-                  historyController: historyController,
-                  onDuplicate: onDuplicate,
-                  onPermissionError: onPermissionError,
-                ),
-          icon: const Icon(Icons.play_arrow),
-          label: const Text('Start Watch'),
-        ),
-      ],
-    );
-  }
-
-  BatchProfile? get _selectedProfile {
-    for (final profile in profiles) {
-      if (profile.id == controller.selectedBatchProfileId) return profile;
-    }
-    return null;
-  }
-}
 
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({
@@ -493,15 +409,16 @@ class _ProfileCard extends StatelessWidget {
     final prefix = profile.outputPrefix.trim().isEmpty
         ? OutputNamingService.defaultPrefix
         : profile.outputPrefix.trim();
+    final template = _templateById(profile.templateId);
 
     return Card(
       color: watching
-          ? Colors.green.withValues(alpha: 0.06)
+          ? Colors.green.withValues(alpha: 0.04)
           : Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
         side: BorderSide(
-          color: statusColor.withValues(alpha: watching ? 0.8 : 0.25),
+          color: statusColor.withValues(alpha: watching ? 0.7 : 0.2),
         ),
       ),
       child: Padding(
@@ -511,129 +428,121 @@ class _ProfileCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  watching ? Icons.radio_button_checked : Icons.visibility,
-                  color: statusColor,
-                ),
-                SizedBox(width: gap / 2),
                 Expanded(
-                  child: Text(
-                    profile.name,
-                    style: TextStyle(
-                      fontSize: AppResponsive.bodySize(context) + 2,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        profile.name,
+                        style: TextStyle(
+                          fontSize: AppResponsive.bodySize(context) + 2,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Template: ${template?.name ?? "None"}',
+                              style: TextStyle(
+                                fontSize: AppResponsive.bodySize(context) - 4,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Prefix: $prefix',
+                            style: TextStyle(
+                              fontSize: AppResponsive.bodySize(context) - 3,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
+                Switch(
+                  value: watching,
+                  activeThumbColor: Colors.green.shade700,
+                  onChanged: (val) {
+                    if (val) {
+                      controller.startWatching(
+                        profileId: profile.id,
+                        historyController: historyController,
+                        onDuplicate: onDuplicate,
+                        onPermissionError: onPermissionError,
+                      );
+                    } else {
+                      controller.stopWatching(profile.id);
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
                 _WatcherStatusChip(
                   label: watching ? 'running' : 'stopped',
                   color: statusColor,
                 ),
               ],
             ),
-            _FolderRow(
-              label: 'Source video folder',
-              path: profile.videoFolderPath,
-              onPressed: () => controller.pickProfileVideoFolder(profile.id),
-            ),
-            _FolderRow(
-              label: 'Source audio folder',
-              path: profile.audioFolderPath,
-              onPressed: () => controller.pickProfileAudioFolder(profile.id),
-            ),
-            _FolderRow(
-              label: 'Result folder',
-              path: profile.resultFolderPath,
-              onPressed: () => controller.pickProfileResultFolder(profile.id),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.drive_file_rename_outline),
-              title: const Text('Output prefix'),
-              subtitle: Text('$prefix-1.mp4, $prefix-2.mp4 ...'),
-              trailing: OutlinedButton(
-                onPressed: onEditPrefix,
-                child: const Text('Edit'),
-              ),
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedTemplateId(),
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Apply template'),
-              items: [
-                for (final template in templatesController.templates)
-                  DropdownMenuItem(
-                    value: template.id,
-                    child: Text(template.name),
+            const SizedBox(height: 8),
+            // Flow Arrow Folder Summary
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                children: [
+                  Icon(Icons.video_library_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      profile.videoFolderPath != null ? p.basename(profile.videoFolderPath!) : 'No Videos',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2),
+                    ),
                   ),
-              ],
-              hint: Text(
-                templatesController.templates.isEmpty
-                    ? 'No templates saved'
-                    : 'Select template',
+                  const Text('  ➔  '),
+                  Icon(Icons.folder_copy_outlined, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      profile.resultFolderPath != null ? p.basename(profile.resultFolderPath!) : 'No Results',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2),
+                    ),
+                  ),
+                ],
               ),
-              onChanged: (templateId) {
-                final template = _templateById(templateId);
-                if (template != null) {
-                  controller.applyTemplateToProfile(
-                    profileId: profile.id,
-                    template: template,
-                  );
-                }
-              },
             ),
-            Text(
-              [
-                'Overlays: ${profile.useOverlay ? '${profile.overlaySettings.items.length} items' : 'Off'}',
-                'Size: ${profile.outputSize.label}',
-                'Fit: ${profile.fitMode.label}',
-              ].join('  |  '),
-              style: TextStyle(fontSize: AppResponsive.bodySize(context) - 1),
-            ),
-            SizedBox(height: gap / 2),
-            Wrap(
-              spacing: gap / 2,
-              runSpacing: gap / 2,
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                FilledButton(
-                  onPressed: watching
-                      ? null
-                      : () => controller.startWatching(
-                          profileId: profile.id,
-                          historyController: historyController,
-                          onDuplicate: onDuplicate,
-                          onPermissionError: onPermissionError,
-                        ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.green.shade700,
-                    foregroundColor: Colors.white,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: const Text('Start Watch'),
-                ),
-                OutlinedButton(
-                  onPressed: watching
-                      ? () => controller.stopWatching(profile.id)
-                      : null,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange.shade800,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: const Text('Stop Watch'),
-                ),
-                OutlinedButton(
+                OutlinedButton.icon(
                   onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined, size: 14),
+                  label: const Text('Edit Settings'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue.shade700,
                     visualDensity: VisualDensity.compact,
                   ),
-                  child: const Text('Edit'),
                 ),
+                const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Duplicate profile',
                   onPressed: onDuplicateProfile,
                   visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.copy),
+                  icon: const Icon(Icons.copy, size: 18),
                 ),
                 IconButton(
                   tooltip: 'Delete',
@@ -641,6 +550,7 @@ class _ProfileCard extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   icon: Icon(
                     Icons.delete_outline,
+                    size: 18,
                     color: Theme.of(context).colorScheme.error,
                   ),
                 ),
@@ -650,13 +560,6 @@ class _ProfileCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String? _selectedTemplateId() {
-    for (final template in templatesController.templates) {
-      if (template.id == profile.templateId) return template.id;
-    }
-    return null;
   }
 
   ProjectTemplate? _templateById(String? id) {
@@ -693,35 +596,7 @@ class _WatcherStatusChip extends StatelessWidget {
   }
 }
 
-class _FolderRow extends StatelessWidget {
-  const _FolderRow({
-    required this.label,
-    required this.path,
-    required this.onPressed,
-  });
 
-  final String label;
-  final String? path;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.folder_open),
-      title: Text(label),
-      subtitle: Text(
-        path ?? 'Not selected',
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: OutlinedButton(
-        onPressed: onPressed,
-        child: const Text('Select'),
-      ),
-    );
-  }
-}
 
 class _QueueTile extends StatelessWidget {
   const _QueueTile({required this.item});
@@ -754,5 +629,294 @@ class _QueueTile extends StatelessWidget {
       WatchProcessingStatus.success => Icons.check_circle,
       WatchProcessingStatus.failed => Icons.error,
     };
+  }
+}
+
+class _EditProfileDialog extends StatefulWidget {
+  const _EditProfileDialog({
+    required this.profile,
+    required this.templatesController,
+  });
+
+  final FolderWatcherProfile profile;
+  final TemplatesController templatesController;
+
+  @override
+  State<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends State<_EditProfileDialog> {
+  final _folderPickerService = FolderPickerService();
+  late final TextEditingController _nameController;
+  late final TextEditingController _prefixController;
+
+  String? _videoFolderPath;
+  String? _audioFolderPath;
+  String? _resultFolderPath;
+  late String? _templateId;
+  late bool _useOverlay;
+  late VideoOutputSize _outputSize;
+  late VideoFitMode _fitMode;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.profile;
+    _nameController = TextEditingController(text: p.name);
+    _prefixController = TextEditingController(text: p.outputPrefix);
+    _videoFolderPath = p.videoFolderPath;
+    _audioFolderPath = p.audioFolderPath;
+    _resultFolderPath = p.resultFolderPath;
+    _templateId = widget.templatesController.templates
+            .any((t) => t.id == p.templateId)
+        ? p.templateId
+        : null;
+    _useOverlay = p.useOverlay;
+    _outputSize = p.outputSize;
+    _fitMode = p.fitMode;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _prefixController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickVideoFolder() async {
+    final path = await _folderPickerService.pickFolder(
+      dialogTitle: 'Select source video folder',
+    );
+    if (path != null) {
+      setState(() => _videoFolderPath = path);
+    }
+  }
+
+  Future<void> _pickAudioFolder() async {
+    final path = await _folderPickerService.pickFolder(
+      dialogTitle: 'Select source audio folder',
+    );
+    if (path != null) {
+      setState(() => _audioFolderPath = path);
+    }
+  }
+
+  Future<void> _pickResultFolder() async {
+    final path = await _folderPickerService.pickFolder(
+      dialogTitle: 'Select result folder',
+    );
+    if (path != null) {
+      setState(() => _resultFolderPath = path);
+    }
+  }
+
+  void _applyTemplate(ProjectTemplate template) {
+    setState(() {
+      _templateId = template.id;
+      _videoFolderPath = template.videoFolder;
+      _audioFolderPath = template.audioFolder;
+      _resultFolderPath = template.outputFolder;
+      _prefixController.text = template.outputPrefix;
+      _useOverlay = template.useOverlay;
+      _outputSize = template.outputSize;
+      _fitMode = template.fitMode;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = AppResponsive.cardGap(context);
+
+    final templateItems = [
+      const DropdownMenuItem<String>(
+        value: null,
+        child: Text('None'),
+      ),
+      for (final template in widget.templatesController.templates)
+        DropdownMenuItem(
+          value: template.id,
+          child: Text(template.name),
+        ),
+    ];
+
+    final fields = <Widget>[
+      TextField(
+        controller: _nameController,
+        autofocus: true,
+        decoration: const InputDecoration(labelText: 'Profile name'),
+      ),
+      _FolderEditRow(
+        label: 'Source video folder',
+        path: _videoFolderPath,
+        onPressed: _pickVideoFolder,
+      ),
+      _FolderEditRow(
+        label: 'Source audio folder',
+        path: _audioFolderPath,
+        onPressed: _pickAudioFolder,
+      ),
+      _FolderEditRow(
+        label: 'Result folder',
+        path: _resultFolderPath,
+        onPressed: _pickResultFolder,
+      ),
+      TextField(
+        controller: _prefixController,
+        decoration: const InputDecoration(
+          labelText: 'Output prefix',
+          hintText: OutputNamingService.defaultPrefix,
+        ),
+      ),
+      DropdownButtonFormField<String>(
+        initialValue: _templateId,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Apply template'),
+        items: templateItems,
+        hint: const Text('Select template'),
+        onChanged: (id) {
+          if (id == null) {
+            setState(() => _templateId = null);
+          } else {
+            final t = widget.templatesController.templates
+                .firstWhere((element) => element.id == id);
+            _applyTemplate(t);
+          }
+        },
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Overlay tools on/off'),
+        value: _useOverlay,
+        onChanged: (val) => setState(() => _useOverlay = val),
+      ),
+      DropdownButtonFormField<VideoOutputSize>(
+        initialValue: _outputSize,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Output size'),
+        items: [
+          for (final size in VideoOutputSize.values)
+            DropdownMenuItem(value: size, child: Text(size.label)),
+        ],
+        onChanged: (value) {
+          if (value != null) setState(() => _outputSize = value);
+        },
+      ),
+      DropdownButtonFormField<VideoFitMode>(
+        initialValue: _fitMode,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Fit mode'),
+        items: [
+          for (final mode in VideoFitMode.values)
+            DropdownMenuItem(value: mode, child: Text(mode.label)),
+        ],
+        onChanged: (value) {
+          if (value != null) setState(() => _fitMode = value);
+        },
+      ),
+    ];
+
+    return AlertDialog(
+      title: const Text('Edit Watcher Profile'),
+      contentPadding: EdgeInsets.fromLTRB(gap * 1.5, gap, gap * 1.5, gap / 2),
+      actionsPadding: EdgeInsets.fromLTRB(gap, gap / 2, gap, gap),
+      content: SizedBox(
+        width: 500,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < fields.length; i++) ...[
+                fields[i],
+                if (i < fields.length - 1) SizedBox(height: gap),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final updated = widget.profile.copyWith(
+              name: _nameController.text.trim().isEmpty
+                  ? 'Watcher profile'
+                  : _nameController.text.trim(),
+              videoFolderPath: _videoFolderPath,
+              audioFolderPath: _audioFolderPath,
+              resultFolderPath: _resultFolderPath,
+              outputPrefix: _prefixController.text,
+              templateId: _templateId,
+              useOverlay: _useOverlay,
+              outputSize: _outputSize,
+              fitMode: _fitMode,
+            );
+            Navigator.pop(context, updated);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+class _FolderEditRow extends StatelessWidget {
+  const _FolderEditRow({
+    required this.label,
+    required this.path,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String? path;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppResponsive.bodySize(context) - 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  path ?? 'Not selected',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppResponsive.bodySize(context) - 2,
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            onPressed: onPressed,
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+            child: const Text('Select'),
+          ),
+        ],
+      ),
+    );
   }
 }

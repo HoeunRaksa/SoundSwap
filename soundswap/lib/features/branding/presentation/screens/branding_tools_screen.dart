@@ -254,20 +254,22 @@ class _BrandingToolsScreenState extends State<BrandingToolsScreen> {
             if (value != null) setState(() => _previewSize = value);
           },
         ),
-        OverlayPreviewCanvas(
-          outputSize: _previewSize,
-          items: items,
-          onPositionChanged: (id, position) {
-            if (id == 'logo') {
-              widget.controller.update(
-                settings.copyWith(logoPosition: position),
-              );
-            } else {
-              widget.controller.update(
-                settings.copyWith(textPosition: position),
-              );
-            }
-          },
+        RepaintBoundary(
+          child: OverlayPreviewCanvas(
+            outputSize: _previewSize,
+            items: items,
+            onPositionChanged: (id, position) {
+              if (id == 'logo') {
+                widget.controller.update(
+                  settings.copyWith(logoPosition: position),
+                );
+              } else {
+                widget.controller.update(
+                  settings.copyWith(textPosition: position),
+                );
+              }
+            },
+          ),
         ),
       ],
     );

@@ -16,6 +16,7 @@ import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
 import 'package:soundswap/features/home/data/services/media_scanner_service.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 import 'package:soundswap/features/result_history/data/models/result_history_record.dart';
 import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
 import 'package:soundswap/features/templates/data/models/project_template.dart';
@@ -86,10 +87,19 @@ class FolderWatcherController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createProfile(String name) async {
+  Future<void> createProfile(String name, {BatchProfile? importBatchProfile}) async {
     final profile = FolderWatcherProfile(
       id: _newId(),
       name: name.trim().isEmpty ? 'Watcher profile' : name.trim(),
+      videoFolderPath: importBatchProfile?.videoFolderPath,
+      audioFolderPath: importBatchProfile?.audioFolderPath,
+      resultFolderPath: importBatchProfile?.outputFolderPath,
+      outputPrefix: importBatchProfile?.outputPrefix ?? '',
+      templateId: importBatchProfile?.selectedTemplateId,
+      useOverlay: importBatchProfile?.useOverlay ?? false,
+      overlaySettings: importBatchProfile?.overlaySettings ?? const OverlaySettings(),
+      outputSize: importBatchProfile?.outputSize ?? VideoOutputSize.original,
+      fitMode: importBatchProfile?.fitMode ?? VideoFitMode.keepOriginal,
     );
     profiles = [profile, ...profiles];
     await _saveProfiles();
@@ -117,6 +127,13 @@ class FolderWatcherController extends ChangeNotifier {
         name: trimmed.isEmpty ? profile.name : trimmed,
         outputPrefix: outputPrefix,
       ),
+    );
+  }
+
+  Future<void> saveProfile(FolderWatcherProfile updatedProfile) async {
+    await _updateProfile(
+      updatedProfile.id,
+      (_) => updatedProfile,
     );
   }
 
@@ -509,7 +526,7 @@ class FolderWatcherController extends ChangeNotifier {
       return;
     }
     final tempPath = _temporaryGeneratorOutputPath(job.outputPath);
-    final overlayPlan = _overlayService.prepareOverlay(
+    final overlayPlan = await _overlayService.prepareOverlay(
       inputPath: job.outputPath,
       outputPath: tempPath,
       outputSize: profile.outputSize,

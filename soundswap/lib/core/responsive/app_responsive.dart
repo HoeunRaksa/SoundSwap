@@ -136,13 +136,6 @@ class AppResponsive {
     };
   }
 
-  static double metricAspectRatio(BuildContext context) {
-    return switch (windowSize(context)) {
-      AppWindowSize.small => 4.5,
-      AppWindowSize.medium => 1.8,
-      AppWindowSize.large => 2.1,
-    };
-  }
 }
 
 class ResponsiveCenter extends StatelessWidget {

@@ -25,6 +25,18 @@ class OverlayItem {
     this.layerOrder = 0,
     this.textAlignment = 'left',
     this.imageFitMode = 'contain',
+    this.rotation = 0.0,
+    this.locked = false,
+    this.hidden = false,
+    this.folder,
+    this.scaleX = 1.0,
+    this.scaleY = 1.0,
+    this.startTime = 0.0,
+    this.endTime,
+    this.animationEntrance,
+    this.animationEntranceDuration = 0.5,
+    this.animationExit,
+    this.animationExitDuration = 0.5,
   });
 
   final String id;
@@ -48,6 +60,18 @@ class OverlayItem {
   final int layerOrder;
   final String textAlignment;
   final String imageFitMode;
+  final double rotation;
+  final bool locked;
+  final bool hidden;
+  final String? folder;
+  final double scaleX;
+  final double scaleY;
+  final double startTime;
+  final double? endTime;
+  final String? animationEntrance;
+  final double animationEntranceDuration;
+  final String? animationExit;
+  final double animationExitDuration;
 
   bool get hasContent {
     return switch (type) {
@@ -78,6 +102,18 @@ class OverlayItem {
     'layerOrder': layerOrder,
     'textAlignment': textAlignment,
     'imageFitMode': imageFitMode,
+    'rotation': rotation,
+    'locked': locked,
+    'hidden': hidden,
+    'folder': folder,
+    'scaleX': scaleX,
+    'scaleY': scaleY,
+    'startTime': startTime,
+    'endTime': endTime,
+    'animationEntrance': animationEntrance,
+    'animationEntranceDuration': animationEntranceDuration,
+    'animationExit': animationExit,
+    'animationExitDuration': animationExitDuration,
   };
 
   factory OverlayItem.fromJson(Map<String, Object?> json) {
@@ -106,6 +142,18 @@ class OverlayItem {
       layerOrder: json['layerOrder'] as int? ?? 0,
       textAlignment: json['textAlignment'] as String? ?? 'left',
       imageFitMode: json['imageFitMode'] as String? ?? 'contain',
+      rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,
+      locked: json['locked'] as bool? ?? false,
+      hidden: json['hidden'] as bool? ?? false,
+      folder: json['folder'] as String?,
+      scaleX: (json['scaleX'] as num?)?.toDouble() ?? 1.0,
+      scaleY: (json['scaleY'] as num?)?.toDouble() ?? 1.0,
+      startTime: (json['startTime'] as num?)?.toDouble() ?? 0.0,
+      endTime: (json['endTime'] as num?)?.toDouble(),
+      animationEntrance: json['animationEntrance'] as String?,
+      animationEntranceDuration: (json['animationEntranceDuration'] as num?)?.toDouble() ?? 0.5,
+      animationExit: json['animationExit'] as String?,
+      animationExitDuration: (json['animationExitDuration'] as num?)?.toDouble() ?? 0.5,
     );
   }
 
@@ -129,6 +177,20 @@ class OverlayItem {
     int? layerOrder,
     String? textAlignment,
     String? imageFitMode,
+    double? rotation,
+    bool? locked,
+    bool? hidden,
+    String? folder,
+    bool clearFolder = false,
+    double? scaleX,
+    double? scaleY,
+    double? startTime,
+    double? endTime,
+    bool clearEndTime = false,
+    String? animationEntrance,
+    double? animationEntranceDuration,
+    String? animationExit,
+    double? animationExitDuration,
   }) {
     return OverlayItem(
       id: id,
@@ -152,6 +214,18 @@ class OverlayItem {
       layerOrder: layerOrder ?? this.layerOrder,
       textAlignment: textAlignment ?? this.textAlignment,
       imageFitMode: imageFitMode ?? this.imageFitMode,
+      rotation: rotation ?? this.rotation,
+      locked: locked ?? this.locked,
+      hidden: hidden ?? this.hidden,
+      folder: clearFolder ? null : (folder ?? this.folder),
+      scaleX: scaleX ?? this.scaleX,
+      scaleY: scaleY ?? this.scaleY,
+      startTime: startTime ?? this.startTime,
+      endTime: clearEndTime ? null : (endTime ?? this.endTime),
+      animationEntrance: animationEntrance ?? this.animationEntrance,
+      animationEntranceDuration: animationEntranceDuration ?? this.animationEntranceDuration,
+      animationExit: animationExit ?? this.animationExit,
+      animationExitDuration: animationExitDuration ?? this.animationExitDuration,
     );
   }
 }

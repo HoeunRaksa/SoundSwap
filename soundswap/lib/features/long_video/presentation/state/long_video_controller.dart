@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:soundswap/core/constants/app_constants.dart';
+import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
 
 import 'package:soundswap/features/home/data/services/media_scanner_service.dart';
 import 'package:soundswap/features/long_video/data/models/long_video_plan.dart';
 import 'package:soundswap/features/long_video/data/services/long_video_service.dart';
+import 'package:soundswap/features/result_history/data/models/result_history_record.dart';
+import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
 import 'package:soundswap/shared/services/folder_picker_service.dart';
 
 import '../../../../core/video/video_output_settings.dart';
@@ -14,13 +18,16 @@ class LongVideoController extends ChangeNotifier {
     FolderPickerService? folderPickerService,
     MediaScannerService? mediaScannerService,
     LongVideoService? longVideoService,
+    ResultHistoryController? resultHistoryController,
   }) : _folderPickerService = folderPickerService ?? FolderPickerService(),
         _mediaScannerService = mediaScannerService ?? MediaScannerService(),
-        _longVideoService = longVideoService ?? LongVideoService();
+        _longVideoService = longVideoService ?? LongVideoService(),
+        _resultHistoryController = resultHistoryController;
 
   final FolderPickerService _folderPickerService;
   final MediaScannerService _mediaScannerService;
   final LongVideoService _longVideoService;
+  final ResultHistoryController? _resultHistoryController;
 
   String? videoFolderPath;
   String? audioFolderPath;
@@ -40,6 +47,24 @@ class LongVideoController extends ChangeNotifier {
   List<MediaFile> videos = [];
   List<MediaFile> audios = [];
   List<String> logs = [];
+
+  int successCount = 0;
+  int failedCount = 0;
+  int currentExportIndex = 0;
+  String currentClipLabel = '';
+
+  bool useImages = false;
+  String? imageFolderPath;
+  ImageToVideoSettings imageSettings = const ImageToVideoSettings(
+    durationValue: 5,
+    durationUnit: ImageDurationUnit.seconds,
+    fitMode: ImageFitMode.contain,
+  );
+  int numOutputs = 1;
+  List<MediaFile> images = [];
+
+  LongVideoDurationMode durationMode = LongVideoDurationMode.exactTargetLength;
+  LongVideoAudioBehavior audioBehavior = LongVideoAudioBehavior.trimToFinalVideo;
 
   Future<void> pickVideoFolder() async {
     final path = await _folderPickerService.pickFolder(
@@ -73,43 +98,115 @@ class LongVideoController extends ChangeNotifier {
   }
 
   void setOutputName(String value) {
+    if (outputName == value) return;
     outputName = value;
     plan = null;
     notifyListeners();
   }
 
   void setTargetMinutes(String value) {
-    targetMinutes = double.tryParse(value) ?? targetMinutes;
+    final parsed = double.tryParse(value) ?? targetMinutes;
+    if (targetMinutes == parsed) return;
+    targetMinutes = parsed;
     plan = null;
     notifyListeners();
   }
 
   void setClipSeconds(String value) {
-    clipSeconds = double.tryParse(value) ?? clipSeconds;
+    final parsed = double.tryParse(value) ?? clipSeconds;
+    if (clipSeconds == parsed) return;
+    clipSeconds = parsed;
     plan = null;
     notifyListeners();
   }
 
   void setAudioMode(LongVideoAudioMode value) {
+    if (audioMode == value) return;
     audioMode = value;
     plan = null;
     notifyListeners();
   }
 
   void setSelectedAudio(String? value) {
+    if (selectedAudioPath == value) return;
     selectedAudioPath = value;
     plan = null;
     notifyListeners();
   }
 
   void setOutputSize(VideoOutputSize value) {
+    if (outputSize == value) return;
     outputSize = value;
     plan = null;
     notifyListeners();
   }
 
   void setFitMode(VideoFitMode value) {
+    if (fitMode == value) return;
     fitMode = value;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setNumOutputs(String value) {
+    final parsed = int.tryParse(value) ?? 1;
+    if (numOutputs == parsed) return;
+    numOutputs = parsed;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setUseImages(bool value) {
+    if (useImages == value) return;
+    useImages = value;
+    plan = null;
+    notifyListeners();
+  }
+
+  Future<void> pickImageFolder() async {
+    final path = await _folderPickerService.pickFolder(
+      dialogTitle: 'Select image folder',
+    );
+    if (path == null) return;
+    imageFolderPath = path;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setImageDurationValue(String value) {
+    final val = int.tryParse(value);
+    if (val != null) {
+      if (imageSettings.durationValue == val) return;
+      imageSettings = imageSettings.copyWith(durationValue: val);
+      plan = null;
+      notifyListeners();
+    }
+  }
+
+  void setImageDurationUnit(ImageDurationUnit value) {
+    if (imageSettings.durationUnit == value) return;
+    imageSettings = imageSettings.copyWith(durationUnit: value);
+    plan = null;
+    notifyListeners();
+  }
+
+  void setImageFitMode(ImageFitMode value) {
+    if (imageSettings.fitMode == value) return;
+    imageSettings = imageSettings.copyWith(fitMode: value);
+    plan = null;
+    notifyListeners();
+  }
+
+  void setDurationMode(LongVideoDurationMode value) {
+    if (durationMode == value) return;
+    durationMode = value;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setAudioBehavior(LongVideoAudioBehavior value) {
+    if (audioBehavior == value) return;
+    audioBehavior = value;
     plan = null;
     notifyListeners();
   }
@@ -123,27 +220,53 @@ class LongVideoController extends ChangeNotifier {
 
     try {
       _validateFolders();
-      videos = await _mediaScannerService.scanFolder(
-        folderPath: videoFolderPath!,
-        extensions: AppConstants.supportedVideoExtensions,
-      );
+      
+      if (videoFolderPath != null && videoFolderPath!.isNotEmpty) {
+        videos = await _mediaScannerService.scanFolder(
+          folderPath: videoFolderPath!,
+          extensions: AppConstants.supportedVideoExtensions,
+        );
+      } else {
+        videos = [];
+      }
+
+      if (useImages && imageFolderPath != null && imageFolderPath!.isNotEmpty) {
+        images = await _mediaScannerService.scanFolder(
+          folderPath: imageFolderPath!,
+          extensions: AppConstants.supportedImageExtensions,
+        );
+      } else {
+        images = [];
+      }
+
       audios = await _mediaScannerService.scanFolder(
         folderPath: audioFolderPath!,
         extensions: AppConstants.supportedAudioExtensions,
       );
       selectedAudioPath ??= audios.isEmpty ? null : audios.first.path;
+
       plan = await _longVideoService.createPlan(
         videos: videos,
+        images: useImages ? images : [],
         audios: audios,
         outputFolderPath: outputFolderPath!,
         outputName: outputName,
         targetMinutes: targetMinutes,
         clipSeconds: clipSeconds,
         audioMode: audioMode,
+        imageSettings: imageSettings,
         selectedAudioPath: selectedAudioPath,
+        durationMode: durationMode,
+        audioBehavior: audioBehavior,
       );
-      message =
-      'Plan ready: ${plan!.clips.length} clips, ${_format(plan!.estimatedDuration)} seconds.';
+      final p = plan!;
+      final targetSec = targetMinutes * 60;
+      final diff = (p.estimatedDuration - targetSec).abs();
+      if (diff > 0.5 && durationMode == LongVideoDurationMode.exactTargetLength) {
+        message = 'Plan ready (⚠ ${diff.toStringAsFixed(1)}s mismatch): ${p.clips.length} clips, ${_format(p.estimatedDuration)}s.';
+      } else {
+        message = 'Plan ready: ${p.clips.length} clips, ${_format(p.estimatedDuration)}s.';
+      }
     } catch (error) {
       errorMessage = error.toString();
       message = 'Plan failed.';
@@ -165,19 +288,97 @@ class LongVideoController extends ChangeNotifier {
     errorMessage = null;
     message = 'Starting export...';
     logs = [];
+    successCount = 0;
+    failedCount = 0;
+    currentExportIndex = 0;
+    currentClipLabel = '';
     notifyListeners();
 
     try {
-      await _longVideoService.exportPlan(
-        currentPlan,
-        outputSize: outputSize,
-        fitMode: fitMode,
-        onProgress: (value) async {
-          logs = [...logs, value];
-          message = value;
+      final total = numOutputs;
+      for (var k = 1; k <= total; k++) {
+        if (!isExporting) break;
+
+        currentExportIndex = k;
+        message = 'Exporting video $k of $total...';
+        notifyListeners();
+
+        final currentOutputName = total > 1
+            ? '${p.basenameWithoutExtension(outputName.trim().isEmpty ? 'long-video' : outputName.trim())}-$k'
+            : outputName;
+
+        LongVideoPlan? loopPlan;
+        try {
+          loopPlan = await _longVideoService.createPlan(
+            videos: videos,
+            images: useImages ? images : [],
+            audios: audios,
+            outputFolderPath: outputFolderPath!,
+            outputName: currentOutputName,
+            targetMinutes: targetMinutes,
+            clipSeconds: clipSeconds,
+            audioMode: audioMode,
+            imageSettings: imageSettings,
+            selectedAudioPath: selectedAudioPath,
+            durationMode: durationMode,
+            audioBehavior: audioBehavior,
+          );
+
+          await _longVideoService.exportPlan(
+            loopPlan,
+            imageSettings: imageSettings,
+            outputSize: outputSize,
+            fitMode: fitMode,
+            onProgress: (value) async {
+              logs = [...logs, '[Video $k/$total] $value'];
+              message = '[Video $k/$total] $value';
+              currentClipLabel = value;
+              notifyListeners();
+            },
+          );
+          successCount++;
+
+          final record = ResultHistoryRecord(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            originalVideoPath: loopPlan.clips.isNotEmpty ? loopPlan.clips.first.videoPath : '',
+            audioPath: loopPlan.audioSegments.isNotEmpty ? loopPlan.audioSegments.first.audioPath : '',
+            outputPath: loopPlan.outputPath,
+            resultFolderPath: outputFolderPath!,
+            status: ResultHistoryStatus.success,
+            createdAt: DateTime.now(),
+            processType: ResultProcessType.longVideo,
+            outputPrefix: currentOutputName,
+            totalVideos: loopPlan.clips.length,
+          );
+          await _resultHistoryController?.add(record);
+        } catch (error) {
+          failedCount++;
+          final record = ResultHistoryRecord(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            originalVideoPath: loopPlan?.clips.isNotEmpty == true ? loopPlan!.clips.first.videoPath : '',
+            audioPath: loopPlan?.audioSegments.isNotEmpty == true ? loopPlan!.audioSegments.first.audioPath : '',
+            outputPath: loopPlan?.outputPath ?? p.join(outputFolderPath!, '$currentOutputName.mp4'),
+            resultFolderPath: outputFolderPath!,
+            status: ResultHistoryStatus.failed,
+            createdAt: DateTime.now(),
+            processType: ResultProcessType.longVideo,
+            outputPrefix: currentOutputName,
+            totalVideos: loopPlan?.clips.length ?? 0,
+            errorMessage: error.toString(),
+          );
+          await _resultHistoryController?.add(record);
+          // Continue to next output instead of rethrowing for multi-output batches
+          logs = [...logs, '[Video $k/$total] FAILED: $error'];
+          message = '[Video $k/$total] Failed — continuing...';
           notifyListeners();
-        },
-      );
+        }
+      }
+      if (failedCount == 0) {
+        message = 'All $total export${total > 1 ? 's' : ''} completed! ✓ $successCount succeeded.';
+      } else {
+        message = 'Completed: ✓ $successCount succeeded, ✗ $failedCount failed.';
+        if (failedCount == total) errorMessage = 'All exports failed. Check logs.';
+      }
     } catch (error) {
       errorMessage = error.toString();
       message = 'Export failed.';
@@ -187,17 +388,66 @@ class LongVideoController extends ChangeNotifier {
     }
   }
 
+  void stopExport() {
+    isExporting = false;
+    notifyListeners();
+  }
+
   void clearPlan() {
     plan = null;
     logs = [];
     message = null;
     errorMessage = null;
+    successCount = 0;
+    failedCount = 0;
+    currentExportIndex = 0;
+    currentClipLabel = '';
     notifyListeners();
   }
 
+  /// Whether a plan exists and has no critical mismatch for exact mode.
+  bool get canExport {
+    if (plan == null) return false;
+    if (isExporting || isPlanning) return false;
+    return true;
+  }
+
+  /// A human-readable summary of the current plan for pre-export review.
+  LongVideoPlanSummary? get planSummary {
+    final p = plan;
+    if (p == null) return null;
+    final targetSec = targetMinutes * 60;
+    final videoDuration = p.clips.fold(0.0, (sum, c) => sum + c.clipDuration);
+    final audioDuration = p.audioSegments.fold(0.0, (sum, s) => sum + s.segmentDuration);
+    final imageClips = p.clips.where((c) => MediaFile(path: c.videoPath).isImage).length;
+    final videoClips = p.clips.length - imageClips;
+    final diff = (p.estimatedDuration - targetSec).abs();
+    final hasMismatch = durationMode == LongVideoDurationMode.exactTargetLength && diff > 0.5;
+    return LongVideoPlanSummary(
+      targetDuration: targetSec,
+      plannedVideoDuration: videoDuration,
+      plannedAudioDuration: audioDuration,
+      estimatedFinalDuration: p.estimatedDuration,
+      numVideoClips: videoClips,
+      numImageClips: imageClips,
+      hasMismatch: hasMismatch,
+      mismatchSeconds: diff,
+    );
+  }
+
   void _validateFolders() {
-    if (videoFolderPath == null || videoFolderPath!.isEmpty) {
-      throw const LongVideoValidationException('Select a video folder.');
+    if (useImages) {
+      final hasVideos = videoFolderPath != null && videoFolderPath!.isNotEmpty;
+      final hasImages = imageFolderPath != null && imageFolderPath!.isNotEmpty;
+      if (!hasVideos && !hasImages) {
+        throw const LongVideoValidationException(
+          'Select either a video folder or an image folder (or both) when images are enabled.',
+        );
+      }
+    } else {
+      if (videoFolderPath == null || videoFolderPath!.isEmpty) {
+        throw const LongVideoValidationException('Select a video folder.');
+      }
     }
     if (audioFolderPath == null || audioFolderPath!.isEmpty) {
       throw const LongVideoValidationException('Select an audio folder.');
@@ -208,6 +458,15 @@ class LongVideoController extends ChangeNotifier {
   }
 
   String _format(double value) => value.toStringAsFixed(1);
+
+  String _fmtDuration(double seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toStringAsFixed(0).padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  // ignore: unused_element
+  String get _targetLabel => _fmtDuration(targetMinutes * 60);
 }
 
 class LongVideoValidationException implements Exception {
@@ -217,4 +476,38 @@ class LongVideoValidationException implements Exception {
 
   @override
   String toString() => message;
+}
+
+class LongVideoPlanSummary {
+  const LongVideoPlanSummary({
+    required this.targetDuration,
+    required this.plannedVideoDuration,
+    required this.plannedAudioDuration,
+    required this.estimatedFinalDuration,
+    required this.numVideoClips,
+    required this.numImageClips,
+    required this.hasMismatch,
+    required this.mismatchSeconds,
+  });
+
+  final double targetDuration;
+  final double plannedVideoDuration;
+  final double plannedAudioDuration;
+  final double estimatedFinalDuration;
+  final int numVideoClips;
+  final int numImageClips;
+  final bool hasMismatch;
+  final double mismatchSeconds;
+
+  String _fmt(double s) {
+    final m = (s ~/ 60).toString().padLeft(2, '0');
+    final sec = (s % 60).toStringAsFixed(0).padLeft(2, '0');
+    return '$m:$sec';
+  }
+
+  String get targetLabel => _fmt(targetDuration);
+  String get plannedVideoLabel => _fmt(plannedVideoDuration);
+  String get plannedAudioLabel => _fmt(plannedAudioDuration);
+  String get estimatedLabel => _fmt(estimatedFinalDuration);
+  int get totalClips => numVideoClips + numImageClips;
 }

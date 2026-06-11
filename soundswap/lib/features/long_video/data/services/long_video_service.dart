@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:path/path.dart' as p;
+import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
 import 'package:soundswap/features/long_video/data/models/long_video_plan.dart';
@@ -21,21 +22,25 @@ class LongVideoService {
 
   Future<LongVideoPlan> createPlan({
     required List<MediaFile> videos,
+    required List<MediaFile> images,
     required List<MediaFile> audios,
     required String outputFolderPath,
     required String outputName,
     required double targetMinutes,
     required double clipSeconds,
     required LongVideoAudioMode audioMode,
+    required ImageToVideoSettings imageSettings,
     String? selectedAudioPath,
+    LongVideoDurationMode durationMode = LongVideoDurationMode.exactTargetLength,
+    LongVideoAudioBehavior audioBehavior = LongVideoAudioBehavior.trimToFinalVideo,
   }) async {
     if (!_ffmpegService.isReady) {
       throw const FfmpegException(
         'FFmpeg files are missing in tools/ffmpeg. Please add ffmpeg.exe and ffprobe.exe.',
       );
     }
-    if (videos.isEmpty) {
-      throw const FfmpegException('No supported videos found.');
+    if (videos.isEmpty && images.isEmpty) {
+      throw const FfmpegException('No supported videos or images found.');
     }
     if (audios.isEmpty) {
       throw const FfmpegException('No supported audio files found.');
@@ -47,25 +52,101 @@ class LongVideoService {
       throw const FfmpegException('Clip length must be greater than 0.');
     }
 
-    final targetSeconds = targetMinutes * 60;
-    final shuffledVideos = [...videos]..shuffle(_random);
+    final exactTargetSeconds = targetMinutes * 60.0;
+
+    // Determine the baseline audio length
+    double audioLength = 0.0;
+    if (audios.isNotEmpty) {
+      final selectedPath = selectedAudioPath ?? audios.first.path;
+      final matchedAudio = audios.firstWhere(
+        (a) => a.path == selectedPath,
+        orElse: () => audios.first,
+      );
+      audioLength = await _ffmpegService.probeDuration(matchedAudio.path);
+    }
+
+    final allMedia = <MediaFile>[];
+    if (videos.isNotEmpty) {
+      allMedia.addAll(videos);
+    }
+    if (images.isNotEmpty) {
+      allMedia.addAll(images);
+    }
+    allMedia.shuffle(_random);
+
+    double videoPlanLength = 0.0;
+    for (final media in allMedia) {
+      if (media.isImage) {
+        videoPlanLength += imageSettings.durationSeconds;
+      } else {
+        try {
+          final d = await _ffmpegService.probeDuration(media.path);
+          videoPlanLength += min(d, clipSeconds);
+        } catch (_) {
+          videoPlanLength += clipSeconds;
+        }
+      }
+    }
+
+    // Resolve target duration based on mode
+    double finalTargetSeconds = exactTargetSeconds;
+    switch (durationMode) {
+      case LongVideoDurationMode.exactTargetLength:
+        finalTargetSeconds = exactTargetSeconds;
+        break;
+      case LongVideoDurationMode.matchAudioLength:
+        finalTargetSeconds = audioLength;
+        break;
+      case LongVideoDurationMode.matchVideoPlanLength:
+        finalTargetSeconds = videoPlanLength;
+        break;
+      case LongVideoDurationMode.useShortest:
+        finalTargetSeconds = min(exactTargetSeconds, audioLength);
+        break;
+      case LongVideoDurationMode.useLongest:
+        finalTargetSeconds = max(exactTargetSeconds, audioLength);
+        break;
+    }
+
+    if (finalTargetSeconds <= 0.001) {
+      finalTargetSeconds = exactTargetSeconds > 0 ? exactTargetSeconds : 60.0;
+    }
+
     final clips = <LongVideoClip>[];
     var totalDuration = 0.0;
+    var mediaIndex = 0;
 
-    for (final video in shuffledVideos) {
-      if (totalDuration >= targetSeconds) break;
-      final duration = await _ffmpegService.probeDuration(video.path);
-      final remaining = targetSeconds - totalDuration;
-      final clipDuration = min(min(duration, clipSeconds), remaining);
-      if (clipDuration <= 0) continue;
+    while (totalDuration < finalTargetSeconds && allMedia.isNotEmpty) {
+      final media = allMedia[mediaIndex % allMedia.length];
+      mediaIndex++;
+
+      final remaining = finalTargetSeconds - totalDuration;
+      if (remaining <= 0.001) break;
+
+      double duration;
+      double clipDuration;
+
+      if (media.isImage) {
+        duration = imageSettings.durationSeconds;
+        clipDuration = min(duration, remaining);
+      } else {
+        duration = await _ffmpegService.probeDuration(media.path);
+        clipDuration = min(min(duration, clipSeconds), remaining);
+      }
+
+      if (clipDuration <= 0.001) continue;
       clips.add(
         LongVideoClip(
-          videoPath: video.path,
+          videoPath: media.path,
           sourceDuration: duration,
           clipDuration: clipDuration,
         ),
       );
       totalDuration += clipDuration;
+
+      if (durationMode == LongVideoDurationMode.matchVideoPlanLength && mediaIndex >= allMedia.length) {
+        break;
+      }
     }
 
     if (clips.isEmpty) {
@@ -77,6 +158,7 @@ class LongVideoService {
       audioMode: audioMode,
       selectedAudioPath: selectedAudioPath,
       targetSeconds: totalDuration,
+      audioBehavior: audioBehavior,
     );
 
     return LongVideoPlan(
@@ -91,11 +173,12 @@ class LongVideoService {
   }
 
   Future<void> exportPlan(
-      LongVideoPlan plan, {
-        VideoOutputSize? outputSize,
-        VideoFitMode? fitMode,
-        LongVideoProgress? onProgress,
-      }) async {
+    LongVideoPlan plan, {
+    required ImageToVideoSettings imageSettings,
+    VideoOutputSize? outputSize,
+    VideoFitMode? fitMode,
+    LongVideoProgress? onProgress,
+  }) async {
     final outputDirectory = Directory(p.dirname(plan.outputPath));
     await outputDirectory.create(recursive: true);
     final tempDirectory = Directory(
@@ -120,25 +203,59 @@ class LongVideoService {
           'clip_${i.toString().padLeft(3, '0')}.mp4',
         );
         await onProgress?.call('Preparing clip ${i + 1}/${plan.clips.length}');
-        await _runFfmpeg([
-          '-y',
-          '-i',
-          clip.videoPath,
-          '-t',
-          _seconds(clip.clipDuration),
-          '-an',
-          '-vf',
-          videoFilter,
-          '-c:v',
-          'libx264',
-          '-preset',
-          'veryfast',
-          '-crf',
-          '20',
-          '-pix_fmt',
-          'yuv420p',
-          tempClip,
-        ]);
+
+        final mediaFile = MediaFile(path: clip.videoPath);
+        if (mediaFile.isImage) {
+          var targetW = 1080;
+          var targetH = 1920;
+          final resolvedSize = _resolveOutputSize(outputSize);
+          if (resolvedSize != null) {
+            targetW = resolvedSize.width;
+            targetH = resolvedSize.height;
+          } else {
+            try {
+              final dims =
+                  await _ffmpegService.probeVideoDimensions(clip.videoPath);
+              targetW = dims.width;
+              targetH = dims.height;
+              if (targetW % 2 != 0) targetW += 1;
+              if (targetH % 2 != 0) targetH += 1;
+            } catch (_) {}
+          }
+
+          await _ffmpegService.convertImageToVideo(
+            imagePath: clip.videoPath,
+            outputPath: tempClip,
+            settings: ImageToVideoSettings(
+              durationValue: max(1, clip.clipDuration.round()),
+              durationUnit: ImageDurationUnit.seconds,
+              fitMode: imageSettings.fitMode,
+            ),
+            width: targetW,
+            height: targetH,
+            durationOverride: clip.clipDuration,
+          );
+        } else {
+          await _runFfmpeg([
+            '-y',
+            '-i',
+            clip.videoPath,
+            '-t',
+            _seconds(clip.clipDuration),
+            '-an',
+            '-vf',
+            videoFilter,
+            '-c:v',
+            'libx264',
+            '-preset',
+            'veryfast',
+            '-crf',
+            '20',
+            '-pix_fmt',
+            'yuv420p',
+            tempClip,
+          ]);
+        }
         clipPaths.add(tempClip);
       }
 
@@ -219,7 +336,6 @@ class LongVideoService {
         'aac',
         '-t',
         _seconds(plan.estimatedDuration),
-        '-shortest',
         plan.outputPath,
       ]);
       await onProgress?.call('Export completed: ${plan.outputName}');
@@ -235,11 +351,12 @@ class LongVideoService {
     required LongVideoAudioMode audioMode,
     required String? selectedAudioPath,
     required double targetSeconds,
+    required LongVideoAudioBehavior audioBehavior,
   }) async {
     final ordered = <MediaFile>[];
     if (audioMode == LongVideoAudioMode.selectedFile) {
       final selected = audios.firstWhere(
-            (audio) => audio.path == selectedAudioPath,
+        (audio) => audio.path == selectedAudioPath,
         orElse: () => audios.first,
       );
       ordered.add(selected);
@@ -248,23 +365,59 @@ class LongVideoService {
       ordered.addAll([...audios]..shuffle(_random));
     }
 
+    if (ordered.isEmpty) return const [];
+
     final segments = <LongVideoAudioSegment>[];
     var remaining = targetSeconds;
-    var index = 0;
-    while (remaining > 0.1) {
-      final audio = ordered[index % ordered.length];
+
+    if (audioBehavior == LongVideoAudioBehavior.silenceWhenAudioEnds ||
+        audioBehavior == LongVideoAudioBehavior.trimToFinalVideo) {
+      final audio = ordered.first;
       final duration = await _ffmpegService.probeDuration(audio.path);
       final segmentDuration = min(duration, remaining);
-      segments.add(
-        LongVideoAudioSegment(
-          audioPath: audio.path,
-          sourceDuration: duration,
-          segmentDuration: segmentDuration,
-        ),
-      );
-      remaining -= segmentDuration;
-      index++;
+      if (segmentDuration > 0.001) {
+        segments.add(
+          LongVideoAudioSegment(
+            audioPath: audio.path,
+            sourceDuration: duration,
+            segmentDuration: segmentDuration,
+          ),
+        );
+      }
+    } else if (audioBehavior == LongVideoAudioBehavior.loopToFinalVideo) {
+      final audio = ordered.first;
+      final duration = await _ffmpegService.probeDuration(audio.path);
+      while (remaining > 0.001) {
+        final segmentDuration = min(duration, remaining);
+        if (segmentDuration <= 0.001) break;
+        segments.add(
+          LongVideoAudioSegment(
+            audioPath: audio.path,
+            sourceDuration: duration,
+            segmentDuration: segmentDuration,
+          ),
+        );
+        remaining -= segmentDuration;
+      }
+    } else if (audioBehavior == LongVideoAudioBehavior.randomFillToFinalVideo) {
+      var index = 0;
+      while (remaining > 0.001) {
+        final audio = ordered[index % ordered.length];
+        final duration = await _ffmpegService.probeDuration(audio.path);
+        final segmentDuration = min(duration, remaining);
+        if (segmentDuration <= 0.001) break;
+        segments.add(
+          LongVideoAudioSegment(
+            audioPath: audio.path,
+            sourceDuration: duration,
+            segmentDuration: segmentDuration,
+          ),
+        );
+        remaining -= segmentDuration;
+        index++;
+      }
     }
+
     return segments;
   }
 

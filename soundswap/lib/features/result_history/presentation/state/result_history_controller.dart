@@ -6,6 +6,8 @@ import 'package:soundswap/core/constants/app_constants.dart';
 import 'package:soundswap/features/result_history/data/models/result_history_record.dart';
 import 'package:soundswap/features/result_history/data/services/result_history_service.dart';
 
+enum ResultDateFilter { today, last7Days, last30Days, allTime }
+
 class ResultHistoryController extends ChangeNotifier {
   ResultHistoryController({ResultHistoryService? service})
     : _service = service ?? ResultHistoryService();
@@ -14,18 +16,59 @@ class ResultHistoryController extends ChangeNotifier {
   List<ResultHistoryRecord> records = [];
   ResultProcessType? processFilter;
   String? resultFolderFilter;
+  ResultDateFilter dateFilter = ResultDateFilter.allTime;
+  String? searchQuery;
+  int visibleLimit = 50;
   String? message;
 
   List<ResultHistoryRecord> get filteredRecords {
     final filter = processFilter;
     final folder = resultFolderFilter;
+    final query = searchQuery?.toLowerCase().trim();
+
     return records.where((record) {
       final processMatches = filter == null || record.processType == filter;
       final folderMatches =
           folder == null ||
           p.equals(p.normalize(record.resultFolderPath), p.normalize(folder));
-      return processMatches && folderMatches;
+      final searchMatches = query == null || query.isEmpty ||
+          p.basename(record.outputPath).toLowerCase().contains(query);
+      final dateMatches = _dateMatches(record.createdAt);
+
+      return processMatches && folderMatches && searchMatches && dateMatches;
     }).toList();
+  }
+
+  List<ResultHistoryRecord> get visibleRecords {
+    final filtered = filteredRecords;
+    if (filtered.length <= visibleLimit) {
+      return filtered;
+    }
+    return filtered.take(visibleLimit).toList();
+  }
+
+  bool get hasMore => filteredRecords.length > visibleLimit;
+
+  void loadMore() {
+    visibleLimit += 50;
+    notifyListeners();
+  }
+
+  bool _dateMatches(DateTime dateTime) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    switch (dateFilter) {
+      case ResultDateFilter.today:
+        return dateTime.isAfter(todayStart);
+      case ResultDateFilter.last7Days:
+        final sevenDaysAgo = todayStart.subtract(const Duration(days: 7));
+        return dateTime.isAfter(sevenDaysAgo);
+      case ResultDateFilter.last30Days:
+        final thirtyDaysAgo = todayStart.subtract(const Duration(days: 30));
+        return dateTime.isAfter(thirtyDaysAgo);
+      case ResultDateFilter.allTime:
+        return true;
+    }
   }
 
   List<String> get resultFolders {
@@ -40,23 +83,39 @@ class ResultHistoryController extends ChangeNotifier {
 
   void setProcessFilter(ResultProcessType? filter) {
     processFilter = filter;
+    visibleLimit = 50;
     notifyListeners();
   }
 
   void setResultFolderFilter(String? folder) {
     resultFolderFilter = folder;
+    visibleLimit = 50;
+    notifyListeners();
+  }
+
+  void setDateFilter(ResultDateFilter filter) {
+    dateFilter = filter;
+    visibleLimit = 50;
+    notifyListeners();
+  }
+
+  void setSearchQuery(String? query) {
+    searchQuery = query;
+    visibleLimit = 50;
     notifyListeners();
   }
 
   Future<void> load() async {
     records = await _service.load();
     records.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    visibleLimit = 50;
     notifyListeners();
   }
 
   Future<void> add(ResultHistoryRecord record) async {
     records = [record, ...records];
     await _service.saveAll(records);
+    visibleLimit = 50;
     notifyListeners();
   }
 
@@ -78,23 +137,30 @@ class ResultHistoryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> clearResultFolder(String resultFolderPath) async {
-    final folder = Directory(resultFolderPath);
-    if (!folder.existsSync()) return;
-    final recordsToClear = records
-        .where((record) => record.resultFolderPath == resultFolderPath)
-        .toList();
+  Future<void> clearFolderResults(String resultFolderPath, {required bool deleteFiles}) async {
+    if (deleteFiles) {
+      final folder = Directory(resultFolderPath);
+      if (folder.existsSync()) {
+        final recordsToClear = records
+            .where((record) => record.resultFolderPath == resultFolderPath)
+            .toList();
 
-    for (final record in recordsToClear) {
-      await _deleteResultFileIfSafe(record);
+        for (final record in recordsToClear) {
+          await _deleteResultFileIfSafe(record);
+        }
+      }
     }
 
     records = records
         .where((record) => record.resultFolderPath != resultFolderPath)
         .toList();
     await _service.saveAll(records);
-    message = 'Result folder cleared.';
+    message = deleteFiles ? 'Result folder cleared (history and files deleted).' : 'Result folder history cleared.';
     notifyListeners();
+  }
+
+  Future<void> clearResultFolder(String resultFolderPath) async {
+    await clearFolderResults(resultFolderPath, deleteFiles: true);
   }
 
   Future<void> removeHistoryByFilter(ResultProcessType? filter) async {

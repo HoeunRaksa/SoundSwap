@@ -120,4 +120,10 @@ class TemplatesController extends ChangeNotifier {
     message = 'Template deleted.';
     notifyListeners();
   }
+
+  Future<void> updateTemplates(List<ProjectTemplate> nextTemplates) async {
+    templates = nextTemplates;
+    await _service.saveAll(templates);
+    notifyListeners();
+  }
 }

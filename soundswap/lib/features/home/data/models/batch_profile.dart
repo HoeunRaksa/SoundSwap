@@ -1,4 +1,7 @@
+import 'package:soundswap/core/video/duration_mode.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
+import 'package:soundswap/features/home/data/models/audio_settings.dart';
+import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 
 class BatchProfile {
@@ -18,6 +21,9 @@ class BatchProfile {
     this.selectedTemplateId,
     this.outputSize = VideoOutputSize.original,
     this.fitMode = VideoFitMode.keepOriginal,
+    this.audioSettings = const AudioSettings(),
+    this.durationMode = DurationMode.trimAudioToVideo,
+    this.imageToVideoSettings = const ImageToVideoSettings(),
   });
 
   final String id;
@@ -35,6 +41,9 @@ class BatchProfile {
   final String? selectedTemplateId;
   final VideoOutputSize outputSize;
   final VideoFitMode fitMode;
+  final AudioSettings audioSettings;
+  final DurationMode durationMode;
+  final ImageToVideoSettings imageToVideoSettings;
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -52,6 +61,9 @@ class BatchProfile {
     'selectedTemplateId': selectedTemplateId,
     'outputSize': outputSize.name,
     'fitMode': fitMode.name,
+    'audioSettings': audioSettings.toJson(),
+    'durationMode': durationMode.name,
+    'imageToVideoSettings': imageToVideoSettings.toJson(),
   };
 
   factory BatchProfile.fromJson(Map<String, Object?> json) {
@@ -83,6 +95,16 @@ class BatchProfile {
         (value) => value.name == json['fitMode'],
         orElse: () => VideoFitMode.keepOriginal,
       ),
+      audioSettings: AudioSettings.fromJson(
+        (json['audioSettings'] as Map?)?.cast<String, Object?>() ?? {},
+      ),
+      durationMode: DurationMode.values.firstWhere(
+        (value) => value.name == json['durationMode'],
+        orElse: () => DurationMode.trimAudioToVideo,
+      ),
+      imageToVideoSettings: ImageToVideoSettings.fromJson(
+        (json['imageToVideoSettings'] as Map?)?.cast<String, Object?>() ?? {},
+      ),
     );
   }
 
@@ -100,6 +122,9 @@ class BatchProfile {
     String? selectedTemplateId,
     VideoOutputSize? outputSize,
     VideoFitMode? fitMode,
+    AudioSettings? audioSettings,
+    DurationMode? durationMode,
+    ImageToVideoSettings? imageToVideoSettings,
     bool clearSelectedOverlayPreset = false,
     bool clearSelectedTemplate = false,
   }) {
@@ -123,6 +148,9 @@ class BatchProfile {
           : selectedTemplateId ?? this.selectedTemplateId,
       outputSize: outputSize ?? this.outputSize,
       fitMode: fitMode ?? this.fitMode,
+      audioSettings: audioSettings ?? this.audioSettings,
+      durationMode: durationMode ?? this.durationMode,
+      imageToVideoSettings: imageToVideoSettings ?? this.imageToVideoSettings,
     );
   }
 }

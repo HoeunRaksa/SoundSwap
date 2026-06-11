@@ -2,6 +2,21 @@ import 'package:path/path.dart' as p;
 
 enum LongVideoAudioMode { selectedFile, randomFromFolder }
 
+enum LongVideoDurationMode {
+  exactTargetLength,
+  matchAudioLength,
+  matchVideoPlanLength,
+  useShortest,
+  useLongest,
+}
+
+enum LongVideoAudioBehavior {
+  trimToFinalVideo,
+  loopToFinalVideo,
+  randomFillToFinalVideo,
+  silenceWhenAudioEnds,
+}
+
 class LongVideoClip {
   const LongVideoClip({
     required this.videoPath,
