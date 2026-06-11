@@ -9,6 +9,7 @@ class QueueTable extends StatefulWidget {
     this.selectedVideoPaths = const {},
     this.onSelectionChanged,
     this.onRemoveVideo,
+    this.onToggleSkip,
     super.key,
   });
 
@@ -16,6 +17,7 @@ class QueueTable extends StatefulWidget {
   final Set<String> selectedVideoPaths;
   final void Function(String videoPath, bool selected)? onSelectionChanged;
   final void Function(String videoPath)? onRemoveVideo;
+  final void Function(int index)? onToggleSkip;
 
   @override
   State<QueueTable> createState() => _QueueTableState();
@@ -160,28 +162,53 @@ class _QueueTableState extends State<QueueTable> {
                                   ),
                                 ),
                                 DataCell(
-                                  IconButton(
-                                    constraints: const BoxConstraints.tightFor(
-                                      width: 28,
-                                      height: 28,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    visualDensity: VisualDensity.compact,
-                                    tooltip: 'Remove',
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: colorScheme.error,
-                                      disabledForegroundColor:
-                                      colorScheme.onSurfaceVariant.withValues(
-                                        alpha: 0.35,
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (job.status == SoundSwapStatus.queued || job.status == SoundSwapStatus.skipped)
+                                        IconButton(
+                                          constraints: const BoxConstraints.tightFor(
+                                            width: 28,
+                                            height: 28,
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          visualDensity: VisualDensity.compact,
+                                          tooltip: job.status == SoundSwapStatus.skipped ? 'Unskip' : 'Skip',
+                                          style: IconButton.styleFrom(
+                                            foregroundColor: job.status == SoundSwapStatus.skipped ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                                          ),
+                                          onPressed: widget.onToggleSkip == null
+                                              ? null
+                                              : () => widget.onToggleSkip!(startIndex + visibleJobs.indexOf(job)),
+                                          icon: Icon(
+                                            job.status == SoundSwapStatus.skipped ? Icons.play_circle_outline : Icons.next_plan_outlined,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      IconButton(
+                                        constraints: const BoxConstraints.tightFor(
+                                          width: 28,
+                                          height: 28,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        visualDensity: VisualDensity.compact,
+                                        tooltip: 'Remove',
+                                        style: IconButton.styleFrom(
+                                          foregroundColor: colorScheme.error,
+                                          disabledForegroundColor:
+                                          colorScheme.onSurfaceVariant.withValues(
+                                            alpha: 0.35,
+                                          ),
+                                        ),
+                                        onPressed: widget.onRemoveVideo == null
+                                            ? null
+                                            : () => widget.onRemoveVideo!(job.video.path),
+                                        icon: const Icon(
+                                          Icons.remove_circle_outline,
+                                          size: 18,
+                                        ),
                                       ),
-                                    ),
-                                    onPressed: widget.onRemoveVideo == null
-                                        ? null
-                                        : () => widget.onRemoveVideo!(job.video.path),
-                                    icon: const Icon(
-                                      Icons.remove_circle_outline,
-                                      size: 18,
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -343,6 +370,11 @@ class _StatusChip extends StatelessWidget {
       label: 'Failed',
       icon: Icons.error,
       color: colorScheme.error,
+      ),
+      SoundSwapStatus.skipped => (
+      label: 'Skipped',
+      icon: Icons.next_plan_outlined,
+      color: colorScheme.outline,
       ),
     };
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -12,6 +13,14 @@ class FfmpegService {
   final Random _random = Random();
   String? _resolvedFfmpegPath;
   String? _resolvedFfprobePath;
+
+  static final Map<String, double> _durationCache = {};
+  static final Map<String, VideoDimensions> _dimensionsCache = {};
+
+  static void clearProbeCache() {
+    _durationCache.clear();
+    _dimensionsCache.clear();
+  }
 
   FfmpegService() {
     _locateExecutables();
@@ -138,6 +147,9 @@ class FfmpegService {
   }
 
   Future<double> probeDuration(String inputPath) async {
+    if (_durationCache.containsKey(inputPath)) {
+      return _durationCache[inputPath]!;
+    }
     final ffprobeExecutable = _ffprobeExecutable;
     final result = await _runProcess(ffprobeExecutable, [
       '-v',
@@ -172,20 +184,24 @@ class FfmpegService {
         'Could not read media duration with ffprobe.\nInput: $inputPath\nOutput: ${result.stdout}',
       );
     }
+    _durationCache[inputPath] = duration;
     return duration;
   }
 
   Future<VideoDimensions> probeVideoDimensions(String inputPath) async {
+    if (_dimensionsCache.containsKey(inputPath)) {
+      return _dimensionsCache[inputPath]!;
+    }
     final ffprobeExecutable = _ffprobeExecutable;
     final arguments = [
       '-v',
       'error',
       '-select_streams',
-      'v:0',
+      'v',
       '-show_entries',
-      'stream=width,height',
+      'stream=width,height,codec_name:stream_side_data=displaymatrix:stream_tags=rotate',
       '-of',
-      'csv=p=0:s=x',
+      'json',
       inputPath,
     ];
     final result = await _runProcess(ffprobeExecutable, arguments);
@@ -199,21 +215,100 @@ class FfmpegService {
       );
     }
 
-    final parts = result.stdout.trim().split('x');
-    if (parts.length != 2) {
-      throw FfmpegException(
-        'Could not read video dimensions with ffprobe.\nInput: $inputPath\nOutput: ${result.stdout}',
-      );
-    }
+    try {
+      final Map<String, dynamic> data = jsonDecode(result.stdout);
+      final streams = data['streams'] as List?;
+      if (streams == null || streams.isEmpty) {
+        throw FfmpegException('No video streams found in $inputPath');
+      }
 
-    final width = int.tryParse(parts[0]);
-    final height = int.tryParse(parts[1]);
-    if (width == null || height == null || width <= 0 || height <= 0) {
+      int finalWidth = 0;
+      int finalHeight = 0;
+      int finalRawWidth = 0;
+      int finalRawHeight = 0;
+      int finalRotation = 0;
+      int maxArea = 0;
+
+      for (final streamMap in streams.cast<Map<String, dynamic>>()) {
+        final w = streamMap['width'] as int?;
+        final h = streamMap['height'] as int?;
+        final codec = streamMap['codec_name'] as String?;
+        if (codec == 'mjpeg' || codec == 'png' || codec == 'bmp') {
+          continue;
+        }
+        if (w != null && h != null && w > 0 && h > 0) {
+          int rotation = 0;
+          final sideDataList = streamMap['side_data_list'] as List?;
+          if (sideDataList != null) {
+            for (final sideData in sideDataList.cast<Map>()) {
+              final rot = sideData['rotation'];
+              if (rot is num) {
+                rotation = rot.toInt().abs();
+              }
+            }
+          }
+          final tags = streamMap['tags'] as Map?;
+          if (tags != null) {
+            final rotStr = tags['rotate'] ?? tags['rotation'];
+            if (rotStr != null) {
+              final rot = int.tryParse(rotStr.toString());
+              if (rot != null) {
+                rotation = rot.abs();
+              }
+            }
+          }
+
+          final actualW = (rotation == 90 || rotation == 270) ? h : w;
+          final actualH = (rotation == 90 || rotation == 270) ? w : h;
+
+          final area = actualW * actualH;
+          if (area > maxArea) {
+            maxArea = area;
+            finalWidth = actualW;
+            finalHeight = actualH;
+            finalRawWidth = w;
+            finalRawHeight = h;
+            finalRotation = rotation;
+          }
+        }
+      }
+
+      if (finalWidth == 0) {
+        for (final streamMap in streams.cast<Map<String, dynamic>>()) {
+          final w = streamMap['width'] as int?;
+          final h = streamMap['height'] as int?;
+          if (w != null && h != null && w > 0 && h > 0) {
+            final area = w * h;
+            if (area > maxArea) {
+              maxArea = area;
+              finalWidth = w;
+              finalHeight = h;
+              finalRawWidth = w;
+              finalRawHeight = h;
+              finalRotation = 0;
+            }
+          }
+        }
+      }
+
+      if (finalWidth <= 0 || finalHeight <= 0) {
+        throw FfmpegException('Invalid video dimensions for $inputPath');
+      }
+
+      final dims = VideoDimensions(
+        width: finalWidth,
+        height: finalHeight,
+        rotation: finalRotation,
+        rawWidth: finalRawWidth,
+        rawHeight: finalRawHeight,
+      );
+      _dimensionsCache[inputPath] = dims;
+      return dims;
+    } catch (e) {
       throw FfmpegException(
-        'Invalid video dimensions from ffprobe.\nInput: $inputPath\nOutput: ${result.stdout}',
+        'Could not parse ffprobe output JSON: $e\nInput: $inputPath\nOutput: ${result.stdout}',
       );
     }
-    return VideoDimensions(width: width, height: height);
   }
 
   /// Converts a still image into an MP4 video of the specified duration.
@@ -450,8 +545,9 @@ class FfmpegService {
 
   Future<ProcessRunOutput> _runProcess(
     String executable,
-    List<String> arguments,
-  ) async {
+    List<String> arguments, {
+    Duration inactivityTimeout = const Duration(seconds: 60),
+  }) async {
     late final Process process;
     try {
       process = await Process.start(executable, arguments);
@@ -463,16 +559,51 @@ class FfmpegService {
 
     final stdoutBuffer = StringBuffer();
     final stderrBuffer = StringBuffer();
-    final stdoutDone = process.stdout
-        .transform(utf8.decoder)
-        .forEach(stdoutBuffer.write);
-    final stderrDone = process.stderr
-        .transform(utf8.decoder)
-        .forEach(stderrBuffer.write);
-    final exitCode = await process.exitCode;
 
-    await stdoutDone;
-    await stderrDone;
+    Timer? timer;
+    bool timedOut = false;
+
+    void resetTimer() {
+      timer?.cancel();
+      timer = Timer(inactivityTimeout, () {
+        timedOut = true;
+        process.kill();
+      });
+    }
+
+    resetTimer();
+
+    final stdoutCompleter = Completer<void>();
+    process.stdout.transform(utf8.decoder).listen(
+      (data) {
+        stdoutBuffer.write(data);
+        resetTimer();
+      },
+      onDone: () => stdoutCompleter.complete(),
+      onError: (e) => stdoutCompleter.completeError(e),
+    );
+
+    final stderrCompleter = Completer<void>();
+    process.stderr.transform(utf8.decoder).listen(
+      (data) {
+        stderrBuffer.write(data);
+        resetTimer();
+      },
+      onDone: () => stderrCompleter.complete(),
+      onError: (e) => stderrCompleter.completeError(e),
+    );
+
+    final exitCode = await process.exitCode;
+    timer?.cancel();
+
+    try {
+      await stdoutCompleter.future;
+      await stderrCompleter.future;
+    } catch (_) {}
+
+    if (timedOut) {
+      throw const FfmpegException('Failed: FFmpeg timeout');
+    }
 
     return ProcessRunOutput(
       exitCode: exitCode,
@@ -507,7 +638,134 @@ class FfmpegService {
     }
     return '"${argument.replaceAll('"', r'\"')}"';
   }
+  Future<void> convertHeicToPng(String inputPath, String outputPath) async {
+    final result = await _runProcess(ffmpegPath, [
+      '-y',
+      '-i',
+      inputPath,
+      outputPath,
+    ]);
+    if (result.exitCode != 0) {
+      throw FfmpegException(
+        'FFmpeg HEIC to PNG conversion failed (exit code ${result.exitCode}): ${result.stderr}',
+      );
+    }
+  }
+
+  /// Extracts a single raw RGB frame (64x64) for visual analysis.
+  Future<List<int>?> extractRawFrame(String videoPath, String outRawPath, {int size = 64}) async {
+    final expectedBytes = size * size * 3;
+    // Try to extract at 1 second first (often has non-black content)
+    try {
+      final result = await _runProcess(ffmpegPath, [
+        '-y',
+        '-ss',
+        '00:00:01',
+        '-i',
+        videoPath,
+        '-vframes',
+        '1',
+        '-s',
+        '${size}x$size',
+        '-pix_fmt',
+        'rgb24',
+        '-f',
+        'rawvideo',
+        outRawPath,
+      ]);
+      if (result.exitCode == 0 && File(outRawPath).existsSync() && File(outRawPath).lengthSync() == expectedBytes) {
+        return File(outRawPath).readAsBytesSync();
+      }
+    } catch (_) {}
+
+    // Fallback: extract from the very beginning (00:00:00)
+    try {
+      final result = await _runProcess(ffmpegPath, [
+        '-y',
+        '-i',
+        videoPath,
+        '-vframes',
+        '1',
+        '-s',
+        '${size}x$size',
+        '-pix_fmt',
+        'rgb24',
+        '-f',
+        'rawvideo',
+        outRawPath,
+      ]);
+      if (result.exitCode == 0 && File(outRawPath).existsSync() && File(outRawPath).lengthSync() == expectedBytes) {
+        return File(outRawPath).readAsBytesSync();
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  /// Uses FFmpeg's cropdetect filter to find the actual content area of a video.
+  /// Returns a CropDetectResult with the detected crop rectangle (w:h:x:y).
+  /// This works even with colored/blurred side bars, not just black bars.
+  Future<CropDetectResult?> detectCropArea(String videoPath) async {
+    // Analyze a few seconds of video using cropdetect
+    // limit=24 is the threshold for "uniform" detection — a low value catches
+    // even non-black borders (blurred backgrounds, colored bars).
+    // round=2 avoids odd-number rounding issues.
+    // We run on a short segment to keep it fast.
+    try {
+      final result = await _runProcess(ffmpegPath, [
+        '-ss', '00:00:01',
+        '-i', videoPath,
+        '-t', '3',
+        '-vf', 'cropdetect=limit=24:round=2:reset=0',
+        '-f', 'null',
+        '-',
+      ]);
+
+      // cropdetect outputs lines like: [Parsed_cropdetect_0 ... crop=W:H:X:Y
+      // We want the last one (most stable detection after analyzing multiple frames)
+      final stderr = result.stderr;
+      final cropPattern = RegExp(r'crop=(\d+):(\d+):(\d+):(\d+)');
+      final matches = cropPattern.allMatches(stderr).toList();
+
+      if (matches.isEmpty) return null;
+
+      // Use the last detected crop (most stable)
+      final lastMatch = matches.last;
+      final cropW = int.parse(lastMatch.group(1)!);
+      final cropH = int.parse(lastMatch.group(2)!);
+      final cropX = int.parse(lastMatch.group(3)!);
+      final cropY = int.parse(lastMatch.group(4)!);
+
+      return CropDetectResult(
+        cropWidth: cropW,
+        cropHeight: cropH,
+        cropX: cropX,
+        cropY: cropY,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }
+
+/// Result of FFmpeg cropdetect filter analysis.
+class CropDetectResult {
+  const CropDetectResult({
+    required this.cropWidth,
+    required this.cropHeight,
+    required this.cropX,
+    required this.cropY,
+  });
+
+  final int cropWidth;
+  final int cropHeight;
+  final int cropX;
+  final int cropY;
+
+  @override
+  String toString() => 'crop=$cropWidth:$cropHeight:$cropX:$cropY';
+}
+
 
 class _DurationFlags {
   const _DurationFlags(this.flags);
@@ -573,10 +831,19 @@ class ProcessRunOutput {
 }
 
 class VideoDimensions {
-  const VideoDimensions({required this.width, required this.height});
+  const VideoDimensions({
+    required this.width,
+    required this.height,
+    this.rotation = 0,
+    required this.rawWidth,
+    required this.rawHeight,
+  });
 
   final int width;
   final int height;
+  final int rotation;
+  final int rawWidth;
+  final int rawHeight;
 }
 
 class FfmpegException implements Exception {

@@ -19,6 +19,8 @@ import 'package:soundswap/features/result_history/presentation/screens/result_hi
 import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
+import 'package:soundswap/features/folder_organizer/presentation/screens/folder_organizer_screen.dart';
+import 'package:soundswap/features/folder_organizer/presentation/state/folder_organizer_controller.dart';
 import 'package:soundswap/shared/widgets/custom_title_bar.dart';
 
 class AppShell extends StatefulWidget {
@@ -39,6 +41,7 @@ class _AppShellState extends State<AppShell> {
   late final EffectsController _effectsController;
   late final ProductImportController _productImportController;
   late final LongVideoController _longVideoController;
+  late final FolderOrganizerController _folderOrganizerController;
 
   var _selectedIndex = 0;
 
@@ -129,34 +132,56 @@ class _AppShellState extends State<AppShell> {
       group: _NavGroup.management,
       child: ProductImportScreen(controller: _productImportController),
     ),
+    _NavigationItem(
+      label: 'Folder Organizer',
+      icon: Icons.folder_copy_outlined,
+      selectedIcon: Icons.folder_copy,
+      group: _NavGroup.tools,
+      child: FolderOrganizerScreen(controller: _folderOrganizerController),
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
     _resultHistoryController = ResultHistoryController();
+    _effectsController = EffectsController();
     _homeController = HomeController(
       resultHistoryController: _resultHistoryController,
+      effectsController: _effectsController,
     );
     _brandingController = BrandingController();
     _textOverlayController = TextOverlayController();
     _overlayController = OverlayToolsController();
     _templatesController = TemplatesController();
     _folderWatcherController = FolderWatcherController();
-    _effectsController = EffectsController();
     _productImportController = ProductImportController();
     _longVideoController = LongVideoController(
       resultHistoryController: _resultHistoryController,
+      homeController: _homeController,
+      templatesController: _templatesController,
     );
+    _folderOrganizerController = FolderOrganizerController();
+    
     _homeController.initialize();
     _brandingController.load();
     _textOverlayController.load();
     _overlayController.load();
     _templatesController.load();
-    _folderWatcherController.load();
+    _folderWatcherController.load().then((_) {
+      for (final profile in _folderWatcherController.profiles) {
+        if (profile.isActive) {
+          _folderWatcherController.startWatching(
+            profileId: profile.id,
+            historyController: _resultHistoryController,
+          );
+        }
+      }
+    });
     _resultHistoryController.load();
     _effectsController.load();
     _productImportController.load();
+    _folderOrganizerController.load();
   }
 
   @override
@@ -171,6 +196,7 @@ class _AppShellState extends State<AppShell> {
     _effectsController.dispose();
     _productImportController.dispose();
     _longVideoController.dispose();
+    _folderOrganizerController.dispose();
     super.dispose();
   }
 
@@ -250,6 +276,7 @@ enum _NavGroup {
   processing,
   editing,
   management,
+  tools,
 }
 
 extension _NavGroupLabel on _NavGroup {
@@ -257,6 +284,7 @@ extension _NavGroupLabel on _NavGroup {
         _NavGroup.processing => 'Processing',
         _NavGroup.editing => 'Editing',
         _NavGroup.management => 'Management',
+        _NavGroup.tools => 'Tools',
       };
 }
 

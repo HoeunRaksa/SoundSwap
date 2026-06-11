@@ -15,6 +15,7 @@ class ResultHistoryRecord {
     this.outputPrefix = '',
     this.totalVideos = 1,
     this.errorMessage,
+    this.retryCount = 0,
   });
 
   final String id;
@@ -28,6 +29,7 @@ class ResultHistoryRecord {
   final String outputPrefix;
   final int totalVideos;
   final String? errorMessage;
+  final int retryCount;
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -41,6 +43,7 @@ class ResultHistoryRecord {
     'outputPrefix': outputPrefix,
     'totalVideos': totalVideos,
     'errorMessage': errorMessage,
+    'retryCount': retryCount,
   };
 
   factory ResultHistoryRecord.fromJson(Map<String, Object?> json) {
@@ -64,6 +67,7 @@ class ResultHistoryRecord {
       outputPrefix: json['outputPrefix'] as String? ?? '',
       totalVideos: json['totalVideos'] as int? ?? 1,
       errorMessage: json['errorMessage'] as String?,
+      retryCount: json['retryCount'] as int? ?? 0,
     );
   }
 }

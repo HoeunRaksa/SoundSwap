@@ -1605,6 +1605,40 @@ class _GeneratorOptionsPanel extends StatelessWidget {
                   ),
                 ],
 
+                SizedBox(height: gap),
+                const Divider(),
+                SizedBox(height: gap * 0.5),
+                Text(
+                  'Retry Settings',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppResponsive.bodySize(context) - 1,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: gap * 0.5),
+
+                DropdownButtonFormField<int>(
+                  key: ValueKey(controller.maxRetries),
+                  initialValue: controller.maxRetries,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Max Retry Count',
+                  ),
+                  items: [
+                    for (var r = 0; r <= 10; r++)
+                      DropdownMenuItem(
+                        value: r,
+                        child: Text(r == 0 ? 'No Retries (0)' : '$r retries'),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      controller.setMaxRetries(value);
+                    }
+                  },
+                ),
+
                 if (controller.upscaleWarning != null) ...[
                   SizedBox(height: gap),
                   Container(
@@ -1771,24 +1805,9 @@ class _MetricsGrid extends StatelessWidget {
 
     final metrics = [
       MetricCard(
-        label: 'Videos',
-        value: '${controller.videos.length}',
-        icon: Icons.video_file,
-      ),
-      MetricCard(
-        label: 'Audio',
-        value: '${controller.audios.length}',
-        icon: Icons.audio_file,
-      ),
-      MetricCard(
-        label: 'Queue size',
+        label: 'Total Videos',
         value: '${controller.jobs.length}',
-        icon: Icons.playlist_play_outlined,
-      ),
-      MetricCard(
-        label: 'Success Rate',
-        value: successRate,
-        icon: Icons.percent,
+        icon: Icons.video_file,
       ),
       MetricCard(
         label: 'Success',
@@ -1801,6 +1820,22 @@ class _MetricsGrid extends StatelessWidget {
         value: '${controller.failedCount}',
         icon: Icons.error_outline,
         iconColor: Theme.of(context).colorScheme.error,
+      ),
+      MetricCard(
+        label: 'Skipped',
+        value: '${controller.skippedCount}',
+        icon: Icons.next_plan_outlined,
+        iconColor: Colors.grey.shade600,
+      ),
+      MetricCard(
+        label: 'Audio Files',
+        value: '${controller.audios.length}',
+        icon: Icons.audio_file,
+      ),
+      MetricCard(
+        label: 'Success Rate',
+        value: successRate,
+        icon: Icons.percent,
       ),
     ];
 
@@ -1840,6 +1875,9 @@ class _QueuePanel extends StatelessWidget {
       onRemoveVideo: controller.isProcessing
           ? null
           : controller.removeQueuedVideo,
+      onToggleSkip: controller.isProcessing
+          ? null
+          : controller.toggleJobSkip,
     );
 
     return LayoutBuilder(
@@ -1908,7 +1946,25 @@ class _QueuePanel extends StatelessWidget {
                         ? null
                         : controller.removeSelectedQueuedVideos,
                     icon: const Icon(Icons.remove_done),
-                    label: const Text('Remove selected videos'),
+                    label: const Text('Remove selected'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed:
+                        controller.selectedQueueVideoPaths.isEmpty ||
+                            controller.isProcessing
+                        ? null
+                        : controller.skipSelectedJobs,
+                    icon: const Icon(Icons.next_plan_outlined),
+                    label: const Text('Skip selected'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed:
+                        controller.selectedQueueVideoPaths.isEmpty ||
+                            controller.isProcessing
+                        ? null
+                        : controller.unskipSelectedJobs,
+                    icon: const Icon(Icons.play_circle_outline),
+                    label: const Text('Unskip selected'),
                   ),
                   OutlinedButton.icon(
                     onPressed: controller.isProcessing

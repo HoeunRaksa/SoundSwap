@@ -592,6 +592,7 @@ class _ResultHistoryScreenState extends State<ResultHistoryScreen> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     final option = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -630,11 +631,20 @@ class _ResultHistoryScreenState extends State<ResultHistoryScreen> {
         ],
       ),
     );
-
     if (option == 'history_only') {
       await widget.controller.clearFolderResults(folder, deleteFiles: false);
+      if (widget.controller.message != null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(widget.controller.message!)),
+        );
+      }
     } else if (option == 'history_and_files') {
       await widget.controller.clearFolderResults(folder, deleteFiles: true);
+      if (widget.controller.message != null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(widget.controller.message!)),
+        );
+      }
     }
   }
 
@@ -788,6 +798,33 @@ class _RecordTileState extends State<_RecordTile> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (!isSuccess) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Video: ${p.basename(widget.record.originalVideoPath)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (widget.record.errorMessage != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Error: ${widget.record.errorMessage}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.error,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          const SizedBox(height: 2),
+                          Text(
+                            'Retries: ${widget.record.retryCount}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -1073,6 +1110,8 @@ class _ExpandedRecordDetailsState extends State<_ExpandedRecordDetails> {
           _buildDetailRow('Clips Swapped:', '${widget.record.totalVideos}'),
           if (widget.record.status == ResultHistoryStatus.failed && widget.record.errorMessage != null)
             _buildDetailRow('Error Message:', widget.record.errorMessage!, isError: true),
+          if (widget.record.status == ResultHistoryStatus.failed)
+            _buildDetailRow('Retries:', '${widget.record.retryCount}'),
 
           const SizedBox(height: 8),
           Row(

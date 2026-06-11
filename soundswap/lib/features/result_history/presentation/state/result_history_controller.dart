@@ -137,25 +137,87 @@ class ResultHistoryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> clearFolderResults(String resultFolderPath, {required bool deleteFiles}) async {
-    if (deleteFiles) {
-      final folder = Directory(resultFolderPath);
-      if (folder.existsSync()) {
-        final recordsToClear = records
-            .where((record) => record.resultFolderPath == resultFolderPath)
-            .toList();
+  bool _isPathInsideFolder(String filePath, String folderPath) {
+    if (filePath.isEmpty || folderPath.isEmpty) return false;
+    final normFile = p.normalize(filePath).toLowerCase();
+    final normFolder = p.normalize(folderPath).toLowerCase();
+    final separator = p.separator;
+    final prefix = normFolder.endsWith(separator) ? normFolder : '$normFolder$separator';
+    return normFile.startsWith(prefix);
+  }
 
-        for (final record in recordsToClear) {
-          await _deleteResultFileIfSafe(record);
+  Future<void> clearFolderResults(String resultFolderPath, {required bool deleteFiles}) async {
+    final normalizedSelectedFolder = p.normalize(resultFolderPath);
+    int recordsRemoved = 0;
+    int filesDeleted = 0;
+    int failedDeletes = 0;
+
+    final recordsToClear = records.where((record) {
+      return p.equals(p.normalize(record.resultFolderPath), normalizedSelectedFolder);
+    }).toList();
+
+    recordsRemoved = recordsToClear.length;
+
+    if (deleteFiles) {
+      for (final record in recordsToClear) {
+        final outputPath = record.outputPath;
+        if (outputPath.isEmpty) continue;
+
+        // Verify file is inside selected result folder
+        if (!_isPathInsideFolder(outputPath, normalizedSelectedFolder)) {
+          failedDeletes++;
+          continue;
+        }
+
+        // Verify extension is supported video extension
+        final ext = p.extension(outputPath).toLowerCase();
+        if (!AppConstants.supportedVideoExtensions.contains(ext)) {
+          failedDeletes++;
+          continue;
+        }
+
+        final file = File(outputPath);
+        if (file.existsSync()) {
+          // Verify it's a file, not a directory
+          if (FileSystemEntity.isFileSync(outputPath)) {
+            try {
+              await file.delete();
+              filesDeleted++;
+            } catch (e) {
+              failedDeletes++;
+            }
+          } else {
+            failedDeletes++;
+          }
         }
       }
     }
 
-    records = records
-        .where((record) => record.resultFolderPath != resultFolderPath)
-        .toList();
+    // Remove records
+    records = records.where((record) {
+      return !p.equals(p.normalize(record.resultFolderPath), normalizedSelectedFolder);
+    }).toList();
+
+    // Reset filter if it matches the cleared folder
+    if (resultFolderFilter != null &&
+        p.equals(p.normalize(resultFolderFilter!), normalizedSelectedFolder)) {
+      resultFolderFilter = null;
+    }
+
     await _service.saveAll(records);
-    message = deleteFiles ? 'Result folder cleared (history and files deleted).' : 'Result folder history cleared.';
+    await load(); // Refresh list/folders/counts
+
+    // Log tracking info
+    debugPrint('Clear Folder Results Report:');
+    debugPrint('- Selected Folder: $resultFolderPath');
+    debugPrint('- Records Removed: $recordsRemoved');
+    debugPrint('- Files Deleted: $filesDeleted');
+    debugPrint('- Failed Deletes: $failedDeletes');
+
+    message = deleteFiles
+        ? 'Cleared folder results: $recordsRemoved records removed, $filesDeleted files deleted, $failedDeletes failed.'
+        : 'Cleared history for $recordsRemoved records (files kept).';
+
     notifyListeners();
   }
 

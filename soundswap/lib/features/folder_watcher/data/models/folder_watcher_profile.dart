@@ -14,6 +14,7 @@ class FolderWatcherProfile {
     this.overlaySettings = const OverlaySettings(),
     this.outputSize = VideoOutputSize.original,
     this.fitMode = VideoFitMode.keepOriginal,
+    this.isActive = false,
   });
 
   final String id;
@@ -27,6 +28,7 @@ class FolderWatcherProfile {
   final OverlaySettings overlaySettings;
   final VideoOutputSize outputSize;
   final VideoFitMode fitMode;
+  final bool isActive;
 
   bool get hasRequiredFolders =>
       videoFolderPath != null &&
@@ -45,6 +47,7 @@ class FolderWatcherProfile {
     'overlaySettings': overlaySettings.toJson(),
     'outputSize': outputSize.name,
     'fitMode': fitMode.name,
+    'isActive': isActive,
   };
 
   factory FolderWatcherProfile.fromJson(Map<String, Object?> json) {
@@ -68,6 +71,7 @@ class FolderWatcherProfile {
         (value) => value.name == json['fitMode'],
         orElse: () => VideoFitMode.keepOriginal,
       ),
+      isActive: json['isActive'] as bool? ?? false,
     );
   }
 
@@ -82,6 +86,7 @@ class FolderWatcherProfile {
     OverlaySettings? overlaySettings,
     VideoOutputSize? outputSize,
     VideoFitMode? fitMode,
+    bool? isActive,
   }) {
     return FolderWatcherProfile(
       id: id,
@@ -95,6 +100,7 @@ class FolderWatcherProfile {
       overlaySettings: overlaySettings ?? this.overlaySettings,
       outputSize: outputSize ?? this.outputSize,
       fitMode: fitMode ?? this.fitMode,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

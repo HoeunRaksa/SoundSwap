@@ -41,6 +41,9 @@ class EffectsSettings {
     );
   }
 
+  bool get hasActiveVideoEffects =>
+      slightZoom || brightnessAdjustment || speedVariation;
+
   String buildFilterPreview() {
     final filters = <String>[
       if (slightZoom) 'scale=iw*1.03:ih*1.03,crop=iw:ih',

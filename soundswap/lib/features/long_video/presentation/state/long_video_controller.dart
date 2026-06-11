@@ -1,15 +1,22 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/core/constants/app_constants.dart';
 import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
-
 import 'package:soundswap/features/home/data/services/media_scanner_service.dart';
 import 'package:soundswap/features/long_video/data/models/long_video_plan.dart';
 import 'package:soundswap/features/long_video/data/services/long_video_service.dart';
 import 'package:soundswap/features/result_history/data/models/result_history_record.dart';
 import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
 import 'package:soundswap/shared/services/folder_picker_service.dart';
+import 'package:soundswap/features/home/presentation/state/home_controller.dart';
+import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
+import 'package:soundswap/features/templates/data/models/project_template.dart';
+import 'package:soundswap/features/branding/data/models/branding_settings.dart';
+import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 
 import '../../../../core/video/video_output_settings.dart';
 
@@ -19,15 +26,26 @@ class LongVideoController extends ChangeNotifier {
     MediaScannerService? mediaScannerService,
     LongVideoService? longVideoService,
     ResultHistoryController? resultHistoryController,
+    HomeController? homeController,
+    TemplatesController? templatesController,
   }) : _folderPickerService = folderPickerService ?? FolderPickerService(),
         _mediaScannerService = mediaScannerService ?? MediaScannerService(),
         _longVideoService = longVideoService ?? LongVideoService(),
-        _resultHistoryController = resultHistoryController;
+        _resultHistoryController = resultHistoryController,
+        _homeController = homeController,
+        _templatesController = templatesController;
 
   final FolderPickerService _folderPickerService;
   final MediaScannerService _mediaScannerService;
   final LongVideoService _longVideoService;
   final ResultHistoryController? _resultHistoryController;
+  final HomeController? _homeController;
+  final TemplatesController? _templatesController;
+
+  bool useOverlays = false;
+  String selectedOverlayPreset = 'current_overlays';
+  bool useTemplate = false;
+  String? selectedTemplateId;
 
   String? videoFolderPath;
   String? audioFolderPath;
@@ -211,6 +229,140 @@ class LongVideoController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setUseOverlays(bool value) {
+    if (useOverlays == value) return;
+    useOverlays = value;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setSelectedOverlayPreset(String value) {
+    if (selectedOverlayPreset == value) return;
+    selectedOverlayPreset = value;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setUseTemplate(bool value) {
+    if (useTemplate == value) return;
+    useTemplate = value;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setSelectedTemplateId(String? value) {
+    if (selectedTemplateId == value) return;
+    selectedTemplateId = value;
+    plan = null;
+    notifyListeners();
+  }
+
+  List<ProjectTemplate> get templates => _templatesController?.templates ?? [];
+
+  ProjectTemplate? get selectedTemplate =>
+      selectedTemplateId == null
+          ? null
+          : templates.firstWhere((t) => t.id == selectedTemplateId, orElse: () => templates.first);
+
+  String? validateTemplateOrOverlay() {
+    if (useTemplate) {
+      final t = selectedTemplate;
+      if (t == null) {
+        return 'No template selected.';
+      }
+      if (t.useBranding && t.branding.hasLogo && t.branding.logoPath != null) {
+        final f = File(t.branding.logoPath!);
+        if (!f.existsSync()) {
+          return 'Template branding logo file does not exist: ${p.basename(t.branding.logoPath!)}';
+        }
+      }
+      if (t.useOverlay) {
+        for (final item in t.overlaySettings.items) {
+          if (item.type == OverlayItemType.image && item.imagePath != null) {
+            final f = File(item.imagePath!);
+            if (!f.existsSync()) {
+              return 'Template overlay image file does not exist: ${p.basename(item.imagePath!)}';
+            }
+          }
+          if (item.type == OverlayItemType.text && item.fontPath != null && item.fontPath!.isNotEmpty) {
+            final f = File(item.fontPath!);
+            if (!f.existsSync()) {
+              return 'Template font file does not exist: ${p.basename(item.fontPath!)}';
+            }
+          }
+        }
+        if (t.overlaySettings.defaultFontPath != null && t.overlaySettings.defaultFontPath!.isNotEmpty) {
+          final f = File(t.overlaySettings.defaultFontPath!);
+          if (!f.existsSync()) {
+            return 'Template default font file does not exist: ${p.basename(t.overlaySettings.defaultFontPath!)}';
+          }
+        }
+      }
+    } else if (useOverlays) {
+      final home = _homeController;
+      if (home == null) return null;
+      if (home.useBranding && home.activeBrandingSettings?.hasLogo == true && home.activeBrandingSettings?.logoPath != null) {
+        final f = File(home.activeBrandingSettings!.logoPath!);
+        if (!f.existsSync()) {
+          return 'Current branding logo file does not exist: ${p.basename(home.activeBrandingSettings!.logoPath!)}';
+        }
+      }
+      if (home.useOverlay && home.activeOverlaySettings != null) {
+        for (final item in home.activeOverlaySettings!.items) {
+          if (item.type == OverlayItemType.image && item.imagePath != null) {
+            final f = File(item.imagePath!);
+            if (!f.existsSync()) {
+              return 'Current overlay image file does not exist: ${p.basename(item.imagePath!)}';
+            }
+          }
+          if (item.type == OverlayItemType.text && item.fontPath != null && item.fontPath!.isNotEmpty) {
+            final f = File(item.fontPath!);
+            if (!f.existsSync()) {
+              return 'Current font file does not exist: ${p.basename(item.fontPath!)}';
+            }
+          }
+        }
+        if (home.activeOverlaySettings!.defaultFontPath != null && home.activeOverlaySettings!.defaultFontPath!.isNotEmpty) {
+          final f = File(home.activeOverlaySettings!.defaultFontPath!);
+          if (!f.existsSync()) {
+            return 'Current default font file does not exist: ${p.basename(home.activeOverlaySettings!.defaultFontPath!)}';
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  BrandingSettings? getActiveBranding() {
+    if (useTemplate && selectedTemplate != null) {
+      return selectedTemplate!.useBranding ? selectedTemplate!.branding : null;
+    }
+    if (useOverlays) {
+      return _homeController?.useBranding == true ? _homeController?.activeBrandingSettings : null;
+    }
+    return null;
+  }
+
+  TextOverlaySettings? getActiveTextOverlay() {
+    if (useTemplate && selectedTemplate != null) {
+      return selectedTemplate!.useTextOverlay ? selectedTemplate!.textOverlay : null;
+    }
+    if (useOverlays) {
+      return _homeController?.useTextOverlay == true ? _homeController?.activeTextOverlaySettings : null;
+    }
+    return null;
+  }
+
+  OverlaySettings? getActiveOverlaySettings() {
+    if (useTemplate && selectedTemplate != null) {
+      return selectedTemplate!.useOverlay ? selectedTemplate!.overlaySettings : null;
+    }
+    if (useOverlays) {
+      return _homeController?.useOverlay == true ? _homeController?.activeOverlaySettings : null;
+    }
+    return null;
+  }
+
   Future<void> generatePlan() async {
     isPlanning = true;
     errorMessage = null;
@@ -284,6 +436,14 @@ class LongVideoController extends ChangeNotifier {
       return;
     }
 
+    final validationError = validateTemplateOrOverlay();
+    if (validationError != null) {
+      errorMessage = 'Validation Failed: $validationError';
+      isExporting = false;
+      notifyListeners();
+      return;
+    }
+
     isExporting = true;
     errorMessage = null;
     message = 'Starting export...';
@@ -300,7 +460,12 @@ class LongVideoController extends ChangeNotifier {
         if (!isExporting) break;
 
         currentExportIndex = k;
-        message = 'Exporting video $k of $total...';
+        final isOverlayOrTemplateEnabled = useOverlays || useTemplate;
+        final modeText = isOverlayOrTemplateEnabled
+            ? 'Re-encode Mode'
+            : 'Fast Copy Mode';
+        
+        message = 'Exporting video $k of $total ($modeText)...';
         notifyListeners();
 
         final currentOutputName = total > 1
@@ -329,10 +494,14 @@ class LongVideoController extends ChangeNotifier {
             imageSettings: imageSettings,
             outputSize: outputSize,
             fitMode: fitMode,
+            branding: getActiveBranding(),
+            textOverlay: getActiveTextOverlay(),
+            overlaySettings: getActiveOverlaySettings(),
             onProgress: (value) async {
-              logs = [...logs, '[Video $k/$total] $value'];
-              message = '[Video $k/$total] $value';
-              currentClipLabel = value;
+              final progressMsg = '[Video $k/$total] Stage: $value | Mode: $modeText';
+              logs = [...logs, progressMsg];
+              message = progressMsg;
+              currentClipLabel = '$value ($modeText)';
               notifyListeners();
             },
           );

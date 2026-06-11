@@ -7,17 +7,26 @@ import 'package:soundswap/features/home/data/models/image_to_video_settings.dart
 import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
 import 'package:soundswap/features/long_video/data/models/long_video_plan.dart';
+import 'package:soundswap/features/generator/data/services/ffmpeg_overlay_service.dart';
+import 'package:soundswap/features/branding/data/models/branding_settings.dart';
+import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 
 import '../../../../core/video/video_output_settings.dart';
 
 typedef LongVideoProgress = Future<void> Function(String message);
 
 class LongVideoService {
-  LongVideoService({FfmpegService? ffmpegService, Random? random})
-      : _ffmpegService = ffmpegService ?? FfmpegService(),
+  LongVideoService({
+    FfmpegService? ffmpegService,
+    FfmpegOverlayService? overlayService,
+    Random? random,
+  })  : _ffmpegService = ffmpegService ?? FfmpegService(),
+        _overlayService = overlayService ?? FfmpegOverlayService(ffmpegService: ffmpegService),
         _random = random ?? Random();
 
   final FfmpegService _ffmpegService;
+  final FfmpegOverlayService _overlayService;
   final Random _random;
 
   Future<LongVideoPlan> createPlan({
@@ -177,6 +186,9 @@ class LongVideoService {
     required ImageToVideoSettings imageSettings,
     VideoOutputSize? outputSize,
     VideoFitMode? fitMode,
+    BrandingSettings? branding,
+    TextOverlaySettings? textOverlay,
+    OverlaySettings? overlaySettings,
     LongVideoProgress? onProgress,
   }) async {
     final outputDirectory = Directory(p.dirname(plan.outputPath));
@@ -188,6 +200,7 @@ class LongVideoService {
       ),
     );
     await tempDirectory.create(recursive: true);
+    final tempOverlayPath = '${plan.outputPath}.temp_overlay.mp4';
 
     try {
       final videoFilter = _buildVideoFilter(
@@ -338,10 +351,38 @@ class LongVideoService {
         _seconds(plan.estimatedDuration),
         plan.outputPath,
       ]);
+
+      final hasOverlaysToApply = branding != null || textOverlay != null || overlaySettings != null;
+      if (hasOverlaysToApply) {
+        await onProgress?.call('Applying template overlays/branding');
+        final overlayPlan = await _overlayService.prepareOverlay(
+          inputPath: plan.outputPath,
+          outputPath: tempOverlayPath,
+          outputSize: outputSize ?? VideoOutputSize.original,
+          fitMode: fitMode ?? VideoFitMode.keepOriginal,
+          branding: branding,
+          textOverlay: textOverlay,
+          overlaySettings: overlaySettings,
+        );
+        if (overlayPlan != null) {
+          await _overlayService.runOverlay(overlayPlan);
+          final finalFile = File(plan.outputPath);
+          if (finalFile.existsSync()) {
+            await finalFile.delete();
+          }
+          await File(tempOverlayPath).rename(plan.outputPath);
+        }
+      }
       await onProgress?.call('Export completed: ${plan.outputName}');
     } finally {
       if (tempDirectory.existsSync()) {
         await tempDirectory.delete(recursive: true);
+      }
+      final tempOverlayFile = File(tempOverlayPath);
+      if (tempOverlayFile.existsSync()) {
+        try {
+          await tempOverlayFile.delete();
+        } catch (_) {}
       }
     }
   }

@@ -24,8 +24,10 @@ import 'package:soundswap/features/home/data/services/home_state_service.dart';
 import 'package:soundswap/features/home/data/services/media_scanner_service.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_preset.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 import 'package:soundswap/features/result_history/data/models/result_history_record.dart';
 import 'package:soundswap/features/result_history/presentation/state/result_history_controller.dart';
+import 'package:soundswap/features/effects/presentation/state/effects_controller.dart';
 import 'package:soundswap/features/templates/data/models/project_template.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_preset.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
@@ -44,6 +46,7 @@ class HomeController extends ChangeNotifier {
     DebugLogService? debugLogService,
     BatchProfilesService? batchProfilesService,
     HomeStateService? homeStateService,
+    EffectsController? effectsController,
   }) : _folderPickerService = folderPickerService ?? FolderPickerService(),
        _mediaScannerService = mediaScannerService ?? MediaScannerService(),
        _ffmpegService = ffmpegService ?? FfmpegService(),
@@ -52,7 +55,8 @@ class HomeController extends ChangeNotifier {
            outputNamingService ?? const OutputNamingService(),
        _debugLogService = debugLogService ?? DebugLogService(),
        _batchProfilesService = batchProfilesService ?? BatchProfilesService(),
-       _homeStateService = homeStateService ?? HomeStateService() {
+       _homeStateService = homeStateService ?? HomeStateService(),
+       _effectsController = effectsController {
     _overlayService =
         overlayService ?? FfmpegOverlayService(ffmpegService: _ffmpegService);
   }
@@ -66,8 +70,16 @@ class HomeController extends ChangeNotifier {
   final DebugLogService _debugLogService;
   final BatchProfilesService _batchProfilesService;
   final HomeStateService _homeStateService;
+  final EffectsController? _effectsController;
   final Random _random = Random();
-  static const int _maxRetries = 3;
+  int maxRetries = 3;
+
+  void setMaxRetries(int value) {
+    if (maxRetries == value) return;
+    maxRetries = value;
+    unawaited(_persistLastState());
+    notifyListeners();
+  }
 
   String? videoFolderPath;
   String? audioFolderPath;
@@ -310,6 +322,9 @@ class HomeController extends ChangeNotifier {
   int get failedCount =>
       jobs.where((job) => job.status == SoundSwapStatus.failed).length;
 
+  int get skippedCount =>
+      jobs.where((job) => job.status == SoundSwapStatus.skipped).length;
+
   bool get canBuildQueue =>
       videoFolderPath != null &&
       audioFolderPath != null &&
@@ -333,7 +348,33 @@ class HomeController extends ChangeNotifier {
       useTextOverlay ||
       useOverlay ||
       outputSize != VideoOutputSize.original ||
-      fitMode != VideoFitMode.keepOriginal;
+      fitMode != VideoFitMode.keepOriginal ||
+      (_effectsController?.settings.hasActiveVideoEffects ?? false);
+
+  String? get reencodeReason {
+    final activeJob = currentIndex < jobs.length ? jobs[currentIndex] : null;
+    if (activeJob != null && activeJob.video.isImage) {
+      return 'image-to-video conversion is required';
+    }
+    if (activeJob != null &&
+        p.extension(activeJob.video.path).toLowerCase() !=
+            p.extension(activeJob.outputPath).toLowerCase()) {
+      return 'format/extension conversion is required';
+    }
+    if (useBranding) return 'branding overlay is enabled';
+    if (useTextOverlay) return 'text overlay is enabled';
+    if (useOverlay) return 'image/shape overlay is enabled';
+    if (outputSize != VideoOutputSize.original) return 'video resizing is enabled';
+    if (fitMode != VideoFitMode.keepOriginal) {
+      return 'video crop/fill fit mode is enabled';
+    }
+    if (_effectsController?.settings.hasActiveVideoEffects ?? false) {
+      return 'video effects are enabled';
+    }
+    return null;
+  }
+
+  bool get isFastMode => reencodeReason == null;
 
   String get errorReport {
     final parts = [
@@ -388,11 +429,7 @@ class HomeController extends ChangeNotifier {
     if (state == null) return;
     _applyBatchProfileState(state);
     selectedBatchProfileId = state.id == 'last-home-state' ? null : state.id;
-    if (canBuildQueue) {
-      await generateQueue();
-    } else {
-      notifyListeners();
-    }
+    notifyListeners();
   }
 
   Future<void> pickVideoFolder() async {
@@ -451,6 +488,7 @@ class HomeController extends ChangeNotifier {
     required bool clearQueue,
   }) async {
     if (isProcessing) return;
+    FfmpegService.clearProbeCache();
 
     isScanning = true;
     statusMessage = buildQueue
@@ -512,6 +550,7 @@ class HomeController extends ChangeNotifier {
 
   Future<void> startProcessing({bool removeOldResults = false}) async {
     try {
+      FfmpegService.clearProbeCache();
       await _debugLogService.clear();
       debugLogs = [];
       latestError = null;
@@ -553,6 +592,10 @@ class HomeController extends ChangeNotifier {
           break;
         }
         currentIndex = i + 1;
+        if (jobs[i].status == SoundSwapStatus.skipped) {
+          await _logInfo('Skipping video: ${jobs[i].video.name}');
+          continue;
+        }
         await _processJobWithRetries(i);
       }
 
@@ -584,9 +627,6 @@ class HomeController extends ChangeNotifier {
   Future<void> startBatchProfile(BatchProfile profile) async {
     if (isProcessing) return;
     await loadBatchProfile(profile);
-    await generateQueue();
-    _setProfileStatus(profile.id, BatchProfileRunStatus.queued);
-    await startProcessing(removeOldResults: false);
   }
 
   void stopProcessing() {
@@ -702,15 +742,110 @@ class HomeController extends ChangeNotifier {
     await _logInfo('ffprobe available');
   }
 
+  Future<void> _validateJobBeforeRun(SoundSwapJob job) async {
+    // 1. Output directory check/creation
+    final outputDir = Directory(p.dirname(job.outputPath));
+    try {
+      await outputDir.create(recursive: true);
+    } catch (e) {
+      throw FfmpegException('Failed: Output folder is not writable (${outputDir.path})');
+    }
+
+    // 2. Validate branding settings if enabled
+    if (useBranding && activeBrandingSettings != null) {
+      final branding = activeBrandingSettings!;
+      if (branding.hasLogo) {
+        if (branding.logoPath == null || branding.logoPath!.trim().isEmpty) {
+          throw const FfmpegException('Failed: missing overlay logo path');
+        }
+        if (!File(branding.logoPath!).existsSync()) {
+          throw FfmpegException('Failed: missing overlay logo image file (${branding.logoPath})');
+        }
+      }
+      if (branding.hasContactText) {
+        if (branding.fontFamily.trim().isEmpty) {
+          throw const FfmpegException('Failed: font family is empty in branding settings');
+        }
+      }
+    }
+
+    // 3. Validate text overlay settings if enabled
+    if (useTextOverlay && activeTextOverlaySettings != null) {
+      final textSettings = activeTextOverlaySettings!;
+      if (textSettings.fontFamily.trim().isEmpty) {
+        throw const FfmpegException('Failed: font family is empty in text overlay settings');
+      }
+    }
+
+    // 4. Validate custom overlay items if enabled
+    if (useOverlay && activeOverlaySettings != null) {
+      final overlaySettings = activeOverlaySettings!;
+      
+      // Check default font path if specified
+      if (overlaySettings.defaultFontPath != null && overlaySettings.defaultFontPath!.trim().isNotEmpty) {
+        if (!File(overlaySettings.defaultFontPath!).existsSync()) {
+          throw FfmpegException('Failed: missing default font file (${overlaySettings.defaultFontPath})');
+        }
+      }
+
+      for (final item in overlaySettings.items) {
+        if (!item.hasContent) continue;
+        
+        // Check overlay positions are valid
+        if (item.position.x.isNaN || item.position.x.isInfinite ||
+            item.position.y.isNaN || item.position.y.isInfinite) {
+          throw FfmpegException('Failed: invalid position coordinates for overlay item ${item.name}');
+        }
+        if (item.width.isNaN || item.width.isInfinite || item.width < 0) {
+          throw FfmpegException('Failed: invalid width for overlay item ${item.name}');
+        }
+
+        if (item.type == OverlayItemType.image) {
+          if (item.imagePath == null || item.imagePath!.trim().isEmpty) {
+            throw FfmpegException('Failed: missing image path for item ${item.name}');
+          }
+          if (!File(item.imagePath!).existsSync()) {
+            throw FfmpegException('Failed: missing overlay image file (${item.imagePath})');
+          }
+        } else if (item.type == OverlayItemType.text) {
+          if (item.fontPath != null && item.fontPath!.trim().isNotEmpty) {
+            if (!File(item.fontPath!).existsSync()) {
+              throw FfmpegException('Failed: missing font file for item ${item.name} (${item.fontPath})');
+            }
+          }
+        }
+      }
+    }
+  }
+
   Future<void> _processJobWithRetries(int jobIndex) async {
     final originalJob = jobs[jobIndex];
+
+    // Pre-run validation checks
+    try {
+      await _validateJobBeforeRun(originalJob);
+    } catch (validationError) {
+      final errorText = validationError.toString();
+      jobs[jobIndex] = originalJob.copyWith(
+        status: SoundSwapStatus.failed,
+        errorMessage: errorText,
+      );
+      await _recordManualHistory(
+        job: jobs[jobIndex],
+        status: ResultHistoryStatus.failed,
+        errorMessage: errorText,
+      );
+      await _logError('Validation failed for ${originalJob.video.name}: $errorText');
+      notifyListeners();
+      return; // Skip processing/retrying and continue batch
+    }
     Object? lastError;
     StackTrace? lastStackTrace;
     String? lastCommand;
     String? lastOutput;
     MediaFile? lastSelectedAudio;
 
-    for (var attempt = 0; attempt <= _maxRetries; attempt++) {
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
       final selectedAudio = _randomAudio();
       lastSelectedAudio = selectedAudio;
       retryCount = attempt;
@@ -776,6 +911,9 @@ class HomeController extends ChangeNotifier {
           durationMode: durationMode,
         );
         currentFfmpegCommand = plan.command;
+        final mode = isFastMode ? 'Fast Copy Mode' : 'Re-encode Mode';
+        await _logInfo('Selected export mode: $mode');
+        await _logInfo('Reason why re-encode is required: ${reencodeReason ?? 'None (Fast Copy Mode active)'}');
         await _logInfo(
           'Random start position: ${plan.randomStart.toStringAsFixed(2)}',
         );
@@ -826,9 +964,9 @@ class HomeController extends ChangeNotifier {
         lastOutput = error is FfmpegFailure ? error.stderr : null;
         await _recordException(error, stackTrace);
 
-        if (attempt < _maxRetries) {
+        if (attempt < maxRetries) {
           await _logInfo(
-            'Retrying ${originalJob.video.name}. Retry ${attempt + 1} of $_maxRetries.',
+            'Retrying ${originalJob.video.name}. Retry ${attempt + 1} of $maxRetries.',
           );
         }
       }
@@ -838,7 +976,7 @@ class HomeController extends ChangeNotifier {
     jobs[jobIndex] = originalJob.copyWith(
       audio: lastSelectedAudio ?? originalJob.audio,
       status: SoundSwapStatus.failed,
-      retryCount: _maxRetries,
+      retryCount: maxRetries,
       ffmpegCommand: lastCommand,
       ffmpegOutput: lastOutput,
       stackTrace: lastStackTrace?.toString(),
@@ -891,6 +1029,39 @@ class HomeController extends ChangeNotifier {
     _replaceSelectedQueue(videos: videos, jobs: jobs);
     selectedQueueVideoPaths = {};
     statusMessage = _queueMessage();
+    notifyListeners();
+  }
+
+  void toggleJobSkip(int index) {
+    if (index < 0 || index >= jobs.length) return;
+    final currentStatus = jobs[index].status;
+    if (currentStatus == SoundSwapStatus.queued) {
+      jobs[index] = jobs[index].copyWith(status: SoundSwapStatus.skipped);
+    } else if (currentStatus == SoundSwapStatus.skipped) {
+      jobs[index] = jobs[index].copyWith(status: SoundSwapStatus.queued);
+    }
+    notifyListeners();
+  }
+
+  void skipSelectedJobs() {
+    for (var i = 0; i < jobs.length; i++) {
+      if (selectedQueueVideoPaths.contains(jobs[i].video.path) &&
+          jobs[i].status == SoundSwapStatus.queued) {
+        jobs[i] = jobs[i].copyWith(status: SoundSwapStatus.skipped);
+      }
+    }
+    selectedQueueVideoPaths = {};
+    notifyListeners();
+  }
+
+  void unskipSelectedJobs() {
+    for (var i = 0; i < jobs.length; i++) {
+      if (selectedQueueVideoPaths.contains(jobs[i].video.path) &&
+          jobs[i].status == SoundSwapStatus.skipped) {
+        jobs[i] = jobs[i].copyWith(status: SoundSwapStatus.queued);
+      }
+    }
+    selectedQueueVideoPaths = {};
     notifyListeners();
   }
 
@@ -1028,26 +1199,71 @@ class HomeController extends ChangeNotifier {
       branding: branding,
       textOverlay: textOverlay,
       overlaySettings: overlaySettings,
+      effects: _effectsController?.settings,
     );
     if (overlayPlan == null) return null;
 
     await _warnIfUpscaling(job.video.path);
     currentFfmpegCommand = overlayPlan.command;
-    await _logInfo('Running FFmpeg overlay command:\n${overlayPlan.command}');
+
+    // Gather overlay image paths for logging
+    final overlayImagePaths = <String>[];
+    if (branding?.hasLogo ?? false) {
+      overlayImagePaths.add(branding!.logoPath!);
+    }
+    if (overlaySettings != null) {
+      for (final item in overlaySettings.items) {
+        if (item.type == OverlayItemType.image && item.imagePath != null) {
+          overlayImagePaths.add(item.imagePath!);
+        }
+      }
+    }
+
+    final mode = isFastMode ? 'Fast Copy Mode' : 'Re-encode Mode';
+
+    // Show UI reason
+    statusMessage = 'Re-encode Mode because overlay/template is enabled';
+    await _logInfo('=== OVERLAY EXPORT START ===');
+    await _logInfo('Export Mode: $mode');
+    await _logInfo('Input Video: ${job.outputPath}');
+    await _logInfo('Input Audio: ${job.audio.path}');
+    await _logInfo('Overlay Images: ${overlayImagePaths.isEmpty ? "None" : overlayImagePaths.join(", ")}');
+    await _logInfo('Output Path: $tempPath');
+    await _logInfo('FFmpeg Command: ${overlayPlan.command}');
+    await _logInfo('============================');
     notifyListeners();
 
-    final output = await _overlayService.runOverlay(overlayPlan);
-    final tempFile = File(tempPath);
-    if (!tempFile.existsSync()) {
-      throw FfmpegException('Overlay output was not created: $tempPath');
+    // Show processing step
+    statusMessage = 'Processing overlay $currentIndex/${jobs.length}';
+    notifyListeners();
+
+    try {
+      final output = await _overlayService.runOverlay(overlayPlan);
+      final tempFile = File(tempPath);
+      if (!tempFile.existsSync()) {
+        throw FfmpegException('Overlay output was not created: $tempPath');
+      }
+      final targetFile = File(job.outputPath);
+      if (targetFile.existsSync()) {
+        await targetFile.delete();
+      }
+      await tempFile.rename(job.outputPath);
+      
+      await _logInfo('=== OVERLAY EXPORT SUCCESS ===');
+      await _logInfo('Exit Code: 0');
+      await _logInfo('Output Path: ${job.outputPath}');
+      await _logInfo('=============================');
+      return output;
+    } catch (e) {
+      final exitCode = e is FfmpegFailure ? e.exitCode : -1;
+      final stderr = e is FfmpegFailure ? e.stderr : e.toString();
+      await _logError('=== OVERLAY EXPORT FAILURE ===');
+      await _logError('Exit Code: $exitCode');
+      await _logError('Error: $e');
+      await _logError('Stderr:\n$stderr');
+      await _logError('=============================');
+      rethrow;
     }
-    final targetFile = File(job.outputPath);
-    if (targetFile.existsSync()) {
-      await targetFile.delete();
-    }
-    await tempFile.rename(job.outputPath);
-    await _logInfo('Overlay output file:\n${job.outputPath}');
-    return output;
   }
 
   Future<void> _warnIfUpscaling(String sourcePath) async {
@@ -1090,6 +1306,7 @@ class HomeController extends ChangeNotifier {
         outputPrefix: outputNamePrefix,
         totalVideos: jobs.length,
         errorMessage: errorMessage,
+        retryCount: job.retryCount,
       ),
     );
   }
@@ -1317,6 +1534,7 @@ class HomeController extends ChangeNotifier {
       audioSettings: audioSettings,
       durationMode: durationMode,
       imageToVideoSettings: imageToVideoSettings,
+      maxRetries: maxRetries,
     );
   }
 
@@ -1335,6 +1553,7 @@ class HomeController extends ChangeNotifier {
     audioSettings = profile.audioSettings;
     durationMode = profile.durationMode;
     imageToVideoSettings = profile.imageToVideoSettings;
+    maxRetries = profile.maxRetries;
     upscaleWarning = outputSize == VideoOutputSize.original
         ? null
         : 'Upscaling may not improve quality.';

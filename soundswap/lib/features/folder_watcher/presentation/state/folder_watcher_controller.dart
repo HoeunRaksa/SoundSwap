@@ -59,6 +59,7 @@ class FolderWatcherController extends ChangeNotifier {
   final MediaScannerService _mediaScannerService;
   final DebugLogService _debugLogService;
   final OutputNamingService _outputNamingService;
+
   final Random _random = Random();
   final _subscriptions = <String, StreamSubscription<FileSystemEvent>>{};
   final _processing = <String>{};
@@ -286,6 +287,9 @@ class FolderWatcherController extends ChangeNotifier {
       );
 
       errorMessage = null;
+      if (!profile.isActive) {
+        await _updateProfile(profileId, (p) => p.copyWith(isActive: true));
+      }
       _subscriptions[profileId] = Directory(profile.videoFolderPath!)
           .watch()
           .listen(
@@ -310,6 +314,10 @@ class FolderWatcherController extends ChangeNotifier {
 
   Future<void> stopWatching(String profileId) async {
     await _subscriptions.remove(profileId)?.cancel();
+    final profile = _profileById(profileId);
+    if (profile != null && profile.isActive) {
+      await _updateProfile(profileId, (p) => p.copyWith(isActive: false));
+    }
     notifyListeners();
   }
 

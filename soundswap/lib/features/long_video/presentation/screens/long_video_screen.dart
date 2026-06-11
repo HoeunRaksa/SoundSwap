@@ -354,6 +354,153 @@ class _LongVideoScreenState extends State<LongVideoScreen> {
           ),
           SizedBox(height: gap),
 
+          // Overlays & Templates Settings
+          Card(
+            clipBehavior: Clip.antiAlias,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
+              side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.7)),
+            ),
+            child: ExpansionTile(
+              title: Text(
+                'Overlays & Templates',
+                style: TextStyle(
+                  fontSize: AppResponsive.bodySize(context),
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              leading: Icon(
+                Icons.layers_outlined,
+                color: (controller.useOverlays || controller.useTemplate)
+                    ? Colors.green.shade700
+                    : colorScheme.primary,
+              ),
+              initiallyExpanded: controller.useOverlays || controller.useTemplate,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(gap, 0, gap, gap),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Mode details banner
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: (controller.useOverlays || controller.useTemplate)
+                              ? Colors.orange.withValues(alpha: 0.08)
+                              : Colors.green.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: (controller.useOverlays || controller.useTemplate)
+                                ? Colors.orange.withValues(alpha: 0.4)
+                                : Colors.green.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              (controller.useOverlays || controller.useTemplate)
+                                  ? Icons.warning_amber_rounded
+                                  : Icons.flash_on,
+                              size: 16,
+                              color: (controller.useOverlays || controller.useTemplate)
+                                  ? Colors.orange.shade700
+                                  : Colors.green.shade700,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                (controller.useOverlays || controller.useTemplate)
+                                    ? 'Re-encode Mode because overlay/template is enabled.'
+                                    : 'Fast Copy Mode (Fastest possible export mode)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: (controller.useOverlays || controller.useTemplate)
+                                      ? Colors.orange.shade800
+                                      : Colors.green.shade800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: gap),
+                      // Use Overlays row
+                      CheckboxListTile(
+                        title: const Text('Use Overlays'),
+                        value: controller.useOverlays,
+                        onChanged: (val) {
+                          if (val != null) {
+                            controller.setUseOverlays(val);
+                            if (val) {
+                              controller.setUseTemplate(false);
+                            }
+                          }
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      if (controller.useOverlays) ...[
+                        DropdownButtonFormField<String>(
+                          initialValue: controller.selectedOverlayPreset,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Overlay preset'),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'current_overlays',
+                              child: Text('Use current overlays'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) controller.setSelectedOverlayPreset(value);
+                          },
+                        ),
+                        SizedBox(height: gap),
+                      ],
+                      // Use Template row
+                      CheckboxListTile(
+                        title: const Text('Use Template'),
+                        value: controller.useTemplate,
+                        onChanged: (val) {
+                          if (val != null) {
+                            controller.setUseTemplate(val);
+                            if (val) {
+                              controller.setUseOverlays(false);
+                            }
+                          }
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      if (controller.useTemplate) ...[
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(controller.selectedTemplateId),
+                          initialValue: controller.selectedTemplateId,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Template'),
+                          hint: Text(
+                            controller.templates.isEmpty ? 'No templates saved' : 'Select template',
+                          ),
+                          items: [
+                            for (final t in controller.templates)
+                              DropdownMenuItem(value: t.id, child: Text(t.name)),
+                          ],
+                          onChanged: (value) {
+                            controller.setSelectedTemplateId(value);
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: gap),
+
           // 4. Advanced Settings
           Card(
             clipBehavior: Clip.antiAlias,

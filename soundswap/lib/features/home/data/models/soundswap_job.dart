@@ -1,7 +1,7 @@
 import 'package:path/path.dart' as p;
 import 'package:soundswap/features/home/data/models/media_file.dart';
 
-enum SoundSwapStatus { queued, processing, success, failed }
+enum SoundSwapStatus { queued, processing, success, failed, skipped }
 
 class SoundSwapJob {
   const SoundSwapJob({

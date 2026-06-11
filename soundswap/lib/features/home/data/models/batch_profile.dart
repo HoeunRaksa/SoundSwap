@@ -24,6 +24,7 @@ class BatchProfile {
     this.audioSettings = const AudioSettings(),
     this.durationMode = DurationMode.trimAudioToVideo,
     this.imageToVideoSettings = const ImageToVideoSettings(),
+    this.maxRetries = 3,
   });
 
   final String id;
@@ -44,6 +45,7 @@ class BatchProfile {
   final AudioSettings audioSettings;
   final DurationMode durationMode;
   final ImageToVideoSettings imageToVideoSettings;
+  final int maxRetries;
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -64,6 +66,7 @@ class BatchProfile {
     'audioSettings': audioSettings.toJson(),
     'durationMode': durationMode.name,
     'imageToVideoSettings': imageToVideoSettings.toJson(),
+    'maxRetries': maxRetries,
   };
 
   factory BatchProfile.fromJson(Map<String, Object?> json) {
@@ -105,6 +108,7 @@ class BatchProfile {
       imageToVideoSettings: ImageToVideoSettings.fromJson(
         (json['imageToVideoSettings'] as Map?)?.cast<String, Object?>() ?? {},
       ),
+      maxRetries: json['maxRetries'] as int? ?? 3,
     );
   }
 
@@ -125,6 +129,7 @@ class BatchProfile {
     AudioSettings? audioSettings,
     DurationMode? durationMode,
     ImageToVideoSettings? imageToVideoSettings,
+    int? maxRetries,
     bool clearSelectedOverlayPreset = false,
     bool clearSelectedTemplate = false,
   }) {
@@ -151,6 +156,7 @@ class BatchProfile {
       audioSettings: audioSettings ?? this.audioSettings,
       durationMode: durationMode ?? this.durationMode,
       imageToVideoSettings: imageToVideoSettings ?? this.imageToVideoSettings,
+      maxRetries: maxRetries ?? this.maxRetries,
     );
   }
 }

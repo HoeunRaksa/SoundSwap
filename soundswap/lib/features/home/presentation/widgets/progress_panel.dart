@@ -100,6 +100,41 @@ class ProgressPanel extends StatelessWidget {
                   ),
                 ),
               ),
+            if (controller.isProcessing) ...[
+              SizedBox(height: gap * 0.75),
+              Row(
+                children: [
+                  Icon(
+                    controller.isFastMode ? Icons.bolt : Icons.video_settings_outlined,
+                    size: 14,
+                    color: controller.isFastMode ? Colors.amber.shade700 : Colors.blue.shade700,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    controller.isFastMode ? 'Fast Copy Mode' : 'Re-encode Mode',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: controller.isFastMode ? Colors.amber.shade700 : Colors.blue.shade700,
+                    ),
+                  ),
+                  if (!controller.isFastMode && controller.reencodeReason != null) ...[
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '(${controller.reencodeReason})',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ],
         ),
       ),

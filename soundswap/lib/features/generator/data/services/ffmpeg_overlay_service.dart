@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -7,6 +8,7 @@ import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
+import 'package:soundswap/features/effects/data/models/effects_settings.dart';
 
 class FfmpegOverlayService {
   FfmpegOverlayService({FfmpegService? ffmpegService})
@@ -22,12 +24,22 @@ class FfmpegOverlayService {
     BrandingSettings? branding,
     TextOverlaySettings? textOverlay,
     OverlaySettings? overlaySettings,
+    EffectsSettings? effects,
   }) async {
     final hasBranding = branding?.hasContent ?? false;
     final hasText = textOverlay?.hasContent ?? false;
     final hasOverlayItems = overlaySettings?.hasContent ?? false;
     final resizes = outputSize != VideoOutputSize.original;
-    if (!hasBranding && !hasText && !hasOverlayItems && !resizes) {
+    final hasEffects = effects != null &&
+        (effects.slightZoom ||
+            effects.brightnessAdjustment ||
+            effects.speedVariation);
+
+    if (!hasBranding &&
+        !hasText &&
+        !hasOverlayItems &&
+        !resizes &&
+        !hasEffects) {
       return null;
     }
 
@@ -68,6 +80,7 @@ class FfmpegOverlayService {
       overlaySettings: overlaySettings,
       logoInputIndex: logoInputIndex,
       overlayImageInputIndexes: overlayImageInputIndexes,
+      effects: effects,
     );
 
     arguments.addAll([
@@ -120,10 +133,29 @@ class FfmpegOverlayService {
     required OverlaySettings? overlaySettings,
     required int logoInputIndex,
     required Map<String, int> overlayImageInputIndexes,
+    EffectsSettings? effects,
   }) {
     final filters = <String>[];
     var current = _baseVideoFilter(outputSize, fitMode, filters);
     var index = 0;
+
+    if (effects != null) {
+      if (effects.slightZoom) {
+        final next = 'v_zoom';
+        filters.add('[$current]scale=iw*1.03:ih*1.03,crop=iw:ih[$next]');
+        current = next;
+      }
+      if (effects.brightnessAdjustment) {
+        final next = 'v_bright';
+        filters.add('[$current]eq=brightness=0.04:saturation=1.05[$next]');
+        current = next;
+      }
+      if (effects.speedVariation) {
+        final next = 'v_speed';
+        filters.add('[$current]setpts=PTS/1.02[$next]');
+        current = next;
+      }
+    }
 
     if (branding?.hasLogo ?? false) {
       final logoWidth = _logoWidth(outW);
@@ -131,7 +163,7 @@ class FfmpegOverlayService {
       filters.add('[$logoInputIndex:v]scale=$logoWidth:-1[$logoLabel]');
       final next = 'v${++index}';
       filters.add(
-        '[$current][$logoLabel]overlay=x=main_w*${branding!.logoPosition.x.toStringAsFixed(5)}:y=main_h*${branding.logoPosition.y.toStringAsFixed(5)}[$next]',
+        '[$current][$logoLabel]overlay=x=main_w*${branding!.logoPosition.x.toStringAsFixed(5)}:y=main_h*${branding.logoPosition.y.toStringAsFixed(5)}:shortest=1[$next]',
       );
       current = next;
     }
@@ -186,7 +218,7 @@ class FfmpegOverlayService {
           final xVal = _getPosXExpression(item, 'main_w', 'overlay_w');
           final yVal = _getPosYExpression(item, 'main_h', 'overlay_h');
           
-          var overlayOpts = 'x=$xVal:y=$yVal';
+          var overlayOpts = 'x=$xVal:y=$yVal:shortest=1';
           if (item.startTime > 0 || item.endTime != null) {
             overlayOpts = '$overlayOpts:enable=\'between(t,${item.startTime.toStringAsFixed(3)},${(item.endTime ?? 99999).toStringAsFixed(3)})\'';
           }
@@ -374,8 +406,8 @@ class FfmpegOverlayService {
   }
 
   String _escapeDrawText(String value) {
-    return value
-        .replaceAll('\\', r'\\')
+    final normalized = value.replaceAll('\\', '/');
+    return normalized
         .replaceAll("'", r"\'")
         .replaceAll(':', r'\:')
         .replaceAll(',', r'\,')
@@ -384,8 +416,9 @@ class FfmpegOverlayService {
 
   Future<ProcessRunOutput> _runProcess(
     String executable,
-    List<String> arguments,
-  ) async {
+    List<String> arguments, {
+    Duration inactivityTimeout = const Duration(seconds: 60),
+  }) async {
     late final Process process;
     try {
       process = await Process.start(executable, arguments);
@@ -397,16 +430,51 @@ class FfmpegOverlayService {
 
     final stdoutBuffer = StringBuffer();
     final stderrBuffer = StringBuffer();
-    final stdoutDone = process.stdout
-        .transform(utf8.decoder)
-        .forEach(stdoutBuffer.write);
-    final stderrDone = process.stderr
-        .transform(utf8.decoder)
-        .forEach(stderrBuffer.write);
-    final exitCode = await process.exitCode;
 
-    await stdoutDone;
-    await stderrDone;
+    Timer? timer;
+    bool timedOut = false;
+
+    void resetTimer() {
+      timer?.cancel();
+      timer = Timer(inactivityTimeout, () {
+        timedOut = true;
+        process.kill();
+      });
+    }
+
+    resetTimer();
+
+    final stdoutCompleter = Completer<void>();
+    process.stdout.transform(utf8.decoder).listen(
+      (data) {
+        stdoutBuffer.write(data);
+        resetTimer();
+      },
+      onDone: () => stdoutCompleter.complete(),
+      onError: (e) => stdoutCompleter.completeError(e),
+    );
+
+    final stderrCompleter = Completer<void>();
+    process.stderr.transform(utf8.decoder).listen(
+      (data) {
+        stderrBuffer.write(data);
+        resetTimer();
+      },
+      onDone: () => stderrCompleter.complete(),
+      onError: (e) => stderrCompleter.completeError(e),
+    );
+
+    final exitCode = await process.exitCode;
+    timer?.cancel();
+
+    try {
+      await stdoutCompleter.future;
+      await stderrCompleter.future;
+    } catch (_) {}
+
+    if (timedOut) {
+      throw const FfmpegException('Failed: FFmpeg timeout');
+    }
 
     return ProcessRunOutput(
       exitCode: exitCode,
