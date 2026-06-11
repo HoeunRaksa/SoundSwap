@@ -31,8 +31,8 @@ class TemplatesController extends ChangeNotifier {
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: name.trim().isEmpty ? 'Untitled template' : name.trim(),
       createdAt: DateTime.now(),
-      videoFolder: home.videoFolderPath,
-      audioFolder: home.audioFolderPath,
+      videoFolders: home.videoFolders,
+      audioFolders: home.audioFolders,
       outputFolder: home.outputFolderPath,
       outputPrefix: home.outputNamePrefix,
       branding: home.activeBrandingSettings ?? branding.settings,
@@ -58,8 +58,8 @@ class TemplatesController extends ChangeNotifier {
     required OverlayToolsController overlay,
   }) async {
     await home.applyTemplateFolders(
-      videoFolder: template.videoFolder,
-      audioFolder: template.audioFolder,
+      videoFolders: template.videoFolders,
+      audioFolders: template.audioFolders,
       outputFolder: template.outputFolder,
       outputPrefix: template.outputPrefix,
     );
@@ -93,8 +93,8 @@ class TemplatesController extends ChangeNotifier {
             id: item.id,
             name: updatedName,
             createdAt: item.createdAt,
-            videoFolder: item.videoFolder,
-            audioFolder: item.audioFolder,
+            videoFolders: item.videoFolders,
+            audioFolders: item.audioFolders,
             outputFolder: item.outputFolder,
             outputPrefix: item.outputPrefix,
             branding: item.branding,

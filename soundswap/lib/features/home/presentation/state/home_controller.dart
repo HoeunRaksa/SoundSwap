@@ -81,8 +81,8 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? videoFolderPath;
-  String? audioFolderPath;
+  List<String> videoFolders = [];
+  List<String> audioFolders = [];
   String? outputFolderPath;
   String? statusMessage;
   String? currentVideoName;
@@ -124,13 +124,13 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<void> applyTemplateFolders({
-    required String? videoFolder,
-    required String? audioFolder,
+    required List<String> videoFolders,
+    required List<String> audioFolders,
     required String? outputFolder,
     required String outputPrefix,
   }) async {
-    videoFolderPath = videoFolder;
-    audioFolderPath = audioFolder;
+    this.videoFolders = List.from(videoFolders);
+    this.audioFolders = List.from(audioFolders);
     outputFolderPath = outputFolder;
     outputNamePrefix = outputPrefix;
     await scanSelectedFolders(clearQueue: true);
@@ -218,8 +218,8 @@ class HomeController extends ChangeNotifier {
     useTemplate = template != null || useTemplate;
     if (template != null) {
       await applyTemplateFolders(
-        videoFolder: template.videoFolder,
-        audioFolder: template.audioFolder,
+        videoFolders: template.videoFolders,
+        audioFolders: template.audioFolders,
         outputFolder: template.outputFolder,
         outputPrefix: template.outputPrefix,
       );
@@ -326,8 +326,8 @@ class HomeController extends ChangeNotifier {
       jobs.where((job) => job.status == SoundSwapStatus.skipped).length;
 
   bool get canBuildQueue =>
-      videoFolderPath != null &&
-      audioFolderPath != null &&
+      videoFolders.isNotEmpty &&
+      audioFolders.isNotEmpty &&
       outputFolderPath != null;
 
   bool get canGenerateQueue => canBuildQueue && !isProcessing && !isScanning;
@@ -437,7 +437,18 @@ class HomeController extends ChangeNotifier {
       dialogTitle: 'Select video folder',
     );
     if (path != null) {
-      videoFolderPath = path;
+      if (!videoFolders.contains(path)) {
+        videoFolders.add(path);
+      }
+      selectedBatchProfileId = null;
+      selectedBatchQueueId = null;
+      await scanSelectedFolders(clearQueue: true);
+      unawaited(_persistLastState());
+    }
+  }
+
+  Future<void> removeVideoFolder(String path) async {
+    if (videoFolders.remove(path)) {
       selectedBatchProfileId = null;
       selectedBatchQueueId = null;
       await scanSelectedFolders(clearQueue: true);
@@ -450,7 +461,18 @@ class HomeController extends ChangeNotifier {
       dialogTitle: 'Select audio folder',
     );
     if (path != null) {
-      audioFolderPath = path;
+      if (!audioFolders.contains(path)) {
+        audioFolders.add(path);
+      }
+      selectedBatchProfileId = null;
+      selectedBatchQueueId = null;
+      await scanSelectedFolders(clearQueue: true);
+      unawaited(_persistLastState());
+    }
+  }
+
+  Future<void> removeAudioFolder(String path) async {
+    if (audioFolders.remove(path)) {
       selectedBatchProfileId = null;
       selectedBatchQueueId = null;
       await scanSelectedFolders(clearQueue: true);
@@ -497,29 +519,59 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (videoFolderPath != null) {
-        await _logInfo('Scanning video folder...');
-        // Scan both videos and images
+      videos = [];
+      detectedImageCount = 0;
+      if (videoFolders.isNotEmpty) {
+        await _logInfo('Scanning video folders...');
         final allVideoExts = [
           ...AppConstants.supportedVideoExtensions,
           ...AppConstants.supportedImageExtensions,
         ];
-        videos = await _mediaScannerService.scanFolder(
-          folderPath: videoFolderPath!,
-          extensions: allVideoExts,
-        );
+        
+        final Map<String, MediaFile> uniqueVideos = {};
+        for (final folder in videoFolders) {
+          if (!Directory(folder).existsSync()) {
+            await _logError('Video folder not found: $folder');
+            continue;
+          }
+          final items = await _mediaScannerService.scanFolder(
+            folderPath: folder,
+            extensions: allVideoExts,
+          );
+          for (final item in items) {
+            uniqueVideos[p.normalize(item.path)] = item;
+          }
+        }
+        
+        videos = uniqueVideos.values.toList();
+        videos.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         detectedImageCount = videos.where((f) => f.isImage).length;
         await _logInfo(
-          'Found ${videos.length} media files ($detectedImageCount images)',
+          'Found ${videos.length} media files ($detectedImageCount images) across ${videoFolders.length} folders',
         );
       }
-      if (audioFolderPath != null) {
-        await _logInfo('Scanning audio folder...');
-        audios = await _mediaScannerService.scanFolder(
-          folderPath: audioFolderPath!,
-          extensions: AppConstants.supportedAudioExtensions,
-        );
-        await _logInfo('Found ${audios.length} audios');
+      
+      audios = [];
+      if (audioFolders.isNotEmpty) {
+        await _logInfo('Scanning audio folders...');
+        final Map<String, MediaFile> uniqueAudios = {};
+        for (final folder in audioFolders) {
+          if (!Directory(folder).existsSync()) {
+            await _logError('Audio folder not found: $folder');
+            continue;
+          }
+          final items = await _mediaScannerService.scanFolder(
+            folderPath: folder,
+            extensions: AppConstants.supportedAudioExtensions,
+          );
+          for (final item in items) {
+            uniqueAudios[p.normalize(item.path)] = item;
+          }
+        }
+        
+        audios = uniqueAudios.values.toList();
+        audios.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        await _logInfo('Found ${audios.length} audios across ${audioFolders.length} folders');
       }
 
 
@@ -689,11 +741,11 @@ class HomeController extends ChangeNotifier {
 
   Future<void> _validateBeforeStart() async {
     await _logInfo('Validating required folders and tools...');
-    if (videoFolderPath == null || videoFolderPath!.isEmpty) {
-      throw const BatchValidationException('Video folder is not selected.');
+    if (videoFolders.isEmpty) {
+      throw const BatchValidationException('No video folders selected.');
     }
-    if (audioFolderPath == null || audioFolderPath!.isEmpty) {
-      throw const BatchValidationException('Audio folder is not selected.');
+    if (audioFolders.isEmpty) {
+      throw const BatchValidationException('No audio folders selected.');
     }
     if (outputFolderPath == null || outputFolderPath!.isEmpty) {
       throw const BatchValidationException('Output folder is not selected.');
@@ -1382,8 +1434,8 @@ class HomeController extends ChangeNotifier {
 
   Future<void> createBatchProfile({
     required String name,
-    required String? videoFolderPath,
-    required String? audioFolderPath,
+    required List<String> videoFolders,
+    required List<String> audioFolders,
     required String? outputFolderPath,
     required String outputPrefix,
   }) async {
@@ -1399,8 +1451,8 @@ class HomeController extends ChangeNotifier {
       name: current.name,
       createdAt: current.createdAt,
       updatedAt: current.updatedAt,
-      videoFolderPath: _emptyToNull(videoFolderPath),
-      audioFolderPath: _emptyToNull(audioFolderPath),
+      videoFolders: List.from(videoFolders),
+      audioFolders: List.from(audioFolders),
       outputFolderPath: _emptyToNull(outputFolderPath),
       outputPrefix: outputPrefix,
       useOverlay: current.useOverlay,
@@ -1423,8 +1475,8 @@ class HomeController extends ChangeNotifier {
   Future<void> updateBatchProfileDetails({
     required BatchProfile profile,
     required String name,
-    required String? videoFolderPath,
-    required String? audioFolderPath,
+    required List<String> videoFolders,
+    required List<String> audioFolders,
     required String? outputFolderPath,
     required String outputPrefix,
   }) async {
@@ -1433,8 +1485,8 @@ class HomeController extends ChangeNotifier {
       name: _cleanProfileName(name, fallback: profile.name),
       createdAt: profile.createdAt,
       updatedAt: DateTime.now(),
-      videoFolderPath: _emptyToNull(videoFolderPath),
-      audioFolderPath: _emptyToNull(audioFolderPath),
+      videoFolders: List.from(videoFolders),
+      audioFolders: List.from(audioFolders),
       outputFolderPath: _emptyToNull(outputFolderPath),
       outputPrefix: outputPrefix,
       useOverlay: profile.useOverlay,
@@ -1520,8 +1572,8 @@ class HomeController extends ChangeNotifier {
       name: name,
       createdAt: createdAt,
       updatedAt: updatedAt,
-      videoFolderPath: videoFolderPath,
-      audioFolderPath: audioFolderPath,
+      videoFolders: videoFolders,
+      audioFolders: audioFolders,
       outputFolderPath: outputFolderPath,
       outputPrefix: outputNamePrefix,
       useOverlay: useOverlay,
@@ -1539,8 +1591,8 @@ class HomeController extends ChangeNotifier {
   }
 
   void _applyBatchProfileState(BatchProfile profile) {
-    videoFolderPath = profile.videoFolderPath;
-    audioFolderPath = profile.audioFolderPath;
+    videoFolders = List.from(profile.videoFolders);
+    audioFolders = List.from(profile.audioFolders);
     outputFolderPath = profile.outputFolderPath ?? outputFolderPath;
     outputNamePrefix = profile.outputPrefix;
     useOverlay = profile.useOverlay;
@@ -1580,8 +1632,8 @@ class HomeController extends ChangeNotifier {
 
   BatchProfile? _matchingBatchProfile() {
     for (final profile in batchProfiles) {
-      if (_samePath(profile.videoFolderPath, videoFolderPath) &&
-          _samePath(profile.audioFolderPath, audioFolderPath) &&
+      if (_samePathList(profile.videoFolders, videoFolders) &&
+          _samePathList(profile.audioFolders, audioFolders) &&
           _samePath(profile.outputFolderPath, outputFolderPath) &&
           profile.outputPrefix == outputNamePrefix &&
           profile.selectedTemplateId == selectedTemplateId &&
@@ -1598,10 +1650,18 @@ class HomeController extends ChangeNotifier {
     return p.equals(p.normalize(left), p.normalize(right));
   }
 
+  bool _samePathList(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    for (int i = 0; i < left.length; i++) {
+      if (!p.equals(p.normalize(left[i]), p.normalize(right[i]))) return false;
+    }
+    return true;
+  }
+
   String _defaultBatchProfileName() {
     final prefix = outputNamePrefix.trim();
     if (prefix.isNotEmpty) return prefix;
-    final folder = videoFolderPath;
+    final folder = videoFolders.isNotEmpty ? videoFolders.first : null;
     if (folder != null && folder.trim().isNotEmpty) {
       return p.basename(folder);
     }
@@ -1671,8 +1731,8 @@ class HomeController extends ChangeNotifier {
   }
 
   String _queueMessage() {
-    if (videoFolderPath == null || audioFolderPath == null) {
-      return 'Select folders, then generate a queue.';
+    if (videoFolders.isEmpty || audioFolders.isEmpty) {
+      return 'Select video and audio folders to start.';
     }
     if (videos.isEmpty) {
       return 'No supported videos found.';

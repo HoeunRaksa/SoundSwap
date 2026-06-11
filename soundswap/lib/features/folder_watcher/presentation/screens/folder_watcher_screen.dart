@@ -713,8 +713,8 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
   void _applyTemplate(ProjectTemplate template) {
     setState(() {
       _templateId = template.id;
-      _videoFolderPath = template.videoFolder;
-      _audioFolderPath = template.audioFolder;
+      _videoFolderPath = template.videoFolders.isNotEmpty ? template.videoFolders.first : null;
+      _audioFolderPath = template.audioFolders.isNotEmpty ? template.audioFolders.first : null;
       _resultFolderPath = template.outputFolder;
       _prefixController.text = template.outputPrefix;
       _useOverlay = template.useOverlay;

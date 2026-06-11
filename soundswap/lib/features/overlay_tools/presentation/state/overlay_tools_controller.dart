@@ -121,8 +121,8 @@ class OverlayToolsController extends ChangeNotifier {
       id: _newId(),
       name: name.trim().isEmpty ? 'Workspace ${workspaces.length + 1}' : name.trim(),
       createdAt: DateTime.now(),
-      videoFolder: home.videoFolderPath,
-      audioFolder: home.audioFolderPath,
+      videoFolders: home.videoFolders,
+      audioFolders: home.audioFolders,
       outputFolder: home.outputFolderPath,
       outputPrefix: home.outputNamePrefix,
       useBranding: home.useBranding,
@@ -149,8 +149,8 @@ class OverlayToolsController extends ChangeNotifier {
     required TemplatesController templatesCtrl,
   }) async {
     await home.applyTemplateFolders(
-      videoFolder: ws.videoFolder,
-      audioFolder: ws.audioFolder,
+      videoFolders: ws.videoFolders,
+      audioFolders: ws.audioFolders,
       outputFolder: ws.outputFolder,
       outputPrefix: ws.outputPrefix,
     );

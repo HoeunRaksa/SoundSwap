@@ -92,8 +92,8 @@ class FolderWatcherController extends ChangeNotifier {
     final profile = FolderWatcherProfile(
       id: _newId(),
       name: name.trim().isEmpty ? 'Watcher profile' : name.trim(),
-      videoFolderPath: importBatchProfile?.videoFolderPath,
-      audioFolderPath: importBatchProfile?.audioFolderPath,
+      videoFolderPath: importBatchProfile?.videoFolders.isNotEmpty == true ? importBatchProfile!.videoFolders.first : null,
+      audioFolderPath: importBatchProfile?.audioFolders.isNotEmpty == true ? importBatchProfile!.audioFolders.first : null,
       resultFolderPath: importBatchProfile?.outputFolderPath,
       outputPrefix: importBatchProfile?.outputPrefix ?? '',
       templateId: importBatchProfile?.selectedTemplateId,
@@ -244,8 +244,8 @@ class FolderWatcherController extends ChangeNotifier {
       profileId,
       (profile) => profile.copyWith(
         templateId: template.id,
-        videoFolderPath: template.videoFolder,
-        audioFolderPath: template.audioFolder,
+        videoFolderPath: template.videoFolders.isNotEmpty ? template.videoFolders.first : null,
+        audioFolderPath: template.audioFolders.isNotEmpty ? template.audioFolders.first : null,
         resultFolderPath: template.outputFolder,
         outputPrefix: template.outputPrefix,
         useOverlay: template.useOverlay,
@@ -643,8 +643,8 @@ class FolderWatcherController extends ChangeNotifier {
     return FolderWatcherProfile(
       id: id,
       name: batchProfile.name,
-      videoFolderPath: batchProfile.videoFolderPath,
-      audioFolderPath: batchProfile.audioFolderPath,
+      videoFolderPath: batchProfile.videoFolders.isNotEmpty ? batchProfile.videoFolders.first : null,
+      audioFolderPath: batchProfile.audioFolders.isNotEmpty ? batchProfile.audioFolders.first : null,
       resultFolderPath: batchProfile.outputFolderPath,
       outputPrefix: batchProfile.outputPrefix,
       templateId: batchProfile.selectedTemplateId,

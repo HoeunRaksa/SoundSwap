@@ -10,8 +10,8 @@ class BatchProfile {
     required this.name,
     required this.createdAt,
     required this.updatedAt,
-    this.videoFolderPath,
-    this.audioFolderPath,
+    this.videoFolders = const [],
+    this.audioFolders = const [],
     this.outputFolderPath,
     this.outputPrefix = '',
     this.useOverlay = false,
@@ -31,8 +31,8 @@ class BatchProfile {
   final String name;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final String? videoFolderPath;
-  final String? audioFolderPath;
+  final List<String> videoFolders;
+  final List<String> audioFolders;
   final String? outputFolderPath;
   final String outputPrefix;
   final bool useOverlay;
@@ -52,8 +52,8 @@ class BatchProfile {
     'name': name,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
-    'videoFolderPath': videoFolderPath,
-    'audioFolderPath': audioFolderPath,
+    'videoFolders': videoFolders,
+    'audioFolders': audioFolders,
     'outputFolderPath': outputFolderPath,
     'outputPrefix': outputPrefix,
     'useOverlay': useOverlay,
@@ -79,8 +79,10 @@ class BatchProfile {
       updatedAt:
           DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
           DateTime.now(),
-      videoFolderPath: json['videoFolderPath'] as String?,
-      audioFolderPath: json['audioFolderPath'] as String?,
+      videoFolders: (json['videoFolders'] as List?)?.cast<String>() ?? 
+          (json['videoFolderPath'] != null ? [json['videoFolderPath'] as String] : []),
+      audioFolders: (json['audioFolders'] as List?)?.cast<String>() ?? 
+          (json['audioFolderPath'] != null ? [json['audioFolderPath'] as String] : []),
       outputFolderPath: json['outputFolderPath'] as String?,
       outputPrefix: json['outputPrefix'] as String? ?? '',
       useOverlay: json['useOverlay'] as bool? ?? false,
@@ -115,8 +117,8 @@ class BatchProfile {
   BatchProfile copyWith({
     String? name,
     DateTime? updatedAt,
-    String? videoFolderPath,
-    String? audioFolderPath,
+    List<String>? videoFolders,
+    List<String>? audioFolders,
     String? outputFolderPath,
     String? outputPrefix,
     bool? useOverlay,
@@ -138,8 +140,8 @@ class BatchProfile {
       name: name ?? this.name,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      videoFolderPath: videoFolderPath ?? this.videoFolderPath,
-      audioFolderPath: audioFolderPath ?? this.audioFolderPath,
+      videoFolders: videoFolders ?? this.videoFolders,
+      audioFolders: audioFolders ?? this.audioFolders,
       outputFolderPath: outputFolderPath ?? this.outputFolderPath,
       outputPrefix: outputPrefix ?? this.outputPrefix,
       useOverlay: useOverlay ?? this.useOverlay,

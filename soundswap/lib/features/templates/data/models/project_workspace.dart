@@ -10,8 +10,8 @@ class ProjectWorkspace {
     required this.id,
     required this.name,
     required this.createdAt,
-    this.videoFolder,
-    this.audioFolder,
+    this.videoFolders = const [],
+    this.audioFolders = const [],
     this.outputFolder,
     this.outputPrefix = '',
     this.useBranding = false,
@@ -29,8 +29,8 @@ class ProjectWorkspace {
   final String id;
   final String name;
   final DateTime createdAt;
-  final String? videoFolder;
-  final String? audioFolder;
+  final List<String> videoFolders;
+  final List<String> audioFolders;
   final String? outputFolder;
   final String outputPrefix;
   final bool useBranding;
@@ -48,8 +48,8 @@ class ProjectWorkspace {
     'id': id,
     'name': name,
     'createdAt': createdAt.toIso8601String(),
-    'videoFolder': videoFolder,
-    'audioFolder': audioFolder,
+    'videoFolders': videoFolders,
+    'audioFolders': audioFolders,
     'outputFolder': outputFolder,
     'outputPrefix': outputPrefix,
     'useBranding': useBranding,
@@ -72,8 +72,8 @@ class ProjectWorkspace {
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Workspace',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
-      videoFolder: json['videoFolder'] as String?,
-      audioFolder: json['audioFolder'] as String?,
+      videoFolders: (json['videoFolders'] as List?)?.cast<String>() ?? (json['videoFolder'] != null ? [json['videoFolder'] as String] : []),
+      audioFolders: (json['audioFolders'] as List?)?.cast<String>() ?? (json['audioFolder'] != null ? [json['audioFolder'] as String] : []),
       outputFolder: json['outputFolder'] as String?,
       outputPrefix: json['outputPrefix'] as String? ?? '',
       useBranding: json['useBranding'] as bool? ?? false,

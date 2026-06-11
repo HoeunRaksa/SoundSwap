@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/core/responsive/app_responsive.dart';
@@ -118,18 +119,20 @@ class _LongVideoScreenState extends State<LongVideoScreen> {
             icon: Icons.folder_open_outlined,
             title: 'Workspace Directories',
             children: [
-              FolderSelectorCard(
-                title: 'Video folder',
-                path: controller.videoFolderPath,
+              _MultiFolderSelectorCard(
+                title: 'Video folders',
+                paths: controller.videoFolders,
                 icon: Icons.video_library_outlined,
-                onPressed: controller.pickVideoFolder,
+                onAdd: controller.pickVideoFolder,
+                onRemove: controller.removeVideoFolder,
               ),
               SizedBox(height: gap),
-              FolderSelectorCard(
-                title: 'Audio folder',
-                path: controller.audioFolderPath,
+              _MultiFolderSelectorCard(
+                title: 'Audio folders',
+                paths: controller.audioFolders,
                 icon: Icons.library_music_outlined,
-                onPressed: controller.pickAudioFolder,
+                onAdd: controller.pickAudioFolder,
+                onRemove: controller.removeAudioFolder,
               ),
               SizedBox(height: gap),
               FolderSelectorCard(
@@ -281,11 +284,12 @@ class _LongVideoScreenState extends State<LongVideoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        FolderSelectorCard(
-                          title: 'Image folder',
-                          path: controller.imageFolderPath,
+                        _MultiFolderSelectorCard(
+                          title: 'Image folders',
+                          paths: controller.imageFolders,
                           icon: Icons.image_outlined,
-                          onPressed: controller.pickImageFolder,
+                          onAdd: controller.pickImageFolder,
+                          onRemove: controller.removeImageFolder,
                         ),
                         SizedBox(height: gap),
                         Row(
@@ -1073,5 +1077,84 @@ class _TwoColumn extends StatelessWidget {
         Expanded(child: right),
       ],
     );
+  }
+}
+
+class _MultiFolderSelectorCard extends StatelessWidget {
+  const _MultiFolderSelectorCard({
+    required this.title,
+    required this.paths,
+    required this.icon,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final String title;
+  final List<String> paths;
+  final IconData icon;
+  final VoidCallback onAdd;
+  final void Function(String) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+            if (paths.isNotEmpty) const SizedBox(height: 12),
+            if (paths.isNotEmpty)
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: paths.map((p) {
+                  return InputChip(
+                    label: Text(
+                      _folderName(p),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onDeleted: () => onRemove(p),
+                    tooltip: p,
+                    deleteIcon: const Icon(Icons.close, size: 14),
+                  );
+                }).toList(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _folderName(String path) {
+    final segments = path.split(Platform.isWindows ? '\\' : '/');
+    return segments.isNotEmpty ? segments.last : path;
   }
 }

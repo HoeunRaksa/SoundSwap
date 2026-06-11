@@ -47,8 +47,8 @@ class LongVideoController extends ChangeNotifier {
   bool useTemplate = false;
   String? selectedTemplateId;
 
-  String? videoFolderPath;
-  String? audioFolderPath;
+  List<String> videoFolders = [];
+  List<String> audioFolders = [];
   String? outputFolderPath;
   String outputName = 'long-video';
   double targetMinutes = 10;
@@ -72,7 +72,7 @@ class LongVideoController extends ChangeNotifier {
   String currentClipLabel = '';
 
   bool useImages = false;
-  String? imageFolderPath;
+  List<String> imageFolders = [];
   ImageToVideoSettings imageSettings = const ImageToVideoSettings(
     durationValue: 5,
     durationUnit: ImageDurationUnit.seconds,
@@ -89,7 +89,13 @@ class LongVideoController extends ChangeNotifier {
       dialogTitle: 'Select video folder',
     );
     if (path == null) return;
-    videoFolderPath = path;
+    if (!videoFolders.contains(path)) videoFolders.add(path);
+    plan = null;
+    notifyListeners();
+  }
+
+  void removeVideoFolder(String path) {
+    videoFolders.remove(path);
     plan = null;
     notifyListeners();
   }
@@ -99,8 +105,17 @@ class LongVideoController extends ChangeNotifier {
       dialogTitle: 'Select audio folder',
     );
     if (path == null) return;
-    audioFolderPath = path;
+    if (!audioFolders.contains(path)) audioFolders.add(path);
     selectedAudioPath = null;
+    plan = null;
+    notifyListeners();
+  }
+
+  void removeAudioFolder(String path) {
+    audioFolders.remove(path);
+    if (selectedAudioPath != null && selectedAudioPath!.startsWith(path)) {
+      selectedAudioPath = null;
+    }
     plan = null;
     notifyListeners();
   }
@@ -186,7 +201,13 @@ class LongVideoController extends ChangeNotifier {
       dialogTitle: 'Select image folder',
     );
     if (path == null) return;
-    imageFolderPath = path;
+    if (!imageFolders.contains(path)) imageFolders.add(path);
+    plan = null;
+    notifyListeners();
+  }
+
+  void removeImageFolder(String path) {
+    imageFolders.remove(path);
     plan = null;
     notifyListeners();
   }
@@ -373,28 +394,57 @@ class LongVideoController extends ChangeNotifier {
     try {
       _validateFolders();
       
-      if (videoFolderPath != null && videoFolderPath!.isNotEmpty) {
-        videos = await _mediaScannerService.scanFolder(
-          folderPath: videoFolderPath!,
-          extensions: AppConstants.supportedVideoExtensions,
-        );
+      if (videoFolders.isNotEmpty) {
+        videos = [];
+        final deduplicated = <String>{};
+        for (final folder in videoFolders) {
+          final normalized = p.normalize(folder);
+          if (deduplicated.contains(normalized)) continue;
+          deduplicated.add(normalized);
+          if (!Directory(normalized).existsSync()) continue;
+          final batch = await _mediaScannerService.scanFolder(
+            folderPath: normalized,
+            extensions: AppConstants.supportedVideoExtensions,
+          );
+          videos.addAll(batch);
+        }
       } else {
         videos = [];
       }
 
-      if (useImages && imageFolderPath != null && imageFolderPath!.isNotEmpty) {
-        images = await _mediaScannerService.scanFolder(
-          folderPath: imageFolderPath!,
-          extensions: AppConstants.supportedImageExtensions,
-        );
+      if (useImages && imageFolders.isNotEmpty) {
+        images = [];
+        final deduplicated = <String>{};
+        for (final folder in imageFolders) {
+          final normalized = p.normalize(folder);
+          if (deduplicated.contains(normalized)) continue;
+          deduplicated.add(normalized);
+          if (!Directory(normalized).existsSync()) continue;
+          final batch = await _mediaScannerService.scanFolder(
+            folderPath: normalized,
+            extensions: AppConstants.supportedImageExtensions,
+          );
+          images.addAll(batch);
+        }
       } else {
         images = [];
       }
 
-      audios = await _mediaScannerService.scanFolder(
-        folderPath: audioFolderPath!,
-        extensions: AppConstants.supportedAudioExtensions,
-      );
+      audios = [];
+      if (audioFolders.isNotEmpty) {
+        final deduplicated = <String>{};
+        for (final folder in audioFolders) {
+          final normalized = p.normalize(folder);
+          if (deduplicated.contains(normalized)) continue;
+          deduplicated.add(normalized);
+          if (!Directory(normalized).existsSync()) continue;
+          final batch = await _mediaScannerService.scanFolder(
+            folderPath: normalized,
+            extensions: AppConstants.supportedAudioExtensions,
+          );
+          audios.addAll(batch);
+        }
+      }
       selectedAudioPath ??= audios.isEmpty ? null : audios.first.path;
 
       plan = await _longVideoService.createPlan(
@@ -411,13 +461,13 @@ class LongVideoController extends ChangeNotifier {
         durationMode: durationMode,
         audioBehavior: audioBehavior,
       );
-      final p = plan!;
+      final currentPlan = plan!;
       final targetSec = targetMinutes * 60;
-      final diff = (p.estimatedDuration - targetSec).abs();
+      final diff = (currentPlan.estimatedDuration - targetSec).abs();
       if (diff > 0.5 && durationMode == LongVideoDurationMode.exactTargetLength) {
-        message = 'Plan ready (⚠ ${diff.toStringAsFixed(1)}s mismatch): ${p.clips.length} clips, ${_format(p.estimatedDuration)}s.';
+        message = 'Plan ready (⚠ ${diff.toStringAsFixed(1)}s mismatch): ${currentPlan.clips.length} clips, ${_format(currentPlan.estimatedDuration)}s.';
       } else {
-        message = 'Plan ready: ${p.clips.length} clips, ${_format(p.estimatedDuration)}s.';
+        message = 'Plan ready: ${currentPlan.clips.length} clips, ${_format(currentPlan.estimatedDuration)}s.';
       }
     } catch (error) {
       errorMessage = error.toString();
@@ -583,20 +633,20 @@ class LongVideoController extends ChangeNotifier {
 
   /// A human-readable summary of the current plan for pre-export review.
   LongVideoPlanSummary? get planSummary {
-    final p = plan;
-    if (p == null) return null;
+    final currentPlan = plan;
+    if (currentPlan == null) return null;
     final targetSec = targetMinutes * 60;
-    final videoDuration = p.clips.fold(0.0, (sum, c) => sum + c.clipDuration);
-    final audioDuration = p.audioSegments.fold(0.0, (sum, s) => sum + s.segmentDuration);
-    final imageClips = p.clips.where((c) => MediaFile(path: c.videoPath).isImage).length;
-    final videoClips = p.clips.length - imageClips;
-    final diff = (p.estimatedDuration - targetSec).abs();
+    final videoDuration = currentPlan.clips.fold(0.0, (sum, c) => sum + c.clipDuration);
+    final audioDuration = currentPlan.audioSegments.fold(0.0, (sum, s) => sum + s.segmentDuration);
+    final imageClips = currentPlan.clips.where((c) => MediaFile(path: c.videoPath).isImage).length;
+    final videoClips = currentPlan.clips.length - imageClips;
+    final diff = (currentPlan.estimatedDuration - targetSec).abs();
     final hasMismatch = durationMode == LongVideoDurationMode.exactTargetLength && diff > 0.5;
     return LongVideoPlanSummary(
       targetDuration: targetSec,
       plannedVideoDuration: videoDuration,
       plannedAudioDuration: audioDuration,
-      estimatedFinalDuration: p.estimatedDuration,
+      estimatedFinalDuration: currentPlan.estimatedDuration,
       numVideoClips: videoClips,
       numImageClips: imageClips,
       hasMismatch: hasMismatch,
@@ -606,19 +656,19 @@ class LongVideoController extends ChangeNotifier {
 
   void _validateFolders() {
     if (useImages) {
-      final hasVideos = videoFolderPath != null && videoFolderPath!.isNotEmpty;
-      final hasImages = imageFolderPath != null && imageFolderPath!.isNotEmpty;
+      final hasVideos = videoFolders.isNotEmpty;
+      final hasImages = imageFolders.isNotEmpty;
       if (!hasVideos && !hasImages) {
         throw const LongVideoValidationException(
           'Select either a video folder or an image folder (or both) when images are enabled.',
         );
       }
     } else {
-      if (videoFolderPath == null || videoFolderPath!.isEmpty) {
+      if (videoFolders.isEmpty) {
         throw const LongVideoValidationException('Select a video folder.');
       }
     }
-    if (audioFolderPath == null || audioFolderPath!.isEmpty) {
+    if (audioFolders.isEmpty) {
       throw const LongVideoValidationException('Select an audio folder.');
     }
     if (outputFolderPath == null || outputFolderPath!.isEmpty) {

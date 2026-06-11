@@ -400,18 +400,20 @@ class _ControlsPanelState extends State<_ControlsPanel> {
           onDelete: _confirmDeleteBatchProfile,
         ),
         SizedBox(height: gap),
-        FolderSelectorCard(
-          title: 'Video folder',
-          path: widget.controller.videoFolderPath,
+        _MultiFolderSelectorCard(
+          title: 'Video folders',
+          paths: widget.controller.videoFolders,
           icon: Icons.movie_creation_outlined,
-          onPressed: widget.controller.pickVideoFolder,
+          onAdd: widget.controller.pickVideoFolder,
+          onRemove: widget.controller.removeVideoFolder,
         ),
         SizedBox(height: gap),
-        FolderSelectorCard(
-          title: 'Audio folder',
-          path: widget.controller.audioFolderPath,
+        _MultiFolderSelectorCard(
+          title: 'Audio folders',
+          paths: widget.controller.audioFolders,
           icon: Icons.library_music_outlined,
-          onPressed: widget.controller.pickAudioFolder,
+          onAdd: widget.controller.pickAudioFolder,
+          onRemove: widget.controller.removeAudioFolder,
         ),
         SizedBox(height: gap),
         FolderSelectorCard(
@@ -656,18 +658,20 @@ class _ControlsPanelState extends State<_ControlsPanel> {
     final prefixController = TextEditingController(
       text: profile?.outputPrefix ?? widget.controller.outputNamePrefix,
     );
-    var videoFolder =
-        profile?.videoFolderPath ?? widget.controller.videoFolderPath ?? '';
-    var audioFolder =
-        profile?.audioFolderPath ?? widget.controller.audioFolderPath ?? '';
+    var videoFolders = profile?.videoFolders.isNotEmpty == true 
+        ? List<String>.from(profile!.videoFolders)
+        : List<String>.from(widget.controller.videoFolders);
+    var audioFolders = profile?.audioFolders.isNotEmpty == true
+        ? List<String>.from(profile!.audioFolders)
+        : List<String>.from(widget.controller.audioFolders);
     var outputFolder =
         profile?.outputFolderPath ?? widget.controller.outputFolderPath ?? '';
     final result =
         await showDialog<
           ({
             String name,
-            String videoFolder,
-            String audioFolder,
+            List<String> videoFolders,
+            List<String> audioFolders,
             String outputFolder,
             String prefix,
           })
@@ -696,29 +700,39 @@ class _ControlsPanelState extends State<_ControlsPanel> {
                           ),
                         ),
                         SizedBox(height: gap),
-                        _BatchProfileFolderPicker(
-                          label: 'Video folder',
-                          path: videoFolder,
+                        _BatchProfileMultiFolderPicker(
+                          label: 'Video folders',
+                          paths: videoFolders,
                           icon: Icons.video_library_outlined,
-                          onBrowse: () async {
+                          onAdd: () async {
                             final path = await _dialogFolderPicker.pickFolder(
                               dialogTitle: 'Select video folder',
                             );
                             if (path == null || !context.mounted) return;
-                            setDialogState(() => videoFolder = path);
+                            setDialogState(() {
+                              if (!videoFolders.contains(path)) videoFolders.add(path);
+                            });
+                          },
+                          onRemove: (path) {
+                            setDialogState(() => videoFolders.remove(path));
                           },
                         ),
                         SizedBox(height: gap),
-                        _BatchProfileFolderPicker(
-                          label: 'Audio folder',
-                          path: audioFolder,
+                        _BatchProfileMultiFolderPicker(
+                          label: 'Audio folders',
+                          paths: audioFolders,
                           icon: Icons.library_music_outlined,
-                          onBrowse: () async {
+                          onAdd: () async {
                             final path = await _dialogFolderPicker.pickFolder(
                               dialogTitle: 'Select audio folder',
                             );
                             if (path == null || !context.mounted) return;
-                            setDialogState(() => audioFolder = path);
+                            setDialogState(() {
+                              if (!audioFolders.contains(path)) audioFolders.add(path);
+                            });
+                          },
+                          onRemove: (path) {
+                            setDialogState(() => audioFolders.remove(path));
                           },
                         ),
                         SizedBox(height: gap),
@@ -755,8 +769,8 @@ class _ControlsPanelState extends State<_ControlsPanel> {
                   FilledButton.icon(
                     onPressed: () => Navigator.pop(context, (
                       name: nameController.text,
-                      videoFolder: videoFolder,
-                      audioFolder: audioFolder,
+                      videoFolders: videoFolders,
+                      audioFolders: audioFolders,
                       outputFolder: outputFolder,
                       prefix: prefixController.text,
                     )),
@@ -774,8 +788,8 @@ class _ControlsPanelState extends State<_ControlsPanel> {
     if (profile == null) {
       await widget.controller.createBatchProfile(
         name: result.name,
-        videoFolderPath: result.videoFolder,
-        audioFolderPath: result.audioFolder,
+        videoFolders: result.videoFolders,
+        audioFolders: result.audioFolders,
         outputFolderPath: result.outputFolder,
         outputPrefix: result.prefix,
       );
@@ -783,8 +797,8 @@ class _ControlsPanelState extends State<_ControlsPanel> {
       await widget.controller.updateBatchProfileDetails(
         profile: profile,
         name: result.name,
-        videoFolderPath: result.videoFolder,
-        audioFolderPath: result.audioFolder,
+        videoFolders: result.videoFolders,
+        audioFolders: result.audioFolders,
         outputFolderPath: result.outputFolder,
         outputPrefix: result.prefix,
       );
@@ -1079,14 +1093,22 @@ class _BatchProfileServiceCard extends StatelessWidget {
               _ServiceMetaLine(
                 icon: Icons.video_library_outlined,
                 title: 'Video',
-                value: _folderName(profile.videoFolderPath),
-                tooltip: profile.videoFolderPath ?? 'Not selected',
+                value: profile.videoFolders.isEmpty 
+                    ? 'None' 
+                    : profile.videoFolders.length == 1 
+                        ? _folderName(profile.videoFolders.first) 
+                        : '${profile.videoFolders.length} folders',
+                tooltip: profile.videoFolders.join('\n'),
               ),
               _ServiceMetaLine(
                 icon: Icons.library_music_outlined,
                 title: 'Audio',
-                value: _folderName(profile.audioFolderPath),
-                tooltip: profile.audioFolderPath ?? 'Not selected',
+                value: profile.audioFolders.isEmpty 
+                    ? 'None' 
+                    : profile.audioFolders.length == 1 
+                        ? _folderName(profile.audioFolders.first) 
+                        : '${profile.audioFolders.length} folders',
+                tooltip: profile.audioFolders.join('\n'),
               ),
               _ServiceMetaLine(
                 icon: Icons.folder_copy_outlined,
@@ -2181,5 +2203,150 @@ class _AnimatedFilledButtonState extends State<_AnimatedFilledButton> {
         ),
       ),
     );
+  }
+}
+
+class _MultiFolderSelectorCard extends StatelessWidget {
+  const _MultiFolderSelectorCard({
+    required this.title,
+    required this.paths,
+    required this.icon,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final String title;
+  final List<String> paths;
+  final IconData icon;
+  final VoidCallback onAdd;
+  final void Function(String) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppResponsive.cardRadius(context)),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+            if (paths.isNotEmpty) const SizedBox(height: 12),
+            if (paths.isNotEmpty)
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: paths.map((p) {
+                  return InputChip(
+                    label: Text(
+                      _folderName(p),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onDeleted: () => onRemove(p),
+                    tooltip: p,
+                    deleteIcon: const Icon(Icons.close, size: 14),
+                  );
+                }).toList(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _folderName(String path) {
+    final segments = path.split(Platform.isWindows ? '\\' : '/');
+    return segments.isNotEmpty ? segments.last : path;
+  }
+}
+
+class _BatchProfileMultiFolderPicker extends StatelessWidget {
+  const _BatchProfileMultiFolderPicker({
+    required this.label,
+    required this.paths,
+    required this.icon,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final String label;
+  final List<String> paths;
+  final IconData icon;
+  final VoidCallback onAdd;
+  final void Function(String) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            OutlinedButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add Folder'),
+              style: OutlinedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+        if (paths.isNotEmpty) const SizedBox(height: 8),
+        if (paths.isNotEmpty)
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: paths.map((p) {
+              return InputChip(
+                label: Text(
+                  _folderName(p),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                onDeleted: () => onRemove(p),
+                tooltip: p,
+                deleteIcon: const Icon(Icons.close, size: 14),
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+
+  String _folderName(String path) {
+    final segments = path.split(Platform.isWindows ? '\\' : '/');
+    return segments.isNotEmpty ? segments.last : path;
   }
 }
