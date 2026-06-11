@@ -102,11 +102,11 @@ void main() {
       expect(item.originalPath, equals(imageFile.path));
       
       // Since quality probing wasn't performed or failed in test (no FFmpeg mock probe setup here),
-      // it defaults/fails to qualityGroup = 'lowerLandscape'.
-      // The target path should be tempDir/images/lowerLandscape/i1.jpg, which is different from tempDir/images/i1.jpg.
+      // it defaults/fails to qualityGroup = 'landscape/lowQuality'.
+      // The target path should be tempDir/images/landscape/lowQuality/i1.jpg, which is different from tempDir/images/i1.jpg.
       // Therefore, the action should be FileItemAction.move (moving into correct quality folder)!
       expect(item.action, equals(FileItemAction.move));
-      expect(p.normalize(item.newPath!), equals(p.normalize(p.join(imagesDir.path, 'lowerLandscape', 'i1.jpg'))));
+      expect(p.normalize(item.newPath!), equals(p.normalize(p.join(imagesDir.path, 'landscape', 'lowQuality', 'i1.jpg'))));
     });
   });
 
@@ -382,7 +382,7 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('portraitQuality'));
+      expect(items.first.qualityGroup, equals('portrait/highQuality'));
       expect(items.first.orientation, equals(MediaOrientation.vertical));
     });
 
@@ -430,7 +430,7 @@ void main() {
       expect(item.displayHeight, equals(1080));
       expect(item.visualOrientation, equals(MediaOrientation.vertical));
       expect(item.finalOrientation, equals(MediaOrientation.vertical));
-      expect(item.qualityGroup, equals('lowerPortrait'));
+      expect(item.qualityGroup, equals('portrait/lowQuality'));
     });
 
     test('classifies portrait lower resolution as lowerPortrait if width < 1080 or height < 1920', () async {
@@ -448,7 +448,7 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('lowerPortrait'));
+      expect(items.first.qualityGroup, equals('portrait/lowQuality'));
       expect(items.first.orientation, equals(MediaOrientation.vertical));
     });
 
@@ -467,7 +467,7 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('lowerPortrait'));
+      expect(items.first.qualityGroup, equals('portrait/lowQuality'));
       expect(items.first.orientation, equals(MediaOrientation.vertical));
     });
 
@@ -486,7 +486,7 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('landscapeQuality'));
+      expect(items.first.qualityGroup, equals('landscape/highQuality'));
       expect(items.first.orientation, equals(MediaOrientation.landscape));
     });
 
@@ -505,7 +505,7 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('lowerLandscape'));
+      expect(items.first.qualityGroup, equals('landscape/lowQuality'));
       expect(items.first.orientation, equals(MediaOrientation.landscape));
     });
 
@@ -524,7 +524,7 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('squareQuality'));
+      expect(items.first.qualityGroup, equals('square/highQuality'));
       expect(items.first.orientation, equals(MediaOrientation.square));
     });
 
@@ -543,7 +543,7 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('lowerSquare'));
+      expect(items.first.qualityGroup, equals('square/lowQuality'));
       expect(items.first.orientation, equals(MediaOrientation.square));
     });
 
@@ -574,11 +574,11 @@ void main() {
       expect(item.rotation, equals(90));
       expect(item.displayWidth, equals(2160));
       expect(item.displayHeight, equals(3840));
-      expect(item.qualityGroup, equals('portraitQuality'));
+      expect(item.qualityGroup, equals('portrait/highQuality'));
       expect(item.orientation, equals(MediaOrientation.vertical));
     });
 
-    test('defaults to lowerLandscape on probing failure and logs warning', () async {
+    test('defaults to landscape/lowQuality on probing failure and logs warning', () async {
       final options = const OrganizerOptions(
         organizeFiles: true,
         organizeMode: OrganizerMode.byQuality,
@@ -592,8 +592,8 @@ void main() {
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
       expect(items.length, equals(1));
-      expect(items.first.qualityGroup, equals('lowerLandscape'));
-      expect(items.first.reason, equals('Resolution unknown → lowerLandscape'));
+      expect(items.first.qualityGroup, equals('landscape/lowQuality'));
+      expect(items.first.reason, equals('Resolution unknown → landscape/lowQuality'));
     });
   });
 }

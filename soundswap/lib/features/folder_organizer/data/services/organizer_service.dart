@@ -80,25 +80,25 @@ class OrganizerService {
       final minDim = w < h ? w : h;
       final maxDim = w > h ? w : h;
       if (minDim >= 1080 && maxDim >= 1920) {
-        return 'portraitQuality';
+        return 'portrait/highQuality';
       } else {
-        return 'lowerPortrait';
+        return 'portrait/lowQuality';
       }
     } else if (finalOrientation == MediaOrientation.landscape) {
       // Landscape
       final minDim = w < h ? w : h;
       final maxDim = w > h ? w : h;
       if (maxDim >= 1920 && minDim >= 1080) {
-        return 'landscapeQuality';
+        return 'landscape/highQuality';
       } else {
-        return 'lowerLandscape';
+        return 'landscape/lowQuality';
       }
     } else {
       // Square
       if (w >= 1080) {
-        return 'squareQuality';
+        return 'square/highQuality';
       } else {
-        return 'lowerSquare';
+        return 'square/lowQuality';
       }
     }
   }
@@ -377,11 +377,11 @@ class OrganizerService {
             name: 'OrganizerService',
           );
         } catch (e) {
-          item.qualityGroup = 'lowerLandscape';
+          item.qualityGroup = 'landscape/lowQuality';
           item.orientation = null;
           item.visualOrientation = null;
           item.finalOrientation = null;
-          item.reason = 'Resolution unknown → lowerLandscape';
+          item.reason = 'Resolution unknown → landscape/lowQuality';
           dev.log(
             '[Organizer] PROBE FAILED: ${p.basename(item.originalPath)} — $e',
             name: 'OrganizerService',

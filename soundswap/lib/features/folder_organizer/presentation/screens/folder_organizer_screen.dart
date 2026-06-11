@@ -373,7 +373,7 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
           title: const Text('Auto-organize files'),
           subtitle: const Text(
             'Type Mode: moves to images/ and videos/\n'
-            'Quality Mode: moves to quality subfolders (portraitQuality, landscapeQuality, squareQuality, lowerPortrait, lowerLandscape, lowerSquare)',
+            'Quality Mode: moves to quality subfolders (portrait/highQuality, landscape/highQuality, square/highQuality, portrait/lowQuality, landscape/lowQuality, square/lowQuality)',
           ),
           value: opts.organizeFiles,
           onChanged: controller.isScanning || controller.isApplying
@@ -469,13 +469,13 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
                         const SizedBox(height: 6),
                         Text(
                           'Quality classification rules:\n'
-                          '  portraitQuality: Portrait (height > width) AND width ≥ 1080 AND height ≥ 1920\n'
-                          '  landscapeQuality: Landscape (width > height) AND width ≥ 1920 AND height ≥ 1080\n'
-                          '  squareQuality: Square (width = height) AND width ≥ 1080 AND height ≥ 1080\n'
-                          '  lowerPortrait: Portrait (height > width) otherwise\n'
-                          '  lowerLandscape: Landscape (width > height) otherwise\n'
-                          '  lowerSquare: Square (width = height) otherwise\n'
-                          '  Unknown resolution: default to lowerLandscape.',
+                          '  portrait/highQuality: Portrait (height > width) AND width ≥ 1080 AND height ≥ 1920\n'
+                          '  landscape/highQuality: Landscape (width > height) AND width ≥ 1920 AND height ≥ 1080\n'
+                          '  square/highQuality: Square (width = height) AND width ≥ 1080 AND height ≥ 1080\n'
+                          '  portrait/lowQuality: Portrait (height > width) otherwise\n'
+                          '  landscape/lowQuality: Landscape (width > height) otherwise\n'
+                          '  square/lowQuality: Square (width = height) otherwise\n'
+                          '  Unknown resolution: default to landscape/lowQuality.',
                           style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
                         ),
                       ],
@@ -1232,7 +1232,7 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
             width: 100,
             child: item.qualityGroup != null
                 ? _buildSmallBadge(
-                    text: item.qualityGroup!,
+                    text: _getQualityLabel(item.qualityGroup!),
                     color: _getQualityColor(item.qualityGroup!),
                   )
                 : const SizedBox.shrink(),
@@ -1288,19 +1288,38 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
     );
   }
 
+  String _getQualityLabel(String quality) {
+    switch (quality) {
+      case 'portrait/highQuality':
+        return 'Portrait | High Quality';
+      case 'landscape/highQuality':
+        return 'Landscape | High Quality';
+      case 'square/highQuality':
+        return 'Square | High Quality';
+      case 'portrait/lowQuality':
+        return 'Portrait | Low Quality';
+      case 'landscape/lowQuality':
+        return 'Landscape | Low Quality';
+      case 'square/lowQuality':
+        return 'Square | Low Quality';
+      default:
+        return quality;
+    }
+  }
+
   Color _getQualityColor(String quality) {
     switch (quality) {
-      case 'portraitQuality':
+      case 'portrait/highQuality':
         return Colors.green;
-      case 'landscapeQuality':
+      case 'landscape/highQuality':
         return Colors.blue;
-      case 'squareQuality':
+      case 'square/highQuality':
         return Colors.teal;
-      case 'lowerPortrait':
+      case 'portrait/lowQuality':
         return Colors.amber;
-      case 'lowerLandscape':
+      case 'landscape/lowQuality':
         return Colors.orange;
-      case 'lowerSquare':
+      case 'square/lowQuality':
         return Colors.red;
       default:
         return Colors.grey;
