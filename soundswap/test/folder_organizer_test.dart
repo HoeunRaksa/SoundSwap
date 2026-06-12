@@ -1,3 +1,4 @@
+import 'package:soundswap/features/folder_organizer/data/models/organizer_scan_mode.dart';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -46,7 +47,7 @@ void main() {
       final videoFile = File(p.join(videosDir.path, 'v1.mp4'))..writeAsStringSync('data');
       final imageFile = File(p.join(imagesDir.path, 'i1.jpg'))..writeAsStringSync('data');
 
-      final stream = service.scanFolder(rootPath: tempDir.path, options: const OrganizerOptions());
+      final stream = service.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: const OrganizerOptions());
       final events = await stream.toList();
       final completedEvent = events.last;
       
@@ -64,7 +65,7 @@ void main() {
       final imagesDir = Directory(p.join(tempDir.path, 'images'))..createSync();
       final imageFile = File(p.join(imagesDir.path, 'i1.jpg'))..writeAsStringSync('data');
 
-      final stream = service.scanFolder(
+      final stream = service.scanFolder(scanMode: OrganizerScanMode.fullScan, 
         rootPath: tempDir.path,
         options: const OrganizerOptions(
           organizeFiles: true,
@@ -93,7 +94,7 @@ void main() {
         keepFolderStructure: false,
       );
 
-      final stream = service.scanFolder(rootPath: tempDir.path, options: options);
+      final stream = service.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final events = await stream.toList();
       final items = events.last['items'] as List<OrganizerFileItem>;
 
@@ -120,7 +121,7 @@ void main() {
       final imagesDir = Directory(p.join(tempDir.path, 'images'))..createSync();
       File(p.join(imagesDir.path, 'i1.jpg')).writeAsStringSync('data');
 
-      await controller.startScan();
+      await controller.startScan(scanMode: OrganizerScanMode.fullScan);
 
       expect(controller.scannedItems.length, equals(1));
       expect(controller.infoMessage, equals('Scan completed\nFiles found: 1, already organized: 1'));
@@ -134,7 +135,7 @@ void main() {
       // Put only non-media file
       File(p.join(tempDir.path, 'notes.txt')).writeAsStringSync('data');
 
-      await controller.startScan();
+      await controller.startScan(scanMode: OrganizerScanMode.fullScan);
 
       expect(controller.scannedItems, isEmpty);
       expect(controller.infoMessage, equals('No supported media files found.'));
@@ -154,7 +155,7 @@ void main() {
       File(p.join(tempDir.path, 'photo1.heic')).writeAsStringSync('data');
       File(p.join(tempDir.path, 'photo2.heif')).writeAsStringSync('data');
 
-      final stream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: const OrganizerOptions());
+      final stream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: const OrganizerOptions());
       final events = await stream.toList();
       final items = events.last['items'] as List<OrganizerFileItem>;
 
@@ -171,7 +172,7 @@ void main() {
         convertHeicToPng: false,
       );
 
-      final stream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final stream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final events = await stream.toList();
       final items = events.last['items'] as List<OrganizerFileItem>;
 
@@ -189,7 +190,7 @@ void main() {
       );
 
       // Verify Scan & proposed changes
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -229,7 +230,7 @@ void main() {
       fakeFfmpeg.shouldFail = true;
 
       // Scan
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -260,7 +261,7 @@ void main() {
       );
 
       // Verify Scan & proposed changes
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -295,7 +296,7 @@ void main() {
         deleteOriginalHeic: false,
       );
 
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -330,7 +331,7 @@ void main() {
         deleteOriginalHeic: true,
       );
 
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -377,7 +378,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -418,7 +419,7 @@ void main() {
       final file = File(p.join(tempDir.path, 'visual_portrait.mp4'));
       file.writeAsStringSync('data');
       
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -443,7 +444,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -462,7 +463,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -481,7 +482,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -500,7 +501,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -519,7 +520,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -538,7 +539,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -563,7 +564,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'phone_video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 
@@ -587,7 +588,7 @@ void main() {
 
       final file = File(p.join(tempDir.path, 'video.mp4'));
       file.writeAsStringSync('data');
-      final scanStream = serviceWithFake.scanFolder(rootPath: tempDir.path, options: options);
+      final scanStream = serviceWithFake.scanFolder(scanMode: OrganizerScanMode.fullScan, rootPath: tempDir.path, options: options);
       final scanEvents = await scanStream.toList();
       final items = scanEvents.last['items'] as List<OrganizerFileItem>;
 

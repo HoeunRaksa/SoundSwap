@@ -1,9 +1,15 @@
+import 'dart:async';
+import 'dart:developer' as dev;
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/features/folder_organizer/data/models/organizer_options.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_file_item.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_history_record.dart';
+import 'package:soundswap/features/folder_organizer/data/models/organizer_state_record.dart';
+import 'package:soundswap/features/folder_organizer/data/models/organizer_scan_mode.dart';
 import 'package:soundswap/features/folder_organizer/data/services/organizer_service.dart';
+import 'package:soundswap/features/folder_organizer/data/services/organizer_state_service.dart';
 import 'package:soundswap/shared/services/folder_picker_service.dart';
 
 class FolderOrganizerController extends ChangeNotifier {
@@ -22,6 +28,20 @@ class FolderOrganizerController extends ChangeNotifier {
   // Root folder selected by the user
   String? rootFolderPath;
 
+  final OrganizerStateService _stateService = OrganizerStateService();
+  List<OrganizerStateRecord> processedState = [];
+
+  // Watch states
+  bool isWatching = false;
+  StreamSubscription<FileSystemEvent>? _watchSubscription;
+  final Set<String> _processingWatchFiles = {};
+
+  // Watch metrics
+  int newFilesDetected = 0;
+  int organizedCount = 0;
+  int watchFailedCount = 0;
+  String? currentProcessingFile;
+
   // Scan states
   bool isScanning = false;
   bool isScanCancelled = false;
@@ -37,6 +57,7 @@ class FolderOrganizerController extends ChangeNotifier {
   int totalToHash = 0;
   int probedCount = 0;
   int totalToProbe = 0;
+  int alreadyProcessedSkippedCount = 0;
 
   // Apply states
   bool isApplying = false;
@@ -111,12 +132,34 @@ class FolderOrganizerController extends ChangeNotifier {
         dialogTitle: 'Select Root Folder to Organize',
       );
       if (selected != null) {
+        if (isWatching) {
+          await stopWatch();
+        }
+
         rootFolderPath = selected;
         scannedItems.clear();
         scanStatus = 'idle';
         errorMessage = null;
         successMessage = null;
         infoMessage = null;
+
+        foldersScanned = 0;
+        filesScanned = 0;
+        imagesCount = 0;
+        videosCount = 0;
+        hashedCount = 0;
+        totalToHash = 0;
+        probedCount = 0;
+        totalToProbe = 0;
+        alreadyProcessedSkippedCount = 0;
+
+        newFilesDetected = 0;
+        organizedCount = 0;
+        watchFailedCount = 0;
+        currentProcessingFile = null;
+        _processingWatchFiles.clear();
+
+        await _loadProcessedState();
         notifyListeners();
       }
     } catch (e) {
@@ -125,14 +168,32 @@ class FolderOrganizerController extends ChangeNotifier {
     }
   }
 
+  Future<void> _loadProcessedState() async {
+    if (rootFolderPath != null) {
+      processedState = await _stateService.getRecords(rootFolderPath!);
+      dev.log('Loaded processed state count: ${processedState.length}', name: 'FolderOrganizer');
+    }
+  }
+
+  Future<void> clearProcessedState() async {
+    if (rootFolderPath != null) {
+      await _stateService.clearRecords(rootFolderPath!);
+      processedState.clear();
+      successMessage = 'Processed state cleared. All files will be treated as new.';
+      notifyListeners();
+    }
+  }
+
   /// Starts scanning the root folder
-  Future<void> startScan() async {
+  Future<void> startScan({required OrganizerScanMode scanMode}) async {
     final path = rootFolderPath;
     if (path == null || path.isEmpty) {
       errorMessage = 'Please select a root folder first.';
       notifyListeners();
       return;
     }
+
+    processedState.clear();
 
     isScanning = true;
     isScanCancelled = false;
@@ -152,6 +213,7 @@ class FolderOrganizerController extends ChangeNotifier {
     probedCount = 0;
     totalToProbe = 0;
     heicFound = 0;
+    alreadyProcessedSkippedCount = 0;
     
     // Clear cached apply statistics and status
     isApplying = false;
@@ -179,6 +241,7 @@ class FolderOrganizerController extends ChangeNotifier {
       final stream = _service.scanFolder(
         rootPath: path,
         options: options,
+        scanMode: scanMode,
         isCancelled: () => isScanCancelled,
       );
       await for (final event in stream) {
@@ -187,6 +250,7 @@ class FolderOrganizerController extends ChangeNotifier {
         filesScanned = event['filesScanned'] as int;
         imagesCount = event['imagesCount'] as int;
         videosCount = event['videosCount'] as int;
+        alreadyProcessedSkippedCount = event['alreadyProcessedSkipped'] as int? ?? 0;
         scannedItems = List<OrganizerFileItem>.from(event['items'] as List);
         
         // Count HEIC/HEIF files
@@ -211,6 +275,8 @@ class FolderOrganizerController extends ChangeNotifier {
       scanDuration = DateTime.now().difference(_scanStartTime!);
       errorMessage = null;
 
+      dev.log('Already processed skipped: $alreadyProcessedSkippedCount', name: 'FolderOrganizer');
+
       // Determine the scan result message to display
       if (scanStatus == 'cancelled') {
         infoMessage = 'Scan cancelled by user\nFiles scanned: $filesScanned\nImages found: $imagesCount\nVideos found: $videosCount';
@@ -218,8 +284,8 @@ class FolderOrganizerController extends ChangeNotifier {
         infoMessage = 'No supported media files found.';
       } else {
         final alreadyOrganizedCount = scannedItems.where((i) => i.action == FileItemAction.alreadyOrganized).length;
-        if (alreadyOrganizedCount > 0) {
-          infoMessage = 'Scan completed\nFiles found: ${scannedItems.length}, already organized: $alreadyOrganizedCount';
+        if (alreadyOrganizedCount > 0 || alreadyProcessedSkippedCount > 0) {
+          infoMessage = 'Scan completed\nFiles found: ${scannedItems.length}, already organized: $alreadyOrganizedCount, skipped processed: $alreadyProcessedSkippedCount';
         } else {
           infoMessage = 'Scan completed\nFiles scanned: $filesScanned\nImages found: $imagesCount\nVideos found: $videosCount';
         }
@@ -326,6 +392,32 @@ class FolderOrganizerController extends ChangeNotifier {
           buffer.write('Failed: $failedCount. ');
           buffer.write('Empty folders removed: $emptyFoldersRemoved.');
           successMessage = buffer.toString();
+          
+          // Save success records to state
+          final recordsToSave = <OrganizerStateRecord>[];
+          final timestamp = DateTime.now();
+          for (final item in scannedItems) {
+            if (item.action != FileItemAction.error) {
+              final record = OrganizerStateRecord(
+                originalPath: item.originalPath,
+                fileName: item.fileName,
+                fileSize: item.sizeBytes,
+                lastModified: item.lastModified,
+                processedAt: timestamp,
+                destinationPath: item.newPath ?? item.originalPath,
+                mediaType: item.fileType.name,
+                status: 'success',
+              );
+              recordsToSave.add(record);
+              processedState.add(record);
+            }
+          }
+
+          if (recordsToSave.isNotEmpty) {
+            await _stateService.addRecords(path, recordsToSave);
+            dev.log('Saved processed state count: ${recordsToSave.length}', name: 'FolderOrganizer');
+          }
+
           // Clear current preview after successful apply
           scannedItems.clear();
           scanStatus = 'idle';
@@ -437,5 +529,151 @@ class FolderOrganizerController extends ChangeNotifier {
   /// Export duplicate report manually
   String getReportContent(OrganizerHistoryRecord record, String format) {
     return _service.generateReportContent(record, format);
+  }
+
+  // ─── Watch Mode ─────────────────────────────────────────────────────────────
+
+  Future<void> startWatch() async {
+    if (rootFolderPath == null || isWatching) return;
+    
+    await _loadProcessedState();
+
+    isWatching = true;
+    newFilesDetected = 0;
+    organizedCount = 0;
+    watchFailedCount = 0;
+    alreadyProcessedSkippedCount = 0;
+    currentProcessingFile = null;
+    errorMessage = null;
+    infoMessage = 'Auto Watch Mode started on $rootFolderPath';
+    notifyListeners();
+
+    try {
+      _watchSubscription = Directory(rootFolderPath!).watch().listen((event) {
+        if (event is FileSystemDeleteEvent) return;
+
+        final ext = p.extension(event.path).toLowerCase().replaceAll('.', '');
+        if (!OrganizerService.imageExtensions.contains(ext) &&
+            !OrganizerService.videoExtensions.contains(ext)) {
+          return;
+        }
+
+        // Avoid infinite loop if destination is inside source folder
+        if (options.keepFolderStructure == false && p.isWithin(rootFolderPath!, event.path)) {
+          final parent = p.basename(p.dirname(event.path));
+          if (parent == 'images' || parent == 'videos') return;
+        }
+
+        if (OrganizerService.isExcludedResultFolder(event.path)) {
+          return;
+        }
+
+        _handleWatchEvent(event.path);
+      }, onError: (e) {
+        errorMessage = 'Watch error: $e';
+        stopWatch();
+      });
+    } catch (e) {
+      errorMessage = 'Failed to start watch: $e';
+      isWatching = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> stopWatch() async {
+    await _watchSubscription?.cancel();
+    _watchSubscription = null;
+    isWatching = false;
+    currentProcessingFile = null;
+    infoMessage = 'Auto Watch Mode stopped.';
+    notifyListeners();
+  }
+
+  Future<void> _handleWatchEvent(String filePath) async {
+    if (_processingWatchFiles.contains(filePath)) return;
+    _processingWatchFiles.add(filePath);
+
+    try {
+      newFilesDetected++;
+      notifyListeners();
+
+      await _waitUntilFileReady(filePath);
+
+      final file = File(filePath);
+      if (!file.existsSync()) return;
+
+      final fileStat = file.statSync();
+      final fileSize = fileStat.size;
+      final lastModified = fileStat.modified.millisecondsSinceEpoch;
+
+      final isProcessed = processedState.any((r) =>
+          r.originalPath == filePath &&
+          r.fileSize == fileSize &&
+          r.lastModified == lastModified &&
+          r.status == 'success');
+
+      if (isProcessed) {
+        alreadyProcessedSkippedCount++;
+        notifyListeners();
+        return;
+      }
+
+      currentProcessingFile = p.basename(filePath);
+      notifyListeners();
+
+      final record = await _service.applySingleFile(
+        filePath: filePath,
+        rootPath: rootFolderPath!,
+        options: options,
+      );
+
+      if (record != null) {
+        if (record.status == 'success') {
+          organizedCount++;
+        } else if (record.status == 'failed') {
+          watchFailedCount++;
+        }
+        await _stateService.addRecords(rootFolderPath!, [record]);
+        processedState.add(record);
+      }
+    } catch (e) {
+      watchFailedCount++;
+    } finally {
+      _processingWatchFiles.remove(filePath);
+      currentProcessingFile = null;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _waitUntilFileReady(String path) async {
+    int lastSize = -1;
+    int stableChecks = 0;
+
+    for (int i = 0; i < 60; i++) {
+      final file = File(path);
+      if (!file.existsSync()) {
+        await Future.delayed(const Duration(seconds: 1));
+        continue;
+      }
+      try {
+        final size = await file.length();
+        if (size == lastSize) {
+          stableChecks++;
+        } else {
+          stableChecks = 0;
+          lastSize = size;
+        }
+        if (stableChecks >= 2) return;
+      } catch (_) {
+        stableChecks = 0;
+      }
+      await Future.delayed(const Duration(seconds: 1));
+    }
+  }
+
+  @override
+  void dispose() {
+    _watchSubscription?.cancel();
+    super.dispose();
   }
 }

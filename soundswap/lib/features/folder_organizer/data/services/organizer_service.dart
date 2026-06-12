@@ -5,14 +5,19 @@ import 'package:crypto/crypto.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_options.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_file_item.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_history_record.dart';
+import 'package:soundswap/features/folder_organizer/data/models/organizer_state_record.dart';
 import 'package:soundswap/shared/services/local_json_store.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
+import 'package:soundswap/features/folder_organizer/data/models/organizer_scan_mode.dart';
 
 /// Folders whose names are reserved for organizer output.
 /// We never skip/delete these as source, but we do skip them when scanning
 /// to avoid re-processing already-organized files.
 const _reservedFolderNames = {
-  'duplicates',
+  'longresult',
+  'sortresult',
+  'result',
+  'results',
 };
 
 class OrganizerService {
@@ -28,6 +33,21 @@ class OrganizerService {
 
   static const imageExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'};
   static const videoExtensions = {'mp4', 'mov', 'mkv', 'avi', 'webm'};
+
+  static bool isExcludedResultFolder(String path) {
+    final lowerPath = path.toLowerCase();
+    final parts = lowerPath.split(RegExp(r'[\\/]'));
+
+    for (final part in parts) {
+      if (part.startsWith('result') ||
+          part == 'longresult' ||
+          part == 'sortresult') {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   // ─── History ──────────────────────────────────────────────────────────────────
 
@@ -119,6 +139,7 @@ class OrganizerService {
   Stream<Map<String, dynamic>> scanFolder({
     required String rootPath,
     required OrganizerOptions options,
+    required OrganizerScanMode scanMode,
     bool Function()? isCancelled,
   }) async* {
     final rootDir = Directory(rootPath);
@@ -132,6 +153,7 @@ class OrganizerService {
     int imagesCount = 0;
     int videosCount = 0;
     int filesSkipped = 0;
+    int alreadyProcessedSkipped = 0;
 
     dev.log(
       '[Organizer] Starting scan\n'
@@ -144,6 +166,9 @@ class OrganizerService {
 
     // ── Collect all files recursively ─────────────────────────────────────────
     final queue = <Directory>[rootDir];
+    int totalFilesFound = 0;
+    int excludedOutputFolderFiles = 0;
+    int eligibleFilesForHash = 0;
 
     while (queue.isNotEmpty) {
       if (isCancelled?.call() ?? false) {
@@ -160,38 +185,60 @@ class OrganizerService {
         'filesScanned': filesScanned,
         'imagesCount': imagesCount,
         'videosCount': videosCount,
+        'alreadyProcessedSkipped': alreadyProcessedSkipped,
         'items': scannedItems,
       };
 
       try {
         for (final entity in dir.listSync(followLinks: false)) {
+          totalFilesFound++;
+
+          // 1. Strict Exclusion BEFORE anything else
+          // Removed static isExcludedResultFolder check here to follow scanMode logic for directories.
+
           final baseName = p.basename(entity.path);
 
           if (!options.includeHiddenFolders &&
               (baseName.startsWith('.') || baseName.startsWith('\$'))) {
             filesSkipped++;
-            dev.log(
-              '[Organizer] Skipped: ${entity.path}\n'
-              '  Reason: Hidden file/folder',
-              name: 'OrganizerService',
-            );
             continue;
           }
 
           if (entity is Directory) {
-            // Skip reserved output folders so we don't re-process organized files
-            if (_reservedFolderNames.contains(baseName.toLowerCase())) {
+            final lowerBaseName = p.basename(entity.path).toLowerCase();
+
+            final isOrganizerFolder =
+                lowerBaseName == 'video' ||
+                lowerBaseName == 'videos' ||
+                lowerBaseName == 'image' ||
+                lowerBaseName == 'images' ||
+                lowerBaseName == 'portrait' ||
+                lowerBaseName == 'landscape' ||
+                lowerBaseName == 'square' ||
+                lowerBaseName == 'highquality' ||
+                lowerBaseName == 'lowquality' ||
+                lowerBaseName.startsWith('result') ||
+                lowerBaseName == 'longresult' ||
+                lowerBaseName == 'sortresult';
+
+            if (scanMode == OrganizerScanMode.rescan && isOrganizerFolder) {
+              excludedOutputFolderFiles++;
               filesSkipped++;
               dev.log(
                 '[Organizer] Skipped: ${entity.path}\n'
-                '  Reason: Destination folder',
+                '  Reason: Organizer folder (Rescan)',
                 name: 'OrganizerService',
               );
               continue;
             }
+
             queue.add(entity);
           } else if (entity is File) {
-            final item = _fileToItem(entity, baseName);
+            final fileStat = entity.statSync();
+            final fileSize = fileStat.size;
+            final lastModified = fileStat.modified.millisecondsSinceEpoch;
+
+            final item = _fileToItem(entity, baseName, fileSize, lastModified);
             if (item != null) {
               if (item.fileType == FileItemType.image) {
                 imagesCount++;
@@ -199,30 +246,25 @@ class OrganizerService {
                 videosCount++;
               }
               filesScanned++;
+              eligibleFilesForHash++;
               scannedItems.add(item);
-              dev.log(
-                '[Organizer] Scanned: ${entity.path}',
-                name: 'OrganizerService',
-              );
             } else {
               filesSkipped++;
-              dev.log(
-                '[Organizer] Skipped: ${entity.path}\n'
-                '  Reason: Unsupported file type',
-                name: 'OrganizerService',
-              );
             }
           }
         }
       } catch (e) {
         filesSkipped++;
-        dev.log(
-          '[Organizer] Skipped directory: ${dir.path}\n'
-          '  Reason: Inaccessible/Permission denied ($e)',
-          name: 'OrganizerService',
-        );
       }
     }
+
+    dev.log(
+      '[Organizer] Scan complete.\n'
+      '  Total files found: $totalFilesFound\n'
+      '  Excluded output folder files: $excludedOutputFolderFiles\n'
+      '  Eligible files for hash: $eligibleFilesForHash',
+      name: 'OrganizerService',
+    );
 
     // ── Duplicate detection ───────────────────────────────────────────────────
 
@@ -236,6 +278,7 @@ class OrganizerService {
           'filesScanned': filesScanned,
           'imagesCount': imagesCount,
           'videosCount': videosCount,
+          'alreadyProcessedSkipped': alreadyProcessedSkipped,
           'items': scannedItems,
           'hashedCount': hashedCount,
           'totalToHash': scannedItems.length,
@@ -283,6 +326,7 @@ class OrganizerService {
           'filesScanned': filesScanned,
           'imagesCount': imagesCount,
           'videosCount': videosCount,
+          'alreadyProcessedSkipped': alreadyProcessedSkipped,
           'items': scannedItems,
           'probedCount': probedCount,
           'totalToProbe': scannedItems.length,
@@ -415,6 +459,7 @@ class OrganizerService {
         'filesScanned': filesScanned,
         'imagesCount': imagesCount,
         'videosCount': videosCount,
+        'alreadyProcessedSkipped': alreadyProcessedSkipped,
         'items': scannedItems,
         'noFilesReason': reason,
       };
@@ -425,12 +470,13 @@ class OrganizerService {
         'filesScanned': filesScanned,
         'imagesCount': imagesCount,
         'videosCount': videosCount,
+        'alreadyProcessedSkipped': alreadyProcessedSkipped,
         'items': scannedItems,
       };
     }
   }
 
-  OrganizerFileItem? _fileToItem(File entity, String baseName) {
+  OrganizerFileItem? _fileToItem(File entity, String baseName, int sizeBytes, int lastModified) {
     final ext = p.extension(entity.path).replaceAll('.', '').toLowerCase();
     FileItemType? fileType;
     if (imageExtensions.contains(ext)) {
@@ -444,7 +490,8 @@ class OrganizerService {
       originalPath: entity.path,
       fileName: baseName,
       fileType: fileType,
-      sizeBytes: entity.lengthSync(),
+      sizeBytes: sizeBytes,
+      lastModified: lastModified,
     );
   }
 
@@ -663,27 +710,28 @@ class OrganizerService {
   /// Builds the destination directory path for [item] relative to [baseDir].
   String _buildTargetDir(String baseDir, OrganizerFileItem item, OrganizerOptions options) {
     if (options.organizeMode == OrganizerMode.byQuality) {
-      String group = item.qualityGroup ?? 'lowerLandscape';
+      String group = item.qualityGroup ?? 'landscape/lowQuality';
       if (group == 'unknown' || 
           group == 'largeSize' || 
           group == 'goodQuality' || 
           group == 'lowerQuality' || 
-          group == 'lowerVertical') {
-        group = 'lowerLandscape';
+          group == 'lowerVertical' ||
+          group == 'lowerLandscape') {
+        group = 'landscape/lowQuality';
       }
       return item.fileType == FileItemType.image
-          ? p.join(baseDir, 'images', group)
-          : p.join(baseDir, 'videos', group);
+          ? p.join(baseDir, 'image', group)
+          : p.join(baseDir, 'video', group);
     } else {
       // Type mode
-      final parentName = p.basename(p.dirname(item.originalPath));
-      // Skip if already inside images/ or videos/
-      if (parentName == 'images' || parentName == 'videos') {
+      final parentName = p.basename(p.dirname(item.originalPath)).toLowerCase();
+      // Skip if already inside image/ or video/
+      if (parentName == 'image' || parentName == 'video') {
         return p.dirname(item.originalPath);
       }
       return item.fileType == FileItemType.image
-          ? p.join(baseDir, 'images')
-          : p.join(baseDir, 'videos');
+          ? p.join(baseDir, 'image')
+          : p.join(baseDir, 'video');
     }
   }
 
@@ -1340,8 +1388,8 @@ class OrganizerService {
         break;
       }
       final baseName = p.basename(current).toLowerCase();
-      if (baseName == 'images' ||
-          baseName == 'videos' ||
+      if (baseName == 'image' ||
+          baseName == 'video' ||
           baseName == 'portraitquality' ||
           baseName == 'landscapequality' ||
           baseName == 'squarequality' ||
@@ -1628,8 +1676,9 @@ class OrganizerService {
   Future<OrganizerFileItem?> probeSingleFile(String path, OrganizerOptions options) async {
     final file = File(path);
     if (!file.existsSync()) return null;
+    final stat = file.statSync();
     final baseName = p.basename(path);
-    final item = _fileToItem(file, baseName);
+    final item = _fileToItem(file, baseName, stat.size, stat.modified.millisecondsSinceEpoch);
     if (item == null) return null;
 
     if (options.organizeMode == OrganizerMode.byQuality) {
@@ -1704,6 +1753,104 @@ class OrganizerService {
       }
     }
     return item;
+  }
+
+  Future<OrganizerStateRecord?> applySingleFile({
+    required String filePath,
+    required String rootPath,
+    required OrganizerOptions options,
+  }) async {
+    final file = File(filePath);
+    if (!file.existsSync()) return null;
+
+    final stat = file.statSync();
+    final baseName = p.basename(filePath);
+    final item = _fileToItem(file, baseName, stat.size, stat.modified.millisecondsSinceEpoch);
+    if (item == null) return null;
+
+    // 1. Probe for quality
+    if (options.organizeMode == OrganizerMode.byQuality) {
+      try {
+        final dims = await _ffmpegService.probeVideoDimensions(filePath);
+        item.width = dims.rawWidth;
+        item.height = dims.rawHeight;
+        item.rotation = dims.rotation;
+        item.displayWidth = dims.width;
+        item.displayHeight = dims.height;
+
+        final metadataOrientation = orientationOf(dims.width, dims.height);
+        MediaOrientation finalOrient = metadataOrientation;
+        int? visualW;
+        int? visualH;
+
+        if (item.fileType == FileItemType.video && options.preferVisualOrientation) {
+          final visualRes = await _detectVisualOrientation(filePath, dims.width, dims.height);
+          if (visualRes.orientation != null) {
+            finalOrient = visualRes.orientation!;
+            visualW = visualRes.visualWidth;
+            visualH = visualRes.visualHeight;
+          }
+        }
+
+        item.finalOrientation = finalOrient;
+        final widthForQuality = visualW ?? dims.width;
+        final heightForQuality = visualH ?? dims.height;
+        item.qualityGroup = classifyQuality(widthForQuality, heightForQuality, finalOrient);
+      } catch (_) {
+        item.qualityGroup = 'landscape/lowQuality';
+      }
+    }
+
+    // 2. Calculate proposed changes
+    calculateProposedChanges([item], rootPath, options);
+
+    // 3. Apply changes
+    String finalDestination = item.originalPath;
+    String status = 'skipped';
+    final fileStat = file.statSync();
+
+    if (item.action == FileItemAction.move ||
+        item.action == FileItemAction.moveAndRename ||
+        item.action == FileItemAction.rename ||
+        item.action == FileItemAction.convert) {
+      try {
+        final destPath = item.newPath!;
+        final destDir = Directory(p.dirname(destPath));
+        if (!destDir.existsSync()) {
+          await destDir.create(recursive: true);
+        }
+
+        if (item.action == FileItemAction.convert) {
+          await _ffmpegService.convertHeicToPng(item.originalPath, destPath);
+          final outFile = File(destPath);
+          if (!outFile.existsSync() || outFile.lengthSync() <= 0) {
+            throw Exception('Conversion failed');
+          }
+          if (options.deleteOriginalHeic) {
+            await file.delete();
+          }
+        } else {
+          await file.rename(destPath);
+        }
+        finalDestination = destPath;
+        status = 'success';
+      } catch (e) {
+        status = 'failed';
+      }
+    } else if (item.action == FileItemAction.alreadyOrganized) {
+      status = 'success';
+    }
+
+    return OrganizerStateRecord(
+      originalPath: item.originalPath,
+      fileName: item.fileName,
+      fileSize: fileStat.size,
+      lastModified: fileStat.modified.millisecondsSinceEpoch,
+      processedAt: DateTime.now(),
+      destinationPath: finalDestination,
+      mediaType: item.fileType == FileItemType.image ? 'image' : 'video',
+      status: status,
+    );
   }
 }
 

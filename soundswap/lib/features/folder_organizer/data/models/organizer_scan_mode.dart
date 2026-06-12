@@ -1,0 +1,4 @@
+enum OrganizerScanMode {
+  rescan,
+  fullScan,
+}

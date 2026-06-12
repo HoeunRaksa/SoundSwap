@@ -31,6 +31,7 @@ class OrganizerFileItem {
     required this.fileName,
     required this.fileType,
     required this.sizeBytes,
+    required this.lastModified,
     this.newPath,
     this.hash,
     this.action = FileItemAction.skip,
@@ -53,6 +54,7 @@ class OrganizerFileItem {
   final String fileName;
   final FileItemType fileType;
   final int sizeBytes;
+  final int lastModified;
   String? newPath;
   String? hash;
   FileItemAction action;
@@ -80,6 +82,7 @@ class OrganizerFileItem {
     String? fileName,
     FileItemType? fileType,
     int? sizeBytes,
+    int? lastModified,
     String? newPath,
     String? hash,
     FileItemAction? action,
@@ -102,6 +105,7 @@ class OrganizerFileItem {
       fileName: fileName ?? this.fileName,
       fileType: fileType ?? this.fileType,
       sizeBytes: sizeBytes ?? this.sizeBytes,
+      lastModified: lastModified ?? this.lastModified,
       newPath: newPath ?? this.newPath,
       hash: hash ?? this.hash,
       action: action ?? this.action,
@@ -124,8 +128,9 @@ class OrganizerFileItem {
   Map<String, Object?> toJson() => {
         'originalPath': originalPath,
         'fileName': fileName,
-        'fileType': fileType.name,
+        'fileType': fileType == FileItemType.video ? 'video' : 'image',
         'sizeBytes': sizeBytes,
+        'lastModified': lastModified,
         'newPath': newPath,
         'hash': hash,
         'action': action.name,
@@ -148,11 +153,9 @@ class OrganizerFileItem {
     return OrganizerFileItem(
       originalPath: json['originalPath'] as String,
       fileName: json['fileName'] as String,
-      fileType: FileItemType.values.firstWhere(
-        (e) => e.name == json['fileType'],
-        orElse: () => FileItemType.image,
-      ),
-      sizeBytes: json['sizeBytes'] as int,
+      fileType: json['fileType'] == 'video' ? FileItemType.video : FileItemType.image,
+      sizeBytes: json['sizeBytes'] as int? ?? 0,
+      lastModified: json['lastModified'] as int? ?? 0,
       newPath: json['newPath'] as String?,
       hash: json['hash'] as String?,
       action: FileItemAction.values.firstWhere(

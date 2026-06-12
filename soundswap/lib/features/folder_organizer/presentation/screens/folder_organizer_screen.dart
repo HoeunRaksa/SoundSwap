@@ -6,6 +6,7 @@ import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_options.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_file_item.dart';
 import 'package:soundswap/features/folder_organizer/data/models/organizer_history_record.dart';
+import 'package:soundswap/features/folder_organizer/data/models/organizer_scan_mode.dart';
 import 'package:soundswap/features/folder_organizer/presentation/state/folder_organizer_controller.dart';
 import 'package:soundswap/shared/widgets/feature_page.dart';
 import 'package:path/path.dart' as p;
@@ -66,6 +67,58 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
     _qualityWidthController.dispose();
     _qualityHeightController.dispose();
     super.dispose();
+  }
+
+  void _confirmFullRescan() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Full Rescan?'),
+        content: const Text(
+            'This will ignore previously processed files and rescan the entire folder.\n\n'
+            'This may take a long time and result in re-processing if items are not yet organized. '
+            'Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              widget.controller.startScan(scanMode: OrganizerScanMode.fullScan);
+            },
+            child: const Text('Yes, Full Rescan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClearState() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Processed State?'),
+        content: const Text(
+            'This will clear the history of files processed in this folder. '
+            'The next scan or watch will treat all files as new.\n\nAre you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () {
+              Navigator.pop(context);
+              widget.controller.clearProcessedState();
+            },
+            child: const Text('Clear State'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _updateOptions() {
@@ -166,7 +219,7 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
                 flex: 4,
                 child: _buildOptionsCard(),
               ),
-              if (controller.scanStatus != 'idle' || controller.scannedItems.isNotEmpty) ...[
+              if (controller.scanStatus != 'idle' || controller.scannedItems.isNotEmpty || controller.isWatching || controller.processedState.isNotEmpty) ...[
                 SizedBox(width: gap),
                 Expanded(
                   flex: 3,
@@ -255,13 +308,38 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
                   ),
                   label: Text(controller.isScanCancelled ? 'Stopping...' : 'Stop Scan'),
                 )
+              else if (!controller.isWatching)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: controller.isApplying ? null : () => controller.startWatch(),
+                      icon: const Icon(Icons.remove_red_eye),
+                      label: const Text('Start Watch'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: controller.isApplying ? null : () => controller.startScan(scanMode: OrganizerScanMode.rescan),
+                      icon: const Icon(Icons.search),
+                      label: const Text('Rescan Unprocessed'),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: controller.isApplying ? null : () => _confirmFullRescan(),
+                      icon: const Icon(Icons.restart_alt),
+                      label: const Text('Full Rescan'),
+                    ),
+                  ],
+                )
               else
                 FilledButton.icon(
-                  onPressed: controller.isApplying
-                      ? null
-                      : () => controller.startScan(),
-                  icon: const Icon(Icons.search),
-                  label: const Text('Scan Folder'),
+                  onPressed: () => controller.stopWatch(),
+                  icon: const Icon(Icons.stop),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colorScheme.error,
+                    foregroundColor: colorScheme.onError,
+                  ),
+                  label: const Text('Stop Watch'),
                 ),
             ],
           ],
@@ -631,6 +709,19 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
             contentPadding: EdgeInsets.zero,
           ),
         ],
+
+        const Divider(height: 24),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Clear Processed State', style: TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: const Text('Reset the memory of which files were already processed.'),
+          trailing: OutlinedButton(
+            onPressed: controller.isApplying || controller.isScanning || controller.isWatching
+                ? null
+                : _confirmClearState,
+            child: const Text('Clear State'),
+          ),
+        ),
       ],
     );
   }
@@ -655,25 +746,59 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
           ),
           child: Column(
             children: [
-              _buildStatRow('Folders scanned', '${controller.foldersScanned}', Icons.folder),
-              const Divider(height: 12),
-              _buildStatRow('Total files scanned', '${controller.filesScanned}', Icons.description),
-              const Divider(height: 12),
-              _buildStatRow('Images found', '${controller.imagesCount}', Icons.image, Colors.blue),
-              const Divider(height: 12),
-              _buildStatRow('Videos found', '${controller.videosCount}', Icons.movie, Colors.purple),
-              if (controller.heicFound > 0) ...[
+              if (controller.isWatching) ...[
+                const Text('Auto Watch Metrics', style: TextStyle(fontWeight: FontWeight.bold)),
                 const Divider(height: 12),
-                _buildStatRow('HEIC files found', '${controller.heicFound}', Icons.image_search_outlined, Colors.teal),
-              ],
-              if (controller.options.detectDuplicates) ...[
+                _buildStatRow('New files detected', '${controller.newFilesDetected}', Icons.file_download),
                 const Divider(height: 12),
-                _buildStatRow(
-                  'Duplicates candidates',
-                  '${duplicateItems.length}',
-                  Icons.copy,
-                  duplicateItems.isNotEmpty ? Colors.orange : Colors.grey,
-                ),
+                _buildStatRow('Already processed skipped', '${controller.alreadyProcessedSkippedCount}', Icons.skip_next, Colors.grey),
+                const Divider(height: 12),
+                _buildStatRow('Organized', '${controller.organizedCount}', Icons.check_circle, Colors.green),
+                const Divider(height: 12),
+                _buildStatRow('Failed', '${controller.watchFailedCount}', Icons.error, Colors.red),
+                if (controller.currentProcessingFile != null) ...[
+                  const Divider(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.sync, size: 16, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      const Text('Processing:', style: TextStyle(fontSize: 13)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          controller.currentProcessingFile!,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ] else ...[
+                _buildStatRow('Folders scanned', '${controller.foldersScanned}', Icons.folder),
+                const Divider(height: 12),
+                _buildStatRow('Total files scanned', '${controller.filesScanned}', Icons.description),
+                if (controller.alreadyProcessedSkippedCount > 0) ...[
+                  const Divider(height: 12),
+                  _buildStatRow('Processed files skipped', '${controller.alreadyProcessedSkippedCount}', Icons.skip_next, Colors.grey),
+                ],
+                const Divider(height: 12),
+                _buildStatRow('Images found', '${controller.imagesCount}', Icons.image, Colors.blue),
+                const Divider(height: 12),
+                _buildStatRow('Videos found', '${controller.videosCount}', Icons.movie, Colors.purple),
+                if (controller.heicFound > 0) ...[
+                  const Divider(height: 12),
+                  _buildStatRow('HEIC files found', '${controller.heicFound}', Icons.image_search_outlined, Colors.teal),
+                ],
+                if (controller.options.detectDuplicates) ...[
+                  const Divider(height: 12),
+                  _buildStatRow(
+                    'Duplicates candidates',
+                    '${duplicateItems.length}',
+                    Icons.copy,
+                    duplicateItems.isNotEmpty ? Colors.orange : Colors.grey,
+                  ),
+                ],
               ],
             ],
           ),
@@ -1082,7 +1207,10 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1096,7 +1224,6 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
                         style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    const SizedBox(width: 6),
                     if (item.action != FileItemAction.duplicateDelete)
                       _buildSmallBadge(
                         text: item.newPath != null
@@ -1104,13 +1231,11 @@ class _FolderOrganizerScreenState extends State<FolderOrganizerScreen>
                             : '—',
                         color: Colors.teal.shade700,
                       ),
-                    if (item.isDuplicate) ...[
-                      const SizedBox(width: 6),
+                    if (item.isDuplicate)
                       Tooltip(
                         message: 'Duplicate of ${p.basename(item.duplicateOfPath ?? "")}',
                         child: Icon(Icons.copy, size: 12, color: Colors.orange.shade700),
                       ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 2),
