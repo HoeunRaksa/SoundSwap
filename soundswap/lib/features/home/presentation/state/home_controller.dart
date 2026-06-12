@@ -112,6 +112,17 @@ class HomeController extends ChangeNotifier {
   DurationMode durationMode = DurationMode.trimAudioToVideo;
   ImageToVideoSettings imageToVideoSettings = const ImageToVideoSettings();
   int detectedImageCount = 0;
+  bool joinImages = false;
+
+  void setJoinImages(bool value) {
+    if (joinImages == value) return;
+    joinImages = value;
+    if (jobs.isNotEmpty) {
+      jobs = _rebuildJobsFromCurrentQueue();
+    }
+    unawaited(_persistLastState());
+    notifyListeners();
+  }
 
   void setOutputNamePrefix(String value) {
     if (outputNamePrefix == value) return;
@@ -519,24 +530,34 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final totalFolders = videoFolders.length + audioFolders.length;
+      debugPrint('feature name: Home Batch');
+      debugPrint('selected folders count: $totalFolders');
+      debugPrint('recursive scan enabled: true');
+      final scanStats = ScanStats();
+
       videos = [];
       detectedImageCount = 0;
       if (videoFolders.isNotEmpty) {
         await _logInfo('Scanning video folders...');
         final allVideoExts = [
           ...AppConstants.supportedVideoExtensions,
-          ...AppConstants.supportedImageExtensions,
+          if (joinImages) ...AppConstants.supportedImageExtensions,
         ];
         
         final Map<String, MediaFile> uniqueVideos = {};
         for (final folder in videoFolders) {
-          if (!Directory(folder).existsSync()) {
+          debugPrint('folder path: $folder');
+          final exists = Directory(folder).existsSync();
+          debugPrint('folder exists: $exists');
+          if (!exists) {
             await _logError('Video folder not found: $folder');
             continue;
           }
           final items = await _mediaScannerService.scanFolder(
             folderPath: folder,
             extensions: allVideoExts,
+            stats: scanStats,
           );
           for (final item in items) {
             uniqueVideos[p.normalize(item.path)] = item;
@@ -546,6 +567,9 @@ class HomeController extends ChangeNotifier {
         videos = uniqueVideos.values.toList();
         videos.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         detectedImageCount = videos.where((f) => f.isImage).length;
+        debugPrint('Join Images enabled: $joinImages');
+        debugPrint('videos found count: ${videos.length - detectedImageCount}');
+        debugPrint('images found count: $detectedImageCount');
         await _logInfo(
           'Found ${videos.length} media files ($detectedImageCount images) across ${videoFolders.length} folders',
         );
@@ -554,23 +578,47 @@ class HomeController extends ChangeNotifier {
       audios = [];
       if (audioFolders.isNotEmpty) {
         await _logInfo('Scanning audio folders...');
+        final audioScanExts = [
+          ...AppConstants.supportedAudioExtensions,
+          ...AppConstants.supportedVideoExtensions,
+        ];
         final Map<String, MediaFile> uniqueAudios = {};
         for (final folder in audioFolders) {
-          if (!Directory(folder).existsSync()) {
+          debugPrint('audio folder path: $folder');
+          final exists = Directory(folder).existsSync();
+          debugPrint('folder exists: $exists');
+          debugPrint('recursive scan enabled: true');
+          if (!exists) {
             await _logError('Audio folder not found: $folder');
             continue;
           }
           final items = await _mediaScannerService.scanFolder(
             folderPath: folder,
-            extensions: AppConstants.supportedAudioExtensions,
+            extensions: audioScanExts,
+            stats: scanStats,
           );
           for (final item in items) {
-            uniqueAudios[p.normalize(item.path)] = item;
+            final isVideoExt = AppConstants.supportedVideoExtensions.contains(p.extension(item.path).toLowerCase());
+            if (isVideoExt) {
+              final hasAudio = await _ffmpegService.probeHasAudio(item.path);
+              if (hasAudio) {
+                debugPrint('accepted audio source: ${item.name}, type: video-with-audio');
+                uniqueAudios[p.normalize(item.path)] = item;
+              } else {
+                debugPrint('skipped video source reason if no audio stream');
+                await _logInfo('Skipped ${item.name}: No audio stream found.');
+              }
+            } else {
+              debugPrint('supported audio file path found: ${item.path}');
+              uniqueAudios[p.normalize(item.path)] = item;
+            }
           }
         }
         
         audios = uniqueAudios.values.toList();
         audios.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        debugPrint('total files discovered: ${scanStats.totalFilesDiscovered}');
+        debugPrint('final audio pool count: ${audios.length}');
         await _logInfo('Found ${audios.length} audios across ${audioFolders.length} folders');
       }
 
@@ -589,6 +637,12 @@ class HomeController extends ChangeNotifier {
       currentIndex = 0;
       statusMessage = _queueMessage();
       unawaited(_persistLastState());
+      
+      debugPrint('total files discovered: ${scanStats.totalFilesDiscovered}');
+      debugPrint('supported media discovered: ${scanStats.supportedMediaDiscovered}');
+      debugPrint('skipped unsupported count: ${scanStats.skippedUnsupportedCount}');
+      debugPrint('skipped destination-folder count: ${scanStats.skippedDestinationFolderCount}');
+      debugPrint('final queue/source count: ${jobs.length}');
     } catch (error, stackTrace) {
       await _recordException(error, stackTrace);
       statusMessage = buildQueue
@@ -717,7 +771,7 @@ class HomeController extends ChangeNotifier {
   }
 
   List<SoundSwapJob> _buildJobsForVideos(List<MediaFile> sourceVideos) {
-    if (sourceVideos.isEmpty || audios.isEmpty || outputFolderPath == null) {
+    if (sourceVideos.isEmpty || outputFolderPath == null) {
       return [];
     }
 
@@ -923,6 +977,7 @@ class HomeController extends ChangeNotifier {
         String effectiveVideoPath = originalJob.video.path;
         String? tempImageVideoPath;
         if (originalJob.video.isImage) {
+          debugPrint('processing item type video/image: image');
           tempImageVideoPath = _temporaryGeneratorOutputPath(
             originalJob.outputPath,
           ).replaceAll('.generator.', '.img2vid.');
@@ -932,23 +987,27 @@ class HomeController extends ChangeNotifier {
           var targetW = outputSize.width ?? 1080;
           var targetH = outputSize.height ?? 1920;
           if (outputSize == VideoOutputSize.original) {
-            try {
-              final dims = await _ffmpegService.probeVideoDimensions(originalJob.video.path);
-              targetW = dims.width;
-              targetH = dims.height;
-              if (targetW % 2 != 0) targetW += 1;
-              if (targetH % 2 != 0) targetH += 1;
-            } catch (_) {}
+            // Need a default because we can't probe a video that doesn't exist
+            targetW = 1080;
+            targetH = 1920;
           }
-          await _ffmpegService.convertImageToVideo(
-            imagePath: originalJob.video.path,
-            outputPath: tempImageVideoPath,
-            settings: imageToVideoSettings,
-            width: targetW,
-            height: targetH,
-          );
-          effectiveVideoPath = tempImageVideoPath;
-          await _logInfo('Image converted to video: $tempImageVideoPath');
+          try {
+            await _ffmpegService.convertImageToVideo(
+              imagePath: originalJob.video.path,
+              outputPath: tempImageVideoPath,
+              settings: imageToVideoSettings,
+              width: targetW,
+              height: targetH,
+            );
+            effectiveVideoPath = tempImageVideoPath;
+            debugPrint('image converted to video temp path: $tempImageVideoPath');
+            await _logInfo('Image converted to video: $tempImageVideoPath');
+          } catch (e) {
+            debugPrint('failed image conversion reason: $e');
+            throw FfmpegException('Image conversion failed: $e');
+          }
+        } else {
+          debugPrint('processing item type video/image: video');
         }
 
         final effectiveJob = tempImageVideoPath == null
@@ -1044,7 +1103,10 @@ class HomeController extends ChangeNotifier {
   }
 
 
-  MediaFile _randomAudio() => audios[_random.nextInt(audios.length)];
+  MediaFile _randomAudio() {
+    if (audios.isEmpty) return const MediaFile(path: '');
+    return audios[_random.nextInt(audios.length)];
+  }
 
   void toggleQueuedVideoSelection(String videoPath, bool selected) {
     selectedQueueVideoPaths = {
@@ -1737,11 +1799,11 @@ class HomeController extends ChangeNotifier {
     if (videos.isEmpty) {
       return 'No supported videos found.';
     }
-    if (audios.isEmpty) {
-      return 'No supported audio files found.';
-    }
     if (jobs.isEmpty && !queueGenerated) {
       return 'Folders scanned. Generate Queue to review files.';
+    }
+    if (audios.isEmpty) {
+      return 'Ready: ${jobs.length} videos queued. (Warning: No supported audio files found)';
     }
     return 'Ready: ${jobs.length} videos queued.';
   }

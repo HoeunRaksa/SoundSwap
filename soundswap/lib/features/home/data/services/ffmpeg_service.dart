@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:soundswap/core/video/duration_mode.dart';
@@ -114,6 +115,17 @@ class FfmpegService {
   }) async {
     final videoDuration = await probeDuration(job.video.path);
     final audioDuration = await probeDuration(job.audio.path);
+
+    final videoHasAudio = await probeHasAudio(job.video.path);
+    final audioHasAudio = await probeHasAudio(job.audio.path);
+
+    debugPrint('input video has audio: $videoHasAudio');
+    debugPrint('selected audio source has audio: $audioHasAudio');
+
+    if (!audioHasAudio) {
+      throw const FfmpegException('Selected audio source has no audio stream');
+    }
+
     final commandPlan = buildReplaceAudioPlan(
       videoPath: job.video.path,
       audioPath: job.audio.path,
@@ -122,6 +134,7 @@ class FfmpegService {
       audioDuration: audioDuration,
       audioSettings: audioSettings,
       durationMode: durationMode,
+      videoHasAudio: videoHasAudio,
     );
 
     return FfmpegReplacementPlan(
@@ -311,6 +324,26 @@ class FfmpegService {
     }
   }
 
+  Future<bool> probeHasAudio(String inputPath) async {
+    final ffprobeExecutable = _ffprobeExecutable;
+    final arguments = [
+      '-v',
+      'error',
+      '-select_streams',
+      'a',
+      '-show_entries',
+      'stream=codec_type',
+      '-of',
+      'default=noprint_wrappers=1:nokey=1',
+      inputPath,
+    ];
+    final result = await _runProcess(ffprobeExecutable, arguments);
+    if (result.exitCode != 0) {
+      return false; // Safely assume no audio if ffprobe fails
+    }
+    return result.stdout.trim().toLowerCase().contains('audio');
+  }
+
   /// Converts a still image into an MP4 video of the specified duration.
   Future<ProcessRunOutput> convertImageToVideo({
     required String imagePath,
@@ -389,6 +422,7 @@ class FfmpegService {
     required double audioDuration,
     AudioSettings audioSettings = const AudioSettings(),
     DurationMode durationMode = DurationMode.trimAudioToVideo,
+    bool videoHasAudio = true,
   }) {
     // Keep original only — just copy the video as-is (audio comes from video)
     if (audioSettings.mode == AudioMode.keepOriginalOnly) {
@@ -422,40 +456,80 @@ class FfmpegService {
     final needsLoop = audioDuration <= videoDuration;
 
     if (audioSettings.mode == AudioMode.mixOriginalAndNew) {
-      // Mix mode: blend original video audio + replacement audio
-      final randomStart = needsLoop
-          ? 0.0
-          : _random.nextDouble() * (audioDuration - videoDuration);
+      if (videoHasAudio) {
+        debugPrint('using mix mode or replace-only mode: mix mode');
+        // Mix mode: blend original video audio + replacement audio
+        final randomStart = needsLoop
+            ? 0.0
+            : _random.nextDouble() * (audioDuration - videoDuration);
 
-      final arguments = <String>[
-        '-y',
-        '-i',
-        videoPath,
-        if (!needsLoop) ...['-ss', _formatSeconds(randomStart)],
-        if (needsLoop) ...['-stream_loop', '-1'],
-        '-i',
-        audioPath,
-        '-filter_complex',
-        '[0:a]volume=$origVol[oa];[1:a]volume=$newVol[na];[oa][na]amix=inputs=2:duration=shortest[aout]',
-        '-map',
-        '0:v',
-        '-map',
-        '[aout]',
-        '-c:v',
-        'copy',
-        '-c:a',
-        'aac',
-        '-b:a',
-        '192k',
-        ...outputDuration.flags,
-        outputPath,
-      ];
-      return FfmpegCommandPlan(
-        arguments: arguments,
-        command: _formatCommand(_ffmpegExecutable, arguments),
-        randomStart: randomStart,
-      );
+        final arguments = <String>[
+          '-y',
+          '-i',
+          videoPath,
+          if (!needsLoop) ...['-ss', _formatSeconds(randomStart)],
+          if (needsLoop) ...['-stream_loop', '-1'],
+          '-i',
+          audioPath,
+          '-filter_complex',
+          '[0:a]volume=$origVol[oa];[1:a]volume=$newVol[na];[oa][na]amix=inputs=2:duration=shortest[aout]',
+          '-map',
+          '0:v',
+          '-map',
+          '[aout]',
+          '-c:v',
+          'copy',
+          '-c:a',
+          'aac',
+          '-b:a',
+          '192k',
+          ...outputDuration.flags,
+          outputPath,
+        ];
+        return FfmpegCommandPlan(
+          arguments: arguments,
+          command: _formatCommand(_ffmpegExecutable, arguments),
+          randomStart: randomStart,
+        );
+      } else {
+        debugPrint('using mix mode or replace-only mode: replace-only mode (fallback due to no original audio)');
+        // Fallback to replace-only behavior but using the exact prompt's example format
+        final randomStart = needsLoop
+            ? 0.0
+            : _random.nextDouble() * (audioDuration - videoDuration);
+
+        final arguments = <String>[
+          '-y',
+          '-i',
+          videoPath,
+          if (!needsLoop) ...['-ss', _formatSeconds(randomStart)],
+          if (needsLoop) ...['-stream_loop', '-1'],
+          '-i',
+          audioPath,
+          '-filter_complex',
+          '[1:a]volume=$newVol[aout]',
+          '-map',
+          '0:v',
+          '-map',
+          '[aout]',
+          '-c:v',
+          'copy',
+          '-c:a',
+          'aac',
+          '-b:a',
+          '192k',
+          ...outputDuration.flags,
+          outputPath,
+        ];
+        return FfmpegCommandPlan(
+          arguments: arguments,
+          command: _formatCommand(_ffmpegExecutable, arguments),
+          randomStart: randomStart,
+        );
+      }
     }
+
+    debugPrint('using mix mode or replace-only mode: replace-only mode');
 
     // Replace mode (default): discard original audio, use replacement only
     if (audioDuration > videoDuration) {

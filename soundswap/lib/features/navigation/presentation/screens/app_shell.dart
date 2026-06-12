@@ -21,6 +21,8 @@ import 'package:soundswap/features/templates/presentation/state/templates_contro
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
 import 'package:soundswap/features/folder_organizer/presentation/screens/folder_organizer_screen.dart';
 import 'package:soundswap/features/folder_organizer/presentation/state/folder_organizer_controller.dart';
+import 'package:soundswap/features/organizer_watch/presentation/screens/organizer_watch_screen.dart';
+import 'package:soundswap/features/organizer_watch/presentation/state/organizer_watch_controller.dart';
 import 'package:soundswap/shared/widgets/custom_title_bar.dart';
 
 class AppShell extends StatefulWidget {
@@ -42,6 +44,7 @@ class _AppShellState extends State<AppShell> {
   late final ProductImportController _productImportController;
   late final LongVideoController _longVideoController;
   late final FolderOrganizerController _folderOrganizerController;
+  late final OrganizerWatchController _organizerWatchController;
 
   var _selectedIndex = 0;
 
@@ -139,6 +142,16 @@ class _AppShellState extends State<AppShell> {
       group: _NavGroup.tools,
       child: FolderOrganizerScreen(controller: _folderOrganizerController),
     ),
+    _NavigationItem(
+      label: 'Organizer Watch',
+      icon: Icons.auto_awesome_motion_outlined,
+      selectedIcon: Icons.auto_awesome_motion,
+      group: _NavGroup.tools,
+      child: OrganizerWatchScreen(
+        controller: _organizerWatchController,
+        historyController: _resultHistoryController,
+      ),
+    ),
   ];
 
   @override
@@ -162,6 +175,7 @@ class _AppShellState extends State<AppShell> {
       templatesController: _templatesController,
     );
     _folderOrganizerController = FolderOrganizerController();
+    _organizerWatchController = OrganizerWatchController();
     
     _homeController.initialize();
     _brandingController.load();
@@ -182,6 +196,16 @@ class _AppShellState extends State<AppShell> {
     _effectsController.load();
     _productImportController.load();
     _folderOrganizerController.load();
+    _organizerWatchController.load().then((_) {
+      for (final profile in _organizerWatchController.profiles) {
+        if (profile.isActive) {
+          _organizerWatchController.startWatching(
+            profileId: profile.id,
+            historyController: _resultHistoryController,
+          );
+        }
+      }
+    });
   }
 
   @override
@@ -197,6 +221,7 @@ class _AppShellState extends State<AppShell> {
     _productImportController.dispose();
     _longVideoController.dispose();
     _folderOrganizerController.dispose();
+    _organizerWatchController.dispose();
     super.dispose();
   }
 

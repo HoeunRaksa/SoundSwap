@@ -571,9 +571,9 @@ class _ResultHistoryScreenState extends State<ResultHistoryScreen> {
 
   Future<void> _confirmClearResults(BuildContext context) async {
     final folder = widget.controller.resultFolderFilter ?? widget.folderWatcherController.resultFolderPath;
-    if (folder == null) return;
-
-    if (_isProtectedSourceFolder(folder)) {
+    final folderName = widget.controller.resultFolderFilter ?? 'All visible folders';
+    
+    if (folder != null && _isProtectedSourceFolder(folder)) {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
@@ -601,12 +601,12 @@ class _ResultHistoryScreenState extends State<ResultHistoryScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Choose how to clear results for the folder:'),
+            const Text('Choose how to clear results for:'),
             const SizedBox(height: 8),
-            Text(folder, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(folderName, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             const Text(
-              'WARNING: Choosing "Clear history and delete files" will permanently delete the output result files from your storage device. This action cannot be undone.',
+              'WARNING: Choosing "Clear history and delete files" will permanently delete the visible output result files from your storage device. This action cannot be undone.',
               style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
             ),
           ],
@@ -632,15 +632,15 @@ class _ResultHistoryScreenState extends State<ResultHistoryScreen> {
       ),
     );
     if (option == 'history_only') {
-      await widget.controller.clearFolderResults(folder, deleteFiles: false);
-      if (widget.controller.message != null) {
+      await widget.controller.clearVisibleResults(deleteFiles: false);
+      if (widget.controller.message != null && context.mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text(widget.controller.message!)),
         );
       }
     } else if (option == 'history_and_files') {
-      await widget.controller.clearFolderResults(folder, deleteFiles: true);
-      if (widget.controller.message != null) {
+      await widget.controller.clearVisibleResults(deleteFiles: true);
+      if (widget.controller.message != null && context.mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text(widget.controller.message!)),
         );
@@ -694,8 +694,13 @@ class _ResultHistoryScreenState extends State<ResultHistoryScreen> {
   }
 
   bool _isProtectedSourceFolder(String folder) {
-    return _foldersMatch(folder, widget.folderWatcherController.videoFolderPath) ||
-        _foldersMatch(folder, widget.folderWatcherController.audioFolderPath);
+    for (final vFolder in widget.folderWatcherController.videoFolders) {
+      if (_foldersMatch(folder, vFolder)) return true;
+    }
+    for (final aFolder in widget.folderWatcherController.audioFolders) {
+      if (_foldersMatch(folder, aFolder)) return true;
+    }
+    return false;
   }
 
   bool _foldersMatch(String folder, String? otherFolder) {
@@ -725,6 +730,7 @@ class _ResultHistoryScreenState extends State<ResultHistoryScreen> {
       ResultProcessType.auto => 'auto processed',
       ResultProcessType.manual => 'manual batch',
       ResultProcessType.longVideo => 'long video',
+      ResultProcessType.organizerWatch => 'organizer watch',
       null => 'all',
     };
     final confirmed = await _showSimpleConfirmDialog(
@@ -945,6 +951,7 @@ class _RecordTileState extends State<_RecordTile> {
       ResultProcessType.auto => 'Auto',
       ResultProcessType.manual => 'Manual',
       ResultProcessType.longVideo => 'Long Video',
+      ResultProcessType.organizerWatch => 'Organizer Watch',
     };
   }
 

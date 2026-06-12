@@ -1318,6 +1318,22 @@ class _GeneratorOptionsPanel extends StatelessWidget {
                     horizontal: -1,
                     vertical: -1,
                   ),
+                  title: const Text('Join images into videos'),
+                  subtitle: const Text('OFF = videos only, ON = images can become video clips.'),
+                  value: controller.joinImages,
+                  onChanged: (value) => controller.setJoinImages(value ?? false),
+                ),
+
+                SizedBox(height: gap * 0.6),
+
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: gap * 0.2,
+                  ),
+                  visualDensity: const VisualDensity(
+                    horizontal: -1,
+                    vertical: -1,
+                  ),
                   title: const Text('Use Overlays'),
                   value: controller.useOverlay,
                   onChanged: (value) {

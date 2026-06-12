@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/core/responsive/app_responsive.dart';
@@ -358,11 +359,11 @@ class FolderWatcherScreen extends StatelessWidget {
     );
     if (selectAgain != true) return;
     for (final profile in controller.profiles) {
-      if (profile.videoFolderPath == folder) {
+      if (profile.videoFolders.contains(folder)) {
         await controller.pickProfileVideoFolder(profile.id);
         return;
       }
-      if (profile.audioFolderPath == folder) {
+      if (profile.audioFolders.contains(folder)) {
         await controller.pickProfileAudioFolder(profile.id);
         return;
       }
@@ -505,7 +506,7 @@ class _ProfileCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      profile.videoFolderPath != null ? p.basename(profile.videoFolderPath!) : 'No Videos',
+                      profile.videoFolders.isNotEmpty ? p.basename(profile.videoFolders.first) : 'No Videos',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2),
@@ -650,8 +651,8 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _prefixController;
 
-  String? _videoFolderPath;
-  String? _audioFolderPath;
+  List<String> _videoFolders = [];
+  List<String> _audioFolders = [];
   String? _resultFolderPath;
   late String? _templateId;
   late bool _useOverlay;
@@ -664,8 +665,8 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
     final p = widget.profile;
     _nameController = TextEditingController(text: p.name);
     _prefixController = TextEditingController(text: p.outputPrefix);
-    _videoFolderPath = p.videoFolderPath;
-    _audioFolderPath = p.audioFolderPath;
+    _videoFolders = List.of(p.videoFolders);
+    _audioFolders = List.of(p.audioFolders);
     _resultFolderPath = p.resultFolderPath;
     _templateId = widget.templatesController.templates
             .any((t) => t.id == p.templateId)
@@ -683,22 +684,30 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
     super.dispose();
   }
 
-  Future<void> _pickVideoFolder() async {
+  Future<void> _addVideoFolder() async {
     final path = await _folderPickerService.pickFolder(
       dialogTitle: 'Select source video folder',
     );
-    if (path != null) {
-      setState(() => _videoFolderPath = path);
+    if (path != null && !_videoFolders.contains(path)) {
+      setState(() => _videoFolders.add(path));
     }
   }
 
-  Future<void> _pickAudioFolder() async {
+  void _removeVideoFolder(String path) {
+    setState(() => _videoFolders.remove(path));
+  }
+
+  Future<void> _addAudioFolder() async {
     final path = await _folderPickerService.pickFolder(
       dialogTitle: 'Select source audio folder',
     );
-    if (path != null) {
-      setState(() => _audioFolderPath = path);
+    if (path != null && !_audioFolders.contains(path)) {
+      setState(() => _audioFolders.add(path));
     }
+  }
+
+  void _removeAudioFolder(String path) {
+    setState(() => _audioFolders.remove(path));
   }
 
   Future<void> _pickResultFolder() async {
@@ -713,8 +722,8 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
   void _applyTemplate(ProjectTemplate template) {
     setState(() {
       _templateId = template.id;
-      _videoFolderPath = template.videoFolders.isNotEmpty ? template.videoFolders.first : null;
-      _audioFolderPath = template.audioFolders.isNotEmpty ? template.audioFolders.first : null;
+      _videoFolders = template.videoFolders.isNotEmpty ? List.of(template.videoFolders) : [];
+      _audioFolders = template.audioFolders.isNotEmpty ? List.of(template.audioFolders) : [];
       _resultFolderPath = template.outputFolder;
       _prefixController.text = template.outputPrefix;
       _useOverlay = template.useOverlay;
@@ -745,15 +754,17 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
         autofocus: true,
         decoration: const InputDecoration(labelText: 'Profile name'),
       ),
-      _FolderEditRow(
-        label: 'Source video folder',
-        path: _videoFolderPath,
-        onPressed: _pickVideoFolder,
+      _MultiFolderEditRow(
+        label: 'Source video folders',
+        paths: _videoFolders,
+        onAdd: _addVideoFolder,
+        onRemove: _removeVideoFolder,
       ),
-      _FolderEditRow(
-        label: 'Source audio folder',
-        path: _audioFolderPath,
-        onPressed: _pickAudioFolder,
+      _MultiFolderEditRow(
+        label: 'Source audio folders',
+        paths: _audioFolders,
+        onAdd: _addAudioFolder,
+        onRemove: _removeAudioFolder,
       ),
       _FolderEditRow(
         label: 'Result folder',
@@ -845,8 +856,8 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
               name: _nameController.text.trim().isEmpty
                   ? 'Watcher profile'
                   : _nameController.text.trim(),
-              videoFolderPath: _videoFolderPath,
-              audioFolderPath: _audioFolderPath,
+              videoFolders: _videoFolders,
+              audioFolders: _audioFolders,
               resultFolderPath: _resultFolderPath,
               outputPrefix: _prefixController.text,
               templateId: _templateId,
@@ -918,5 +929,88 @@ class _FolderEditRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _MultiFolderEditRow extends StatelessWidget {
+  const _MultiFolderEditRow({
+    required this.label,
+    required this.paths,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final String label;
+  final List<String> paths;
+  final VoidCallback onAdd;
+  final void Function(String) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppResponsive.bodySize(context) - 1,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add, size: 14),
+                label: const Text('Add'),
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+          if (paths.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                'Not selected',
+                style: TextStyle(
+                  fontSize: AppResponsive.bodySize(context) - 2,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: paths.map((path) {
+                  return InputChip(
+                    label: Text(
+                      _folderName(path),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onDeleted: () => onRemove(path),
+                    tooltip: path,
+                    deleteIcon: const Icon(Icons.close, size: 14),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _folderName(String path) {
+    final segments = path.split(Platform.isWindows ? '\\' : '/');
+    return segments.isNotEmpty ? segments.last : path;
   }
 }

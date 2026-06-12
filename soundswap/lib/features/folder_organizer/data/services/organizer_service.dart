@@ -67,14 +67,14 @@ class OrganizerService {
 
   // ─── Quality helpers ──────────────────────────────────────────────────────────
 
-  static MediaOrientation _orientationOf(int w, int h) {
+  static MediaOrientation orientationOf(int w, int h) {
     if (w == h) return MediaOrientation.square;
     if (h > w) return MediaOrientation.vertical;
     return MediaOrientation.landscape;
   }
 
   /// Returns orientation-based quality classification folder name.
-  static String _classifyQuality(int w, int h, MediaOrientation finalOrientation) {
+  static String classifyQuality(int w, int h, MediaOrientation finalOrientation) {
     if (finalOrientation == MediaOrientation.vertical) {
       // Portrait
       final minDim = w < h ? w : h;
@@ -302,7 +302,7 @@ class OrganizerService {
           item.displayWidth = displayW;
           item.displayHeight = displayH;
 
-          final metadataOrientation = _orientationOf(displayW, displayH);
+          final metadataOrientation = orientationOf(displayW, displayH);
           MediaOrientation? visualOrient;
           int? visualW;
           int? visualH;
@@ -339,7 +339,7 @@ class OrganizerService {
 
           final widthForQuality = visualW ?? displayW;
           final heightForQuality = visualH ?? displayH;
-          item.qualityGroup = _classifyQuality(widthForQuality, heightForQuality, finalOrient);
+          item.qualityGroup = classifyQuality(widthForQuality, heightForQuality, finalOrient);
 
           final orientName = finalOrient == MediaOrientation.vertical
               ? 'Portrait'
@@ -1409,7 +1409,7 @@ class OrganizerService {
             cropOrientation = MediaOrientation.square;
           }
 
-          final metaOrientation = _orientationOf(originalWidth, originalHeight);
+          final metaOrientation = orientationOf(originalWidth, originalHeight);
           // Only override if the visual orientation differs from metadata
           if (cropOrientation != metaOrientation) {
             return VisualDetectionResult(
@@ -1624,6 +1624,86 @@ class OrganizerService {
         }
       } catch (_) {}
     }
+  }
+  Future<OrganizerFileItem?> probeSingleFile(String path, OrganizerOptions options) async {
+    final file = File(path);
+    if (!file.existsSync()) return null;
+    final baseName = p.basename(path);
+    final item = _fileToItem(file, baseName);
+    if (item == null) return null;
+
+    if (options.organizeMode == OrganizerMode.byQuality) {
+      try {
+        final dims = await _ffmpegService.probeVideoDimensions(item.originalPath);
+        final displayW = dims.width;
+        final displayH = dims.height;
+        final rawW = dims.rawWidth;
+        final rawH = dims.rawHeight;
+        final rotation = dims.rotation;
+
+        item.width = rawW;
+        item.height = rawH;
+        item.rotation = rotation;
+        item.displayWidth = displayW;
+        item.displayHeight = displayH;
+
+        final metadataOrientation = orientationOf(displayW, displayH);
+        MediaOrientation? visualOrient;
+        int? visualW;
+        int? visualH;
+        String visualReason = 'not analyzed';
+        double visualConfidence = 0.0;
+
+        if (item.fileType == FileItemType.video && options.preferVisualOrientation) {
+          final visualRes = await _detectVisualOrientation(item.originalPath, displayW, displayH);
+          visualOrient = visualRes.orientation;
+          visualW = visualRes.visualWidth;
+          visualH = visualRes.visualHeight;
+          visualReason = visualRes.reason;
+          visualConfidence = visualRes.confidence;
+        }
+
+        item.visualOrientation = visualOrient;
+
+        final MediaOrientation finalOrient;
+        String orientSource;
+        if (visualOrient != null && visualOrient != metadataOrientation) {
+          finalOrient = visualOrient;
+          orientSource = 'VISUAL (overrides metadata ${metadataOrientation.name})';
+        } else if (visualOrient != null) {
+          finalOrient = visualOrient;
+          orientSource = 'visual (agrees with metadata)';
+        } else {
+          finalOrient = metadataOrientation;
+          orientSource = 'metadata (${displayW}x$displayH)';
+        }
+        item.finalOrientation = finalOrient;
+        item.orientation = finalOrient;
+
+        final widthForQuality = visualW ?? displayW;
+        final heightForQuality = visualH ?? displayH;
+        item.qualityGroup = classifyQuality(widthForQuality, heightForQuality, finalOrient);
+
+        final orientName = finalOrient == MediaOrientation.vertical
+            ? 'Portrait'
+            : finalOrient == MediaOrientation.landscape
+                ? 'Landscape'
+                : 'Square';
+
+        final sb = StringBuffer();
+        sb.write('Raw metadata: ${rawW}x$rawH (rotation: $rotation)\n');
+        sb.write('Display size: ${displayW}x$displayH\n');
+        if (visualOrient != null) {
+          sb.write('Visual detection: ${visualW}x$visualH (${visualOrient.name})\n');
+          sb.write('Visual confidence: ${(visualConfidence * 100).toStringAsFixed(1)}%\n');
+          sb.write('Visual reason: $visualReason\n');
+        }
+        sb.write('Final orientation: $orientName ($orientSource)');
+      } catch (e) {
+        item.errorMessage = 'Probe error: ${e.toString()}';
+      }
+    }
+    return item;
   }
 }
 

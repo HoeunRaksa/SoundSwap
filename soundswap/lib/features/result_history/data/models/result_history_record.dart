@@ -1,6 +1,6 @@
 enum ResultHistoryStatus { success, failed }
 
-enum ResultProcessType { auto, manual, longVideo }
+enum ResultProcessType { auto, manual, longVideo, organizerWatch }
 
 class ResultHistoryRecord {
   const ResultHistoryRecord({

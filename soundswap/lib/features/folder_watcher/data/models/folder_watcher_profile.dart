@@ -5,8 +5,8 @@ class FolderWatcherProfile {
   const FolderWatcherProfile({
     required this.id,
     required this.name,
-    this.videoFolderPath,
-    this.audioFolderPath,
+    this.videoFolders = const [],
+    this.audioFolders = const [],
     this.resultFolderPath,
     this.outputPrefix = '',
     this.templateId,
@@ -19,8 +19,8 @@ class FolderWatcherProfile {
 
   final String id;
   final String name;
-  final String? videoFolderPath;
-  final String? audioFolderPath;
+  final List<String> videoFolders;
+  final List<String> audioFolders;
   final String? resultFolderPath;
   final String outputPrefix;
   final String? templateId;
@@ -31,15 +31,15 @@ class FolderWatcherProfile {
   final bool isActive;
 
   bool get hasRequiredFolders =>
-      videoFolderPath != null &&
-      audioFolderPath != null &&
+      videoFolders.isNotEmpty &&
+      audioFolders.isNotEmpty &&
       resultFolderPath != null;
 
   Map<String, Object?> toJson() => {
     'id': id,
     'name': name,
-    'videoFolderPath': videoFolderPath,
-    'audioFolderPath': audioFolderPath,
+    'videoFolders': videoFolders,
+    'audioFolders': audioFolders,
     'resultFolderPath': resultFolderPath,
     'outputPrefix': outputPrefix,
     'templateId': templateId,
@@ -54,8 +54,8 @@ class FolderWatcherProfile {
     return FolderWatcherProfile(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Watcher profile',
-      videoFolderPath: json['videoFolderPath'] as String?,
-      audioFolderPath: json['audioFolderPath'] as String?,
+      videoFolders: (json['videoFolders'] as List?)?.cast<String>() ?? (json['videoFolderPath'] != null ? [json['videoFolderPath'] as String] : []),
+      audioFolders: (json['audioFolders'] as List?)?.cast<String>() ?? (json['audioFolderPath'] != null ? [json['audioFolderPath'] as String] : []),
       resultFolderPath: json['resultFolderPath'] as String?,
       outputPrefix: json['outputPrefix'] as String? ?? '',
       templateId: json['templateId'] as String?,
@@ -77,8 +77,8 @@ class FolderWatcherProfile {
 
   FolderWatcherProfile copyWith({
     String? name,
-    String? videoFolderPath,
-    String? audioFolderPath,
+    List<String>? videoFolders,
+    List<String>? audioFolders,
     String? resultFolderPath,
     String? outputPrefix,
     String? templateId,
@@ -91,8 +91,8 @@ class FolderWatcherProfile {
     return FolderWatcherProfile(
       id: id,
       name: name ?? this.name,
-      videoFolderPath: videoFolderPath ?? this.videoFolderPath,
-      audioFolderPath: audioFolderPath ?? this.audioFolderPath,
+      videoFolders: videoFolders ?? this.videoFolders,
+      audioFolders: audioFolders ?? this.audioFolders,
       resultFolderPath: resultFolderPath ?? this.resultFolderPath,
       outputPrefix: outputPrefix ?? this.outputPrefix,
       templateId: templateId ?? this.templateId,

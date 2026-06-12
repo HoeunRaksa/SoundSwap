@@ -61,7 +61,7 @@ class FolderWatcherController extends ChangeNotifier {
   final OutputNamingService _outputNamingService;
 
   final Random _random = Random();
-  final _subscriptions = <String, StreamSubscription<FileSystemEvent>>{};
+  final _subscriptions = <String, List<StreamSubscription<FileSystemEvent>>>{};
   final _processing = <String>{};
 
   List<FolderWatcherProfile> profiles = [];
@@ -71,10 +71,10 @@ class FolderWatcherController extends ChangeNotifier {
   String? errorMessage;
   String? selectedBatchProfileId;
 
-  String? get videoFolderPath =>
-      profiles.isEmpty ? null : profiles.first.videoFolderPath;
-  String? get audioFolderPath =>
-      profiles.isEmpty ? null : profiles.first.audioFolderPath;
+  List<String> get videoFolders =>
+      profiles.isEmpty ? const [] : profiles.first.videoFolders;
+  List<String> get audioFolders =>
+      profiles.isEmpty ? const [] : profiles.first.audioFolders;
   String? get resultFolderPath =>
       profiles.isEmpty ? null : profiles.first.resultFolderPath;
   bool get isWatching => _subscriptions.isNotEmpty;
@@ -92,8 +92,8 @@ class FolderWatcherController extends ChangeNotifier {
     final profile = FolderWatcherProfile(
       id: _newId(),
       name: name.trim().isEmpty ? 'Watcher profile' : name.trim(),
-      videoFolderPath: importBatchProfile?.videoFolders.isNotEmpty == true ? importBatchProfile!.videoFolders.first : null,
-      audioFolderPath: importBatchProfile?.audioFolders.isNotEmpty == true ? importBatchProfile!.audioFolders.first : null,
+      videoFolders: importBatchProfile?.videoFolders ?? const [],
+      audioFolders: importBatchProfile?.audioFolders ?? const [],
       resultFolderPath: importBatchProfile?.outputFolderPath,
       outputPrefix: importBatchProfile?.outputPrefix ?? '',
       templateId: importBatchProfile?.selectedTemplateId,
@@ -144,8 +144,8 @@ class FolderWatcherController extends ChangeNotifier {
     final duplicate = FolderWatcherProfile(
       id: _newId(),
       name: '${profile.name} Copy',
-      videoFolderPath: profile.videoFolderPath,
-      audioFolderPath: profile.audioFolderPath,
+      videoFolders: profile.videoFolders,
+      audioFolders: profile.audioFolders,
       resultFolderPath: profile.resultFolderPath,
       outputPrefix: profile.outputPrefix,
       templateId: profile.templateId,
@@ -209,7 +209,11 @@ class FolderWatcherController extends ChangeNotifier {
     await _pickAndUpdateProfile(
       profileId: profileId,
       dialogTitle: 'Select source video folder',
-      update: (profile, path) => profile.copyWith(videoFolderPath: path),
+      update: (profile, path) {
+        final folders = List.of(profile.videoFolders);
+        if (!folders.contains(path)) folders.add(path);
+        return profile.copyWith(videoFolders: folders);
+      },
     );
   }
 
@@ -217,7 +221,11 @@ class FolderWatcherController extends ChangeNotifier {
     await _pickAndUpdateProfile(
       profileId: profileId,
       dialogTitle: 'Select source audio folder',
-      update: (profile, path) => profile.copyWith(audioFolderPath: path),
+      update: (profile, path) {
+        final folders = List.of(profile.audioFolders);
+        if (!folders.contains(path)) folders.add(path);
+        return profile.copyWith(audioFolders: folders);
+      },
     );
   }
 
@@ -244,8 +252,8 @@ class FolderWatcherController extends ChangeNotifier {
       profileId,
       (profile) => profile.copyWith(
         templateId: template.id,
-        videoFolderPath: template.videoFolders.isNotEmpty ? template.videoFolders.first : null,
-        audioFolderPath: template.audioFolders.isNotEmpty ? template.audioFolders.first : null,
+        videoFolders: template.videoFolders,
+        audioFolders: template.audioFolders,
         resultFolderPath: template.outputFolder,
         outputPrefix: template.outputPrefix,
         useOverlay: template.useOverlay,
@@ -273,14 +281,12 @@ class FolderWatcherController extends ChangeNotifier {
 
     await stopWatching(profileId);
     try {
-      await _validateRequiredFolder(
-        profile.videoFolderPath!,
-        onPermissionError,
-      );
-      await _validateRequiredFolder(
-        profile.audioFolderPath!,
-        onPermissionError,
-      );
+      for (final vf in profile.videoFolders) {
+        await _validateRequiredFolder(vf, onPermissionError);
+      }
+      for (final af in profile.audioFolders) {
+        await _validateRequiredFolder(af, onPermissionError);
+      }
       await _validateRequiredFolder(
         profile.resultFolderPath!,
         onPermissionError,
@@ -290,22 +296,24 @@ class FolderWatcherController extends ChangeNotifier {
       if (!profile.isActive) {
         await _updateProfile(profileId, (p) => p.copyWith(isActive: true));
       }
-      _subscriptions[profileId] = Directory(profile.videoFolderPath!)
-          .watch()
-          .listen(
-            (event) => _handleEvent(
-              event,
-              profileId: profileId,
-              historyController: historyController,
-              onDuplicate: onDuplicate,
-            ),
-            onError: (Object error) async {
-              errorMessage = error.toString();
-              await onPermissionError?.call(profile.videoFolderPath!);
-              await stopWatching(profileId);
-              notifyListeners();
-            },
-          );
+      final subs = <StreamSubscription<FileSystemEvent>>[];
+      for (final vf in profile.videoFolders) {
+        subs.add(Directory(vf).watch().listen(
+          (event) => _handleEvent(
+            event,
+            profileId: profileId,
+            historyController: historyController,
+            onDuplicate: onDuplicate,
+          ),
+          onError: (Object error) async {
+            errorMessage = error.toString();
+            await onPermissionError?.call(vf);
+            await stopWatching(profileId);
+            notifyListeners();
+          },
+        ));
+      }
+      _subscriptions[profileId] = subs;
     } catch (error) {
       errorMessage = error.toString();
     }
@@ -313,7 +321,12 @@ class FolderWatcherController extends ChangeNotifier {
   }
 
   Future<void> stopWatching(String profileId) async {
-    await _subscriptions.remove(profileId)?.cancel();
+    final subs = _subscriptions.remove(profileId);
+    if (subs != null) {
+      for (final sub in subs) {
+        await sub.cancel();
+      }
+    }
     final profile = _profileById(profileId);
     if (profile != null && profile.isActive) {
       await _updateProfile(profileId, (p) => p.copyWith(isActive: false));
@@ -362,8 +375,8 @@ class FolderWatcherController extends ChangeNotifier {
       FolderWatcherProfile(
         id: _newId(),
         name: 'Default watcher',
-        videoFolderPath: settings.videoFolderPath,
-        audioFolderPath: settings.audioFolderPath,
+        videoFolders: settings.videoFolderPath != null ? [settings.videoFolderPath!] : const [],
+        audioFolders: settings.audioFolderPath != null ? [settings.audioFolderPath!] : const [],
         resultFolderPath: settings.resultFolderPath,
       ),
     ];
@@ -585,14 +598,22 @@ class FolderWatcherController extends ChangeNotifier {
   }
 
   Future<MediaFile> _pickRandomAudio(FolderWatcherProfile profile) async {
-    final audios = await _mediaScannerService.scanFolder(
-      folderPath: profile.audioFolderPath!,
-      extensions: AppConstants.supportedAudioExtensions,
-    );
+    final audios = <MediaFile>[];
+    final deduplicated = <String>{};
+    for (final folder in profile.audioFolders) {
+      final normalized = p.normalize(folder);
+      if (deduplicated.contains(normalized)) continue;
+      deduplicated.add(normalized);
+      if (!Directory(normalized).existsSync()) continue;
+      final batch = await _mediaScannerService.scanFolder(
+        folderPath: normalized,
+        extensions: AppConstants.supportedAudioExtensions,
+      );
+      audios.addAll(batch);
+    }
     if (audios.isEmpty) {
       throw FileSystemException(
-        'No supported audio files found',
-        profile.audioFolderPath,
+        'No supported audio files found in ${profile.audioFolders.length} folders',
       );
     }
     return audios[_random.nextInt(audios.length)];
@@ -643,8 +664,8 @@ class FolderWatcherController extends ChangeNotifier {
     return FolderWatcherProfile(
       id: id,
       name: batchProfile.name,
-      videoFolderPath: batchProfile.videoFolders.isNotEmpty ? batchProfile.videoFolders.first : null,
-      audioFolderPath: batchProfile.audioFolders.isNotEmpty ? batchProfile.audioFolders.first : null,
+      videoFolders: batchProfile.videoFolders,
+      audioFolders: batchProfile.audioFolders,
       resultFolderPath: batchProfile.outputFolderPath,
       outputPrefix: batchProfile.outputPrefix,
       templateId: batchProfile.selectedTemplateId,
@@ -659,8 +680,10 @@ class FolderWatcherController extends ChangeNotifier {
 
   @override
   void dispose() {
-    for (final subscription in _subscriptions.values) {
-      subscription.cancel();
+    for (final subs in _subscriptions.values) {
+      for (final sub in subs) {
+        sub.cancel();
+      }
     }
     super.dispose();
   }

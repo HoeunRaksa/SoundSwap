@@ -394,17 +394,27 @@ class LongVideoController extends ChangeNotifier {
     try {
       _validateFolders();
       
+      final scanStats = ScanStats();
+      final totalFolders = videoFolders.length + audioFolders.length + (useImages ? imageFolders.length : 0);
+      debugPrint('feature name: Long Video');
+      debugPrint('selected folders count: $totalFolders');
+      debugPrint('recursive scan enabled: true');
+      
       if (videoFolders.isNotEmpty) {
         videos = [];
         final deduplicated = <String>{};
         for (final folder in videoFolders) {
+          debugPrint('folder path: $folder');
           final normalized = p.normalize(folder);
           if (deduplicated.contains(normalized)) continue;
           deduplicated.add(normalized);
-          if (!Directory(normalized).existsSync()) continue;
+          final exists = Directory(normalized).existsSync();
+          debugPrint('folder exists: $exists');
+          if (!exists) continue;
           final batch = await _mediaScannerService.scanFolder(
             folderPath: normalized,
             extensions: AppConstants.supportedVideoExtensions,
+            stats: scanStats,
           );
           videos.addAll(batch);
         }
@@ -416,13 +426,17 @@ class LongVideoController extends ChangeNotifier {
         images = [];
         final deduplicated = <String>{};
         for (final folder in imageFolders) {
+          debugPrint('folder path: $folder');
           final normalized = p.normalize(folder);
           if (deduplicated.contains(normalized)) continue;
           deduplicated.add(normalized);
-          if (!Directory(normalized).existsSync()) continue;
+          final exists = Directory(normalized).existsSync();
+          debugPrint('folder exists: $exists');
+          if (!exists) continue;
           final batch = await _mediaScannerService.scanFolder(
             folderPath: normalized,
             extensions: AppConstants.supportedImageExtensions,
+            stats: scanStats,
           );
           images.addAll(batch);
         }
@@ -434,13 +448,17 @@ class LongVideoController extends ChangeNotifier {
       if (audioFolders.isNotEmpty) {
         final deduplicated = <String>{};
         for (final folder in audioFolders) {
+          debugPrint('folder path: $folder');
           final normalized = p.normalize(folder);
           if (deduplicated.contains(normalized)) continue;
           deduplicated.add(normalized);
-          if (!Directory(normalized).existsSync()) continue;
+          final exists = Directory(normalized).existsSync();
+          debugPrint('folder exists: $exists');
+          if (!exists) continue;
           final batch = await _mediaScannerService.scanFolder(
             folderPath: normalized,
             extensions: AppConstants.supportedAudioExtensions,
+            stats: scanStats,
           );
           audios.addAll(batch);
         }
@@ -469,6 +487,12 @@ class LongVideoController extends ChangeNotifier {
       } else {
         message = 'Plan ready: ${currentPlan.clips.length} clips, ${_format(currentPlan.estimatedDuration)}s.';
       }
+
+      debugPrint('total files discovered: ${scanStats.totalFilesDiscovered}');
+      debugPrint('supported media discovered: ${scanStats.supportedMediaDiscovered}');
+      debugPrint('skipped unsupported count: ${scanStats.skippedUnsupportedCount}');
+      debugPrint('skipped destination-folder count: ${scanStats.skippedDestinationFolderCount}');
+      debugPrint('final queue/source count: ${videos.length}');
     } catch (error) {
       errorMessage = error.toString();
       message = 'Plan failed.';

@@ -113,7 +113,7 @@ class _QueueTableState extends State<QueueTable> {
                           height: 1.15,
                         ),
                         columns: const [
-                          DataColumn(label: Text('Video')),
+                          DataColumn(label: Text('Media')),
                           DataColumn(label: Text('Audio')),
                           DataColumn(label: Text('Output')),
                           DataColumn(label: Text('Status')),
@@ -139,7 +139,7 @@ class _QueueTableState extends State<QueueTable> {
                                 selected ?? false,
                               ),
                               cells: [
-                                DataCell(_FileCell(text: job.video.name)),
+                                DataCell(_FileCell(text: job.video.isImage ? '[Image] ${job.video.name}' : '[Video] ${job.video.name}')),
                                 DataCell(_FileCell(text: job.audio.name)),
                                 DataCell(
                                   Tooltip(

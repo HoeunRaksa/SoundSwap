@@ -137,24 +137,18 @@ class ResultHistoryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool _isPathInsideFolder(String filePath, String folderPath) {
-    if (filePath.isEmpty || folderPath.isEmpty) return false;
-    final normFile = p.normalize(filePath).toLowerCase();
-    final normFolder = p.normalize(folderPath).toLowerCase();
-    final separator = p.separator;
-    final prefix = normFolder.endsWith(separator) ? normFolder : '$normFolder$separator';
-    return normFile.startsWith(prefix);
-  }
 
-  Future<void> clearFolderResults(String resultFolderPath, {required bool deleteFiles}) async {
-    final normalizedSelectedFolder = p.normalize(resultFolderPath);
+
+  Future<void> clearVisibleResults({required bool deleteFiles}) async {
     int recordsRemoved = 0;
     int filesDeleted = 0;
     int failedDeletes = 0;
 
-    final recordsToClear = records.where((record) {
-      return p.equals(p.normalize(record.resultFolderPath), normalizedSelectedFolder);
-    }).toList();
+    final recordsToClear = filteredRecords;
+    
+    debugPrint('--- Clear Visible Results Initiated ---');
+    debugPrint('Total history records before clear: ${records.length}');
+    debugPrint('Records targeted for clear: ${recordsToClear.length}');
 
     recordsRemoved = recordsToClear.length;
 
@@ -162,12 +156,6 @@ class ResultHistoryController extends ChangeNotifier {
       for (final record in recordsToClear) {
         final outputPath = record.outputPath;
         if (outputPath.isEmpty) continue;
-
-        // Verify file is inside selected result folder
-        if (!_isPathInsideFolder(outputPath, normalizedSelectedFolder)) {
-          failedDeletes++;
-          continue;
-        }
 
         // Verify extension is supported video extension
         final ext = p.extension(outputPath).toLowerCase();
@@ -193,36 +181,29 @@ class ResultHistoryController extends ChangeNotifier {
       }
     }
 
+    final idsToRemove = recordsToClear.map((r) => r.id).toSet();
+    
     // Remove records
-    records = records.where((record) {
-      return !p.equals(p.normalize(record.resultFolderPath), normalizedSelectedFolder);
-    }).toList();
-
-    // Reset filter if it matches the cleared folder
-    if (resultFolderFilter != null &&
-        p.equals(p.normalize(resultFolderFilter!), normalizedSelectedFolder)) {
-      resultFolderFilter = null;
-    }
+    records = records.where((record) => !idsToRemove.contains(record.id)).toList();
 
     await _service.saveAll(records);
+    
+    debugPrint('Records saved to disk. Count after clear: ${records.length}');
+
     await load(); // Refresh list/folders/counts
 
     // Log tracking info
-    debugPrint('Clear Folder Results Report:');
-    debugPrint('- Selected Folder: $resultFolderPath');
+    debugPrint('Clear Visible Results Report:');
     debugPrint('- Records Removed: $recordsRemoved');
     debugPrint('- Files Deleted: $filesDeleted');
     debugPrint('- Failed Deletes: $failedDeletes');
+    debugPrint('- UI records count after refresh: ${records.length}');
 
     message = deleteFiles
-        ? 'Cleared folder results: $recordsRemoved records removed, $filesDeleted files deleted, $failedDeletes failed.'
+        ? 'Cleared history for $recordsRemoved records and deleted $filesDeleted files.'
         : 'Cleared history for $recordsRemoved records (files kept).';
 
     notifyListeners();
-  }
-
-  Future<void> clearResultFolder(String resultFolderPath) async {
-    await clearFolderResults(resultFolderPath, deleteFiles: true);
   }
 
   Future<void> removeHistoryByFilter(ResultProcessType? filter) async {
@@ -239,19 +220,14 @@ class ResultHistoryController extends ChangeNotifier {
 
   Future<void> removeHistoryForFolder(String resultFolderPath) async {
     final before = records.length;
+    final normalizedFolder = p.normalize(resultFolderPath).toLowerCase();
     records = records
         .where(
-          (record) => !p.equals(
-            p.normalize(record.resultFolderPath),
-            p.normalize(resultFolderPath),
-          ),
+          (record) => p.normalize(record.resultFolderPath).toLowerCase() != normalizedFolder,
         )
         .toList();
     if (resultFolderFilter != null &&
-        p.equals(
-          p.normalize(resultFolderFilter!),
-          p.normalize(resultFolderPath),
-        )) {
+        p.normalize(resultFolderFilter!).toLowerCase() == normalizedFolder) {
       resultFolderFilter = null;
     }
     await _service.saveAll(records);
@@ -262,11 +238,9 @@ class ResultHistoryController extends ChangeNotifier {
 
   Future<void> removeFilesForFolder(String resultFolderPath) async {
     var deleted = 0;
+    final normalizedFolder = p.normalize(resultFolderPath).toLowerCase();
     for (final record in records) {
-      if (!p.equals(
-        p.normalize(record.resultFolderPath),
-        p.normalize(resultFolderPath),
-      )) {
+      if (p.normalize(record.resultFolderPath).toLowerCase() != normalizedFolder) {
         continue;
       }
       final file = File(record.outputPath);
