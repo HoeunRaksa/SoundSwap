@@ -657,6 +657,8 @@ class HomeController extends ChangeNotifier {
   Future<void> startProcessing({bool removeOldResults = false}) async {
     try {
       FfmpegService.clearProbeCache();
+      _ffmpegService.resetCancelFlag();
+      _overlayService.resetCancelFlag();
       await _debugLogService.clear();
       debugLogs = [];
       latestError = null;
@@ -671,6 +673,15 @@ class HomeController extends ChangeNotifier {
       stopRequested = false;
       statusMessage = 'Validating batch...';
       notifyListeners();
+
+      debugPrint('stopRequested value before start: $stopRequested');
+      debugPrint('audio pool count before validation: ${audios.length}');
+
+      if (audios.isEmpty && audioFolders.isNotEmpty) {
+        await _logInfo('Audio pool is empty. Rescanning audio folders...');
+        await scanSelectedFolders();
+        debugPrint('audio pool count after rescan: ${audios.length}');
+      }
 
       await _validateBeforeStart();
 
@@ -741,7 +752,9 @@ class HomeController extends ChangeNotifier {
       return;
     }
     stopRequested = true;
-    statusMessage = 'Stopping after current file...';
+    statusMessage = 'Stopping...';
+    _ffmpegService.cancelCurrentProcess();
+    _overlayService.cancelCurrentProcess();
     notifyListeners();
   }
 
@@ -966,6 +979,7 @@ class HomeController extends ChangeNotifier {
       );
       notifyListeners();
 
+      String? tempImageVideoPath;
       try {
         await Directory(
           p.dirname(originalJob.outputPath),
@@ -975,7 +989,6 @@ class HomeController extends ChangeNotifier {
 
         // If the source is an image, convert it to a temporary video first
         String effectiveVideoPath = originalJob.video.path;
-        String? tempImageVideoPath;
         if (originalJob.video.isImage) {
           debugPrint('processing item type video/image: image');
           tempImageVideoPath = _temporaryGeneratorOutputPath(
@@ -1003,6 +1016,7 @@ class HomeController extends ChangeNotifier {
             debugPrint('image converted to video temp path: $tempImageVideoPath');
             await _logInfo('Image converted to video: $tempImageVideoPath');
           } catch (e) {
+            if (e is FfmpegCancelException) rethrow;
             debugPrint('failed image conversion reason: $e');
             throw FfmpegException('Image conversion failed: $e');
           }
@@ -1069,6 +1083,26 @@ class HomeController extends ChangeNotifier {
         notifyListeners();
         return;
       } catch (error, stackTrace) {
+        if (error is FfmpegCancelException) {
+          await _logInfo('Batch processing stopped by user for ${originalJob.video.name}.');
+          jobs[jobIndex] = originalJob.copyWith(
+            status: SoundSwapStatus.skipped,
+            ffmpegCommand: currentFfmpegCommand,
+            errorMessage: 'Cancelled by user',
+          );
+          
+          final outFile = File(originalJob.outputPath);
+          if (outFile.existsSync()) {
+            await outFile.delete();
+          }
+          if (tempImageVideoPath != null) {
+            final tempFile = File(tempImageVideoPath);
+            if (tempFile.existsSync()) await tempFile.delete();
+          }
+          notifyListeners();
+          return;
+        }
+
         lastError = error;
         lastStackTrace = stackTrace;
         lastCommand = currentFfmpegCommand;

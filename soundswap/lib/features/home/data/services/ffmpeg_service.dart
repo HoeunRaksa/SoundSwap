@@ -15,6 +15,11 @@ class FfmpegService {
   String? _resolvedFfmpegPath;
   String? _resolvedFfprobePath;
 
+  Process? _currentFfmpegProcess;
+  // ignore: unused_field
+  Process? _currentProbeProcess;
+  bool _isCancelled = false;
+
   static final Map<String, double> _durationCache = {};
   static final Map<String, VideoDimensions> _dimensionsCache = {};
 
@@ -84,6 +89,15 @@ class FfmpegService {
     } on Object {
       return false;
     }
+  }
+
+  void cancelCurrentProcess() {
+    _isCancelled = true;
+    _currentFfmpegProcess?.kill();
+  }
+  
+  void resetCancelFlag() {
+    _isCancelled = false;
   }
 
   Future<FfmpegRunResult> replaceAudio(
@@ -625,6 +639,11 @@ class FfmpegService {
     late final Process process;
     try {
       process = await Process.start(executable, arguments);
+      if (executable.contains('ffprobe')) {
+        _currentProbeProcess = process;
+      } else {
+        _currentFfmpegProcess = process;
+      }
     } on ProcessException catch (error) {
       throw FfmpegException(
         'Could not start $executable. Make sure FFmpeg is installed and available under tools/ffmpeg/.\n${error.message}',
@@ -668,12 +687,23 @@ class FfmpegService {
     );
 
     final exitCode = await process.exitCode;
+    if (executable.contains('ffprobe')) {
+      _currentProbeProcess = null;
+    } else {
+      _currentFfmpegProcess = null;
+    }
     timer?.cancel();
 
     try {
       await stdoutCompleter.future;
       await stderrCompleter.future;
     } catch (_) {}
+
+    if (_isCancelled) {
+      _isCancelled = false;
+      debugPrint('FFprobe/FFmpeg was cancelled. Executable: $executable');
+      throw const FfmpegCancelException();
+    }
 
     if (timedOut) {
       throw const FfmpegException('Failed: FFmpeg timeout');
@@ -950,4 +980,11 @@ class FfmpegFailure extends FfmpegException {
         '[ERROR] STDOUT:\n$stdout\n'
         '[INFO] Running FFmpeg command:\n$command';
   }
+}
+
+class FfmpegCancelException implements Exception {
+  const FfmpegCancelException();
+  
+  @override
+  String toString() => 'Cancelled by user';
 }

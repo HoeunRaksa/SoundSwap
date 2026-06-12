@@ -495,14 +495,22 @@ class _ControlsPanelState extends State<_ControlsPanel> {
         SizedBox(height: gap / 2),
         SizedBox(
           height: AppResponsive.buttonHeight(context) + 8,
-          child: _AnimatedFilledButton(
-            onPressed: widget.controller.canStart
-                ? () => _confirmStartBatch(context)
-                : null,
-            isRunning: widget.controller.isProcessing,
-            bodySize: AppResponsive.bodySize(context),
-            iconSize: AppResponsive.iconSize(context),
-          ),
+          child: widget.controller.isProcessing
+              ? _AnimatedStopButton(
+                  onPressed: widget.controller.stopRequested
+                      ? null
+                      : widget.controller.stopProcessing,
+                  bodySize: AppResponsive.bodySize(context),
+                  iconSize: AppResponsive.iconSize(context),
+                )
+              : _AnimatedFilledButton(
+                  onPressed: widget.controller.canStart
+                      ? () => _confirmStartBatch(context)
+                      : null,
+                  isRunning: false,
+                  bodySize: AppResponsive.bodySize(context),
+                  iconSize: AppResponsive.iconSize(context),
+                ),
         ),
         SizedBox(height: gap * 1.5),
         _MetricsGrid(controller: widget.controller),
@@ -633,15 +641,24 @@ class _ControlsPanelState extends State<_ControlsPanel> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              debugPrint('Export Preview action selected: cancel');
+              Navigator.pop(context);
+            },
             child: const Text('Cancel'),
           ),
           OutlinedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              debugPrint('Export Preview action selected: remove_old_start_fresh');
+              Navigator.pop(context, true);
+            },
             child: const Text('Remove old & start fresh'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () {
+              debugPrint('Export Preview action selected: keep_old_continue');
+              Navigator.pop(context, false);
+            },
             child: const Text('Keep old & continue'),
           ),
         ],
@@ -2209,6 +2226,86 @@ class _AnimatedFilledButtonState extends State<_AnimatedFilledButton> {
                     ),
               label: Text(
                 widget.isRunning ? 'Running…' : 'Start Processing',
+                style: TextStyle(
+                  fontSize: widget.bodySize,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedStopButton extends StatefulWidget {
+  const _AnimatedStopButton({
+    required this.onPressed,
+    required this.bodySize,
+    required this.iconSize,
+  });
+
+  final VoidCallback? onPressed;
+  final double bodySize;
+  final double iconSize;
+
+  @override
+  State<_AnimatedStopButton> createState() => _AnimatedStopButtonState();
+}
+
+class _AnimatedStopButtonState extends State<_AnimatedStopButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final canPress = widget.onPressed != null;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: _hovered && canPress ? 1.015 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: (_hovered && canPress)
+                ? [
+                    BoxShadow(
+                      color: colorScheme.error.withValues(alpha: 0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: widget.onPressed,
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
+              ),
+              icon: canPress
+                  ? Icon(
+                      Icons.stop_rounded,
+                      size: widget.iconSize + 2,
+                    )
+                  : SizedBox(
+                      width: widget.iconSize - 4,
+                      height: widget.iconSize - 4,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.onError,
+                      ),
+                    ),
+              label: Text(
+                canPress ? 'Stop Batch' : 'Stopping...',
                 style: TextStyle(
                   fontSize: widget.bodySize,
                   fontWeight: FontWeight.bold,

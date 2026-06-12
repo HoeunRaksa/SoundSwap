@@ -16,6 +16,18 @@ class FfmpegOverlayService {
 
   final FfmpegService _ffmpegService;
 
+  Process? _currentProcess;
+  bool _isCancelled = false;
+
+  void cancelCurrentProcess() {
+    _isCancelled = true;
+    _currentProcess?.kill();
+  }
+  
+  void resetCancelFlag() {
+    _isCancelled = false;
+  }
+
   Future<FfmpegOverlayPlan?> prepareOverlay({
     required String inputPath,
     required String outputPath,
@@ -422,6 +434,7 @@ class FfmpegOverlayService {
     late final Process process;
     try {
       process = await Process.start(executable, arguments);
+      _currentProcess = process;
     } on ProcessException catch (error) {
       throw FfmpegException(
         'Could not start $executable for overlay rendering.\n${error.message}',
@@ -465,12 +478,18 @@ class FfmpegOverlayService {
     );
 
     final exitCode = await process.exitCode;
+    _currentProcess = null;
     timer?.cancel();
 
     try {
       await stdoutCompleter.future;
       await stderrCompleter.future;
     } catch (_) {}
+
+    if (_isCancelled) {
+      _isCancelled = false;
+      throw const FfmpegCancelException();
+    }
 
     if (timedOut) {
       throw const FfmpegException('Failed: FFmpeg timeout');
