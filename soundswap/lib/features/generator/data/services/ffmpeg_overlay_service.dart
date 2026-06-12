@@ -9,6 +9,8 @@ import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
 import 'package:soundswap/features/effects/data/models/effects_settings.dart';
+import 'package:soundswap/features/overlay_tools/utils/overlay_position_calculator.dart';
+import 'package:soundswap/features/generator/data/services/text_to_image_renderer.dart';
 
 class FfmpegOverlayService {
   FfmpegOverlayService({FfmpegService? ffmpegService})
@@ -67,72 +69,156 @@ class FfmpegOverlayService {
     final outH = outputSize.height ?? videoHeight;
 
     final arguments = <String>['-y', '-i', inputPath];
-    var logoInputIndex = -1;
-    if (branding?.hasLogo ?? false) {
-      logoInputIndex = 1;
-      arguments.addAll(['-i', branding!.logoPath!]);
-    }
-    final overlayImageInputIndexes = <String, int>{};
-    for (final item in overlaySettings?.items ?? const <OverlayItem>[]) {
-      if (item.type == OverlayItemType.image && item.imagePath != null) {
-        overlayImageInputIndexes[item.id] = arguments
-            .where((value) => value == '-i')
-            .length;
-        arguments.addAll(['-i', item.imagePath!]);
+    final tempFiles = <String>[];
+    
+    try {
+      var logoInputIndex = -1;
+      if (branding?.hasLogo ?? false) {
+        logoInputIndex = arguments.where((value) => value == '-i').length;
+        arguments.addAll(['-i', branding!.logoPath!]);
       }
+
+      int? brandingContactTextIndex;
+      if (branding?.hasContactText ?? false) {
+        brandingContactTextIndex = arguments.where((value) => value == '-i').length;
+        final textW = OverlayPositionCalculator.exportWidth(outputWidth: outW, widthPercent: 0.24);
+        final scaledFontSize = branding!.fontSize * (outH / 1920.0);
+        final tempPng = await TextToImageRenderer.renderTextToPng(
+          text: branding.contactText,
+          width: textW,
+          fontFamily: branding.fontFamily,
+          fontPath: null,
+          fontSize: scaledFontSize,
+          colorHex: branding.textColor,
+          textAlignment: 'left',
+          shadow: true,
+          backgroundBox: true,
+        );
+        tempFiles.add(tempPng);
+        arguments.addAll(['-i', tempPng]);
+      }
+
+      final textOverlayInputIndexes = <String, int>{};
+      if (textOverlay != null) {
+        for (final item in _textItems(textOverlay)) {
+          final textW = OverlayPositionCalculator.exportWidth(outputWidth: outW, widthPercent: 0.24);
+          final scaledFontSize = textOverlay.fontSize * (outH / 1920.0);
+          final tempPng = await TextToImageRenderer.renderTextToPng(
+            text: item.text,
+            width: textW,
+            fontFamily: textOverlay.fontFamily,
+            fontPath: null,
+            fontSize: scaledFontSize,
+            colorHex: textOverlay.textColor,
+            textAlignment: textOverlay.textAlignment,
+            shadow: textOverlay.shadow,
+            backgroundBox: textOverlay.backgroundBox,
+          );
+          tempFiles.add(tempPng);
+          textOverlayInputIndexes[item.id] = arguments.where((value) => value == '-i').length;
+          arguments.addAll(['-i', tempPng]);
+        }
+      }
+
+      final overlayImageInputIndexes = <String, int>{};
+      for (final item in overlaySettings?.items ?? const <OverlayItem>[]) {
+        if (!item.hasContent) continue;
+
+        if (item.type == OverlayItemType.image && item.imagePath != null) {
+          overlayImageInputIndexes[item.id] = arguments.where((value) => value == '-i').length;
+          arguments.addAll(['-i', item.imagePath!]);
+        } else if (item.type == OverlayItemType.text) {
+          final textW = OverlayPositionCalculator.exportWidth(outputWidth: outW, widthPercent: item.width);
+          final scaledFontSize = item.fontSize * (outH / 1920.0);
+          final tempPng = await TextToImageRenderer.renderTextToPng(
+            text: item.text,
+            width: textW,
+            fontFamily: item.fontFamily,
+            fontPath: item.fontPath ?? overlaySettings!.defaultFontPath,
+            fontSize: scaledFontSize,
+            colorHex: item.colorHex,
+            textAlignment: item.textAlignment,
+            shadow: item.shadow,
+            backgroundBox: item.backgroundBox,
+          );
+          tempFiles.add(tempPng);
+          overlayImageInputIndexes[item.id] = arguments.where((value) => value == '-i').length;
+          arguments.addAll(['-i', tempPng]);
+        }
+      }
+
+      final filterGraph = _buildFilterGraph(
+        outW: outW,
+        outH: outH,
+        outputSize: outputSize,
+        fitMode: fitMode,
+        branding: branding,
+        textOverlay: textOverlay,
+        overlaySettings: overlaySettings,
+        logoInputIndex: logoInputIndex,
+        brandingContactTextIndex: brandingContactTextIndex,
+        textOverlayInputIndexes: textOverlayInputIndexes,
+        overlayImageInputIndexes: overlayImageInputIndexes,
+        effects: effects,
+      );
+
+      arguments.addAll([
+        '-filter_complex',
+        filterGraph,
+        '-map',
+        '[vout]',
+        '-map',
+        '0:a?',
+        '-c:v',
+        'libx264',
+        '-preset',
+        'veryfast',
+        '-crf',
+        '18',
+        '-c:a',
+        'copy',
+        '-movflags',
+        '+faststart',
+        outputPath,
+      ]);
+
+      return FfmpegOverlayPlan(
+        arguments: arguments,
+        command: _formatCommand(_ffmpegService.ffmpegPath, arguments),
+        outputPath: outputPath,
+        tempFiles: tempFiles,
+      );
+    } catch (e) {
+      for (final path in tempFiles) {
+        try {
+          final file = File(path);
+          if (file.existsSync()) file.deleteSync();
+        } catch (_) {}
+      }
+      rethrow;
     }
-
-    final filterGraph = _buildFilterGraph(
-      outW: outW,
-      outH: outH,
-      outputSize: outputSize,
-      fitMode: fitMode,
-      branding: branding,
-      textOverlay: textOverlay,
-      overlaySettings: overlaySettings,
-      logoInputIndex: logoInputIndex,
-      overlayImageInputIndexes: overlayImageInputIndexes,
-      effects: effects,
-    );
-
-    arguments.addAll([
-      '-filter_complex',
-      filterGraph,
-      '-map',
-      '[vout]',
-      '-map',
-      '0:a?',
-      '-c:v',
-      'libx264',
-      '-preset',
-      'veryfast',
-      '-crf',
-      '18',
-      '-c:a',
-      'copy',
-      '-movflags',
-      '+faststart',
-      outputPath,
-    ]);
-
-    return FfmpegOverlayPlan(
-      arguments: arguments,
-      command: _formatCommand(_ffmpegService.ffmpegPath, arguments),
-      outputPath: outputPath,
-    );
   }
 
   Future<ProcessRunOutput> runOverlay(FfmpegOverlayPlan plan) async {
-    final result = await _runProcess(_ffmpegService.ffmpegPath, plan.arguments);
-    if (result.exitCode != 0) {
-      throw FfmpegFailure(
-        command: plan.command,
-        exitCode: result.exitCode,
-        stderr: result.stderr,
-        stdout: result.stdout,
-      );
+    try {
+      final result = await _runProcess(_ffmpegService.ffmpegPath, plan.arguments);
+      if (result.exitCode != 0) {
+        throw FfmpegFailure(
+          command: plan.command,
+          exitCode: result.exitCode,
+          stderr: result.stderr,
+          stdout: result.stdout,
+        );
+      }
+      return result;
+    } finally {
+      for (final path in plan.tempFiles) {
+        try {
+          final file = File(path);
+          if (file.existsSync()) file.deleteSync();
+        } catch (_) {}
+      }
     }
-    return result;
   }
 
   String _buildFilterGraph({
@@ -144,6 +230,8 @@ class FfmpegOverlayService {
     required TextOverlaySettings? textOverlay,
     required OverlaySettings? overlaySettings,
     required int logoInputIndex,
+    required int? brandingContactTextIndex,
+    required Map<String, int> textOverlayInputIndexes,
     required Map<String, int> overlayImageInputIndexes,
     EffectsSettings? effects,
   }) {
@@ -174,77 +262,114 @@ class FfmpegOverlayService {
       final logoLabel = 'logo$index';
       filters.add('[$logoInputIndex:v]scale=$logoWidth:-1[$logoLabel]');
       final next = 'v${++index}';
+      
+      final logoX = OverlayPositionCalculator.exportPosition(
+        outputWidth: outW,
+        outputHeight: outH,
+        xPercent: branding!.logoPosition.xPercent,
+        yPercent: branding.logoPosition.yPercent,
+      ).dx;
+      final logoY = OverlayPositionCalculator.exportPosition(
+        outputWidth: outW,
+        outputHeight: outH,
+        xPercent: branding.logoPosition.xPercent,
+        yPercent: branding.logoPosition.yPercent,
+      ).dy;
+      
       filters.add(
-        '[$current][$logoLabel]overlay=x=main_w*${branding!.logoPosition.x.toStringAsFixed(5)}:y=main_h*${branding.logoPosition.y.toStringAsFixed(5)}:shortest=1[$next]',
+        '[$current][$logoLabel]overlay=x=${logoX.toStringAsFixed(2)}:y=${logoY.toStringAsFixed(2)}:shortest=1[$next]',
       );
       current = next;
     }
 
-    if (branding?.hasContactText ?? false) {
+    if (brandingContactTextIndex != null) {
+      final inputIndex = brandingContactTextIndex;
+      final imageLabel = 'brand_text$index';
+      filters.add('[$inputIndex:v]loop=loop=-1:size=1:start=0[$imageLabel]');
+      
       final next = 'v${++index}';
-      final scaledFontSize = branding!.fontSize * (outH / 1920.0);
-      filters.add(
-        '[$current]${_drawTextFilter(text: branding.contactText, position: branding.textPosition, fontFamily: branding.fontFamily, fontPath: null, fontSize: scaledFontSize, colorHex: branding.textColor, shadow: true, backgroundBox: true)}[$next]',
-      );
+      final xVal = OverlayPositionCalculator.exportPosition(
+        outputWidth: outW,
+        outputHeight: outH,
+        xPercent: branding!.textPosition.xPercent,
+        yPercent: branding.textPosition.yPercent,
+      ).dx;
+      final yVal = OverlayPositionCalculator.exportPosition(
+        outputWidth: outW,
+        outputHeight: outH,
+        xPercent: branding.textPosition.xPercent,
+        yPercent: branding.textPosition.yPercent,
+      ).dy;
+      
+      filters.add('[$current][$imageLabel]overlay=x=${xVal.toStringAsFixed(2)}:y=${yVal.toStringAsFixed(2)}:shortest=1[$next]');
       current = next;
     }
 
     if (textOverlay != null) {
       for (final item in _textItems(textOverlay)) {
+        final inputIndex = textOverlayInputIndexes[item.id];
+        if (inputIndex == null) continue;
+
+        final imageLabel = 'text_ov_${item.id}$index';
+        filters.add('[$inputIndex:v]loop=loop=-1:size=1:start=0[$imageLabel]');
+        
         final next = 'v${++index}';
-        final scaledFontSize = textOverlay.fontSize * (outH / 1920.0);
-        filters.add(
-          '[$current]${_drawTextFilter(text: item.text, position: item.position, fontFamily: textOverlay.fontFamily, fontPath: null, fontSize: scaledFontSize, colorHex: textOverlay.textColor, shadow: textOverlay.shadow, backgroundBox: textOverlay.backgroundBox)}[$next]',
-        );
+        final xVal = OverlayPositionCalculator.exportPosition(
+          outputWidth: outW,
+          outputHeight: outH,
+          xPercent: item.position.xPercent,
+          yPercent: item.position.yPercent,
+        ).dx;
+        final yVal = OverlayPositionCalculator.exportPosition(
+          outputWidth: outW,
+          outputHeight: outH,
+          xPercent: item.position.xPercent,
+          yPercent: item.position.yPercent,
+        ).dy;
+        
+        filters.add('[$current][$imageLabel]overlay=x=${xVal.toStringAsFixed(2)}:y=${yVal.toStringAsFixed(2)}:shortest=1[$next]');
         current = next;
       }
     }
 
     if (overlaySettings != null) {
-      for (final item in overlaySettings.items.where(
-        (item) => item.hasContent,
-      )) {
-        if (item.type == OverlayItemType.image) {
-          final inputIndex = overlayImageInputIndexes[item.id];
-          if (inputIndex == null) continue;
-          final overlayWidth = _overlayItemWidth(outW, item.width);
-          final imageLabel = 'image${++index}';
-          
-          var scaleFilter = 'loop=loop=-1:size=1:start=0,scale=$overlayWidth:-1';
-          if (item.animationEntrance == 'fade' || item.animationExit == 'fade') {
-            final st = item.startTime;
-            final ed = item.animationEntranceDuration;
-            if (item.animationEntrance == 'fade') {
-              scaleFilter = '$scaleFilter,fade=t=in:st=${st.toStringAsFixed(3)}:d=${ed.toStringAsFixed(3)}:alpha=1';
-            }
-            if (item.animationExit == 'fade' && item.endTime != null) {
-              final et = item.endTime!;
-              final exd = item.animationExitDuration;
-              scaleFilter = '$scaleFilter,fade=t=out:st=${(et - exd).toStringAsFixed(3)}:d=${exd.toStringAsFixed(3)}:alpha=1';
-            }
+      for (final item in overlaySettings.items.where((item) => item.hasContent)) {
+        final inputIndex = overlayImageInputIndexes[item.id];
+        if (inputIndex == null) continue;
+        
+        final overlayWidth = _overlayItemWidth(outW, item.width);
+        final imageLabel = 'item_${item.id.replaceAll("-", "")}$index';
+        
+        var scaleFilter = 'loop=loop=-1:size=1:start=0';
+        // For actual image files, scale them. For rendered PNG text, they are already sized perfectly, 
+        // but scaling to the same width doesn't hurt and ensures consistency.
+        scaleFilter += ',scale=$overlayWidth:-1';
+        
+        if (item.animationEntrance == 'fade' || item.animationExit == 'fade') {
+          final st = item.startTime;
+          final ed = item.animationEntranceDuration;
+          if (item.animationEntrance == 'fade') {
+            scaleFilter = '$scaleFilter,fade=t=in:st=${st.toStringAsFixed(3)}:d=${ed.toStringAsFixed(3)}:alpha=1';
           }
-          
-          filters.add('[$inputIndex:v]$scaleFilter[$imageLabel]');
-          
-          final next = 'v${++index}';
-          final xVal = _getPosXExpression(item, 'main_w', 'overlay_w');
-          final yVal = _getPosYExpression(item, 'main_h', 'overlay_h');
-          
-          var overlayOpts = 'x=$xVal:y=$yVal:shortest=1';
-          if (item.startTime > 0 || item.endTime != null) {
-            overlayOpts = '$overlayOpts:enable=\'between(t,${item.startTime.toStringAsFixed(3)},${(item.endTime ?? 99999).toStringAsFixed(3)})\'';
+          if (item.animationExit == 'fade' && item.endTime != null) {
+            final et = item.endTime!;
+            final exd = item.animationExitDuration;
+            scaleFilter = '$scaleFilter,fade=t=out:st=${(et - exd).toStringAsFixed(3)}:d=${exd.toStringAsFixed(3)}:alpha=1';
           }
-          
-          filters.add('[$current][$imageLabel]overlay=$overlayOpts[$next]');
-          current = next;
-          continue;
         }
-
+        
+        filters.add('[$inputIndex:v]$scaleFilter[$imageLabel]');
+        
         final next = 'v${++index}';
-        final scaledFontSize = item.fontSize * (outH / 1920.0);
-        filters.add(
-          '[$current]${_drawTextFilter(text: item.text, position: item.position, fontFamily: item.fontFamily, fontPath: item.fontPath ?? overlaySettings.defaultFontPath, fontSize: scaledFontSize, colorHex: item.colorHex, shadow: item.shadow, backgroundBox: item.backgroundBox, item: item)}[$next]',
-        );
+        final xVal = _getPosXExpression(item, outW);
+        final yVal = _getPosYExpression(item, outH);
+        
+        var overlayOpts = 'x=$xVal:y=$yVal:shortest=1';
+        if (item.startTime > 0 || item.endTime != null) {
+          overlayOpts = '$overlayOpts:enable=\'between(t,${item.startTime.toStringAsFixed(3)},${(item.endTime ?? 99999).toStringAsFixed(3)})\'';
+        }
+        
+        filters.add('[$current][$imageLabel]overlay=$overlayOpts[$next]');
         current = next;
       }
     }
@@ -279,126 +404,76 @@ class FfmpegOverlayService {
     return 'base';
   }
 
-  Iterable<({String text, NormalizedPosition position})> _textItems(
+  Iterable<({String id, String text, NormalizedPosition position})> _textItems(
     TextOverlaySettings settings,
   ) sync* {
     if (settings.title.trim().isNotEmpty) {
-      yield (text: settings.title, position: settings.titlePosition);
+      yield (id: 'title', text: settings.title, position: settings.titlePosition);
     }
     if (settings.subtitle.trim().isNotEmpty) {
-      yield (text: settings.subtitle, position: settings.subtitlePosition);
+      yield (id: 'subtitle', text: settings.subtitle, position: settings.subtitlePosition);
     }
     if (settings.promotionText.trim().isNotEmpty) {
-      yield (
-        text: settings.promotionText,
-        position: settings.promotionPosition,
-      );
+      yield (id: 'promotion', text: settings.promotionText, position: settings.promotionPosition);
     }
     if (settings.priceText.trim().isNotEmpty) {
-      yield (text: settings.priceText, position: settings.pricePosition);
+      yield (id: 'price', text: settings.priceText, position: settings.pricePosition);
     }
   }
 
-  String _drawTextFilter({
-    required String text,
-    required NormalizedPosition position,
-    required String fontFamily,
-    required String? fontPath,
-    required double fontSize,
-    required String colorHex,
-    required bool shadow,
-    required bool backgroundBox,
-    OverlayItem? item,
-  }) {
-    final xVal = item != null 
-        ? _getPosXExpression(item, 'w', 'text_w') 
-        : 'w*${position.x.toStringAsFixed(5)}';
-    final yVal = item != null 
-        ? _getPosYExpression(item, 'h', 'text_h') 
-        : 'h*${position.y.toStringAsFixed(5)}';
-
-    String colorStr = _ffmpegColor(colorHex);
-    if (item != null && (item.animationEntrance == 'fade' || item.animationExit == 'fade')) {
-      colorStr = '$colorStr@${_buildAlphaExpression(item)}';
-    }
-
-    final options = [
-      'drawtext=text=\'${_escapeDrawText(text)}\'',
-      if (fontPath != null && fontPath.trim().isNotEmpty)
-        'fontfile=\'${_escapeDrawText(fontPath)}\''
-      else
-        'font=\'${_escapeDrawText(fontFamily)}\'',
-      'fontsize=${fontSize.toStringAsFixed(0)}',
-      'fontcolor=$colorStr',
-      'x=$xVal',
-      'y=$yVal',
-      if (shadow) 'shadowcolor=black@0.65:shadowx=2:shadowy=2',
-      if (backgroundBox) 'box=1:boxcolor=black@0.42:boxborderw=16',
-      if (item != null && (item.startTime > 0 || item.endTime != null))
-        'enable=\'between(t,${item.startTime.toStringAsFixed(3)},${(item.endTime ?? 99999).toStringAsFixed(3)})\'',
-    ];
-    return options.join(':');
-  }
-
-  String _buildAlphaExpression(OverlayItem item) {
+  String _getPosXExpression(OverlayItem item, int outW) {
     final st = item.startTime;
     final ed = item.animationEntranceDuration;
-    final et = item.endTime;
-    final exd = item.animationExitDuration;
+    final targetXExpr = OverlayPositionCalculator.exportPosition(
+      outputWidth: outW,
+      outputHeight: 0,
+      xPercent: item.position.xPercent,
+      yPercent: 0,
+    ).dx.toStringAsFixed(2);
 
-    if (item.animationEntrance == 'fade' && item.animationExit == 'fade' && et != null) {
-      return "if(lt(t,${st + ed}),(t-$st)/$ed,if(gt(t,${et - exd}),($et-t)/$exd,1))";
-    } else if (item.animationEntrance == 'fade') {
-      return "if(lt(t,${st + ed}),(t-$st)/$ed,1)";
-    } else if (item.animationExit == 'fade' && et != null) {
-      return "if(gt(t,${et - exd}),($et-t)/$exd,1)";
-    }
-    return "1";
-  }
-
-  String _getPosXExpression(OverlayItem item, String parentWVar, String selfWVar) {
-    final st = item.startTime;
-    final ed = item.animationEntranceDuration;
-    final targetX = '$parentWVar*${item.position.x.toStringAsFixed(5)}';
-
-    String expr = targetX;
+    String expr = targetXExpr;
     if (item.animationEntrance == 'slide_left') {
-      expr = "if(lt(t,${st + ed}),-$selfWVar+($targetX+$selfWVar)*(t-$st)/$ed,$expr)";
+      expr = "if(lt(t,${st + ed}),-w+($targetXExpr+w)*(t-$st)/$ed,$expr)";
     } else if (item.animationEntrance == 'slide_right') {
-      expr = "if(lt(t,${st + ed}),$parentWVar+($targetX-$parentWVar)*(t-$st)/$ed,$expr)";
+      expr = "if(lt(t,${st + ed}),W+($targetXExpr-W)*(t-$st)/$ed,$expr)";
     }
 
     if (item.endTime != null) {
       final et = item.endTime!;
       final exd = item.animationExitDuration;
       if (item.animationExit == 'slide_left') {
-        expr = "if(gt(t,${et - exd}),$targetX-($targetX+$selfWVar)*(t-($et-$exd))/$exd,$expr)";
+        expr = "if(gt(t,${et - exd}),$targetXExpr-($targetXExpr+w)*(t-($et-$exd))/$exd,$expr)";
       } else if (item.animationExit == 'slide_right') {
-        expr = "if(gt(t,${et - exd}),$targetX+($parentWVar-$targetX)*(t-($et-$exd))/$exd,$expr)";
+        expr = "if(gt(t,${et - exd}),$targetXExpr+(W-$targetXExpr)*(t-($et-$exd))/$exd,$expr)";
       }
     }
     return expr;
   }
 
-  String _getPosYExpression(OverlayItem item, String parentHVar, String selfHVar) {
+  String _getPosYExpression(OverlayItem item, int outH) {
     final st = item.startTime;
     final ed = item.animationEntranceDuration;
-    final targetY = '$parentHVar*${item.position.y.toStringAsFixed(5)}';
+    final targetYExpr = OverlayPositionCalculator.exportPosition(
+      outputWidth: 0,
+      outputHeight: outH,
+      xPercent: 0,
+      yPercent: item.position.yPercent,
+    ).dy.toStringAsFixed(2);
 
-    String expr = targetY;
+    String expr = targetYExpr;
     if (item.animationEntrance == 'slide_down') {
-      expr = "if(lt(t,${st + ed}),-$selfHVar+($targetY+$selfHVar)*(t-$st)/$ed,$expr)";
+      expr = "if(lt(t,${st + ed}),-h+($targetYExpr+h)*(t-$st)/$ed,$expr)";
     } else if (item.animationEntrance == 'slide_up') {
-      expr = "if(lt(t,${st + ed}),$parentHVar+($targetY-$parentHVar)*(t-$st)/$ed,$expr)";
+      expr = "if(lt(t,${st + ed}),H+($targetYExpr-H)*(t-$st)/$ed,$expr)";
     }
 
     if (item.endTime != null) {
       final et = item.endTime!;
       final exd = item.animationExitDuration;
       if (item.animationExit == 'slide_down') {
-        expr = "if(gt(t,${et - exd}),$targetY-($targetY+$selfHVar)*(t-($et-$exd))/$exd,$expr)";
+        expr = "if(gt(t,${et - exd}),$targetYExpr-($targetYExpr+h)*(t-($et-$exd))/$exd,$expr)";
       } else if (item.animationExit == 'slide_up') {
-        expr = "if(gt(t,${et - exd}),$targetY+($parentHVar-$targetY)*(t-($et-$exd))/$exd,$expr)";
+        expr = "if(gt(t,${et - exd}),$targetYExpr+(H-$targetYExpr)*(t-($et-$exd))/$exd,$expr)";
       }
     }
     return expr;
@@ -410,20 +485,6 @@ class FfmpegOverlayService {
 
   int _overlayItemWidth(int outW, double width) {
     return (outW * width.clamp(0.01, 5.0)).round();
-  }
-
-  String _ffmpegColor(String value) {
-    final normalized = value.replaceFirst('#', '').trim();
-    return normalized.length == 6 ? '0x$normalized' : 'white';
-  }
-
-  String _escapeDrawText(String value) {
-    final normalized = value.replaceAll('\\', '/');
-    return normalized
-        .replaceAll("'", r"\'")
-        .replaceAll(':', r'\:')
-        .replaceAll(',', r'\,')
-        .replaceAll('\n', r'\n');
   }
 
   Future<ProcessRunOutput> _runProcess(
@@ -519,9 +580,11 @@ class FfmpegOverlayPlan {
     required this.arguments,
     required this.command,
     required this.outputPath,
+    this.tempFiles = const [],
   });
 
   final List<String> arguments;
   final String command;
   final String outputPath;
+  final List<String> tempFiles;
 }

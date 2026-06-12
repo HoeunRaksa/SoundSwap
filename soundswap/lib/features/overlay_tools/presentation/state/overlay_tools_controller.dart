@@ -101,7 +101,7 @@ class OverlayToolsController extends ChangeNotifier {
       type: OverlayItemType.image,
       name: asset.name,
       imagePath: asset.path,
-      position: const NormalizedPosition(x: 0.1, y: 0.1),
+      position: const NormalizedPosition(xPercent: 0.1, yPercent: 0.1),
       width: 0.3,
     );
     await _replaceSettings(
@@ -225,7 +225,7 @@ class OverlayToolsController extends ChangeNotifier {
       type: OverlayItemType.text,
       name: 'Text overlay',
       text: 'New text',
-      position: const NormalizedPosition(x: 0.1, y: 0.18),
+      position: const NormalizedPosition(xPercent: 0.1, yPercent: 0.18),
       fontPath: settings.defaultFontPath,
       fontFamily: settings.defaultFontFamily,
       startTime: 0.0,
@@ -247,7 +247,7 @@ class OverlayToolsController extends ChangeNotifier {
       type: OverlayItemType.image,
       name: 'Image overlay',
       imagePath: path,
-      position: const NormalizedPosition(x: 0.08, y: 0.08),
+      position: const NormalizedPosition(xPercent: 0.08, yPercent: 0.08),
       width: 0.22,
       startTime: 0.0,
       endTime: null,
@@ -354,8 +354,8 @@ class OverlayToolsController extends ChangeNotifier {
     final newItem = item.copyWith(
       name: '${item.name} Copy',
       position: item.position.copyWith(
-        x: (item.position.x + 0.03).clamp(0.0, 1.0),
-        y: (item.position.y + 0.03).clamp(0.0, 1.0),
+        xPercent: (item.position.xPercent + 0.03).clamp(0.0, 1.0),
+        yPercent: (item.position.yPercent + 0.03).clamp(0.0, 1.0),
       ),
     );
     final index = settings.items.indexWhere((e) => e.id == id);
@@ -496,11 +496,11 @@ class OverlayToolsController extends ChangeNotifier {
     if (selected.isEmpty) return;
     double targetX = 0.0;
     if (selected.length > 1) {
-      targetX = selected.map((e) => e.position.x).reduce((a, b) => a < b ? a : b);
+      targetX = selected.map((e) => e.position.xPercent).reduce((a, b) => a < b ? a : b);
     }
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
-        return e.copyWith(position: e.position.copyWith(x: targetX));
+        return e.copyWith(position: e.position.copyWith(xPercent: targetX));
       }
       return e;
     }).toList();
@@ -513,14 +513,14 @@ class OverlayToolsController extends ChangeNotifier {
     if (selected.length == 1) {
       final item = selected.first;
       if (!item.locked) {
-        await updateItem(item.copyWith(position: item.position.copyWith(x: 1.0 - item.width)));
+        await updateItem(item.copyWith(position: item.position.copyWith(xPercent: 1.0 - item.width)));
       }
       return;
     }
-    final maxX = selected.map((e) => e.position.x + e.width).reduce((a, b) => a > b ? a : b);
+    final maxX = selected.map((e) => e.position.xPercent + e.width).reduce((a, b) => a > b ? a : b);
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
-        return e.copyWith(position: e.position.copyWith(x: maxX - e.width));
+        return e.copyWith(position: e.position.copyWith(xPercent: maxX - e.width));
       }
       return e;
     }).toList();
@@ -533,14 +533,14 @@ class OverlayToolsController extends ChangeNotifier {
     if (selected.length == 1) {
       final item = selected.first;
       if (!item.locked) {
-        await updateItem(item.copyWith(position: item.position.copyWith(x: 0.5 - item.width / 2)));
+        await updateItem(item.copyWith(position: item.position.copyWith(xPercent: 0.5 - item.width / 2)));
       }
       return;
     }
-    final avgCenterX = selected.map((e) => e.position.x + e.width / 2).reduce((a, b) => a + b) / selected.length;
+    final avgCenterX = selected.map((e) => e.position.xPercent + e.width / 2).reduce((a, b) => a + b) / selected.length;
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
-        return e.copyWith(position: e.position.copyWith(x: avgCenterX - e.width / 2));
+        return e.copyWith(position: e.position.copyWith(xPercent: avgCenterX - e.width / 2));
       }
       return e;
     }).toList();
@@ -552,11 +552,11 @@ class OverlayToolsController extends ChangeNotifier {
     if (selected.isEmpty) return;
     double targetY = 0.0;
     if (selected.length > 1) {
-      targetY = selected.map((e) => e.position.y).reduce((a, b) => a < b ? a : b);
+      targetY = selected.map((e) => e.position.yPercent).reduce((a, b) => a < b ? a : b);
     }
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
-        return e.copyWith(position: e.position.copyWith(y: targetY));
+        return e.copyWith(position: e.position.copyWith(yPercent: targetY));
       }
       return e;
     }).toList();
@@ -570,15 +570,15 @@ class OverlayToolsController extends ChangeNotifier {
       final item = selected.first;
       if (!item.locked) {
         final h = _getEstimatedHeight(item);
-        await updateItem(item.copyWith(position: item.position.copyWith(y: 1.0 - h)));
+        await updateItem(item.copyWith(position: item.position.copyWith(yPercent: 1.0 - h)));
       }
       return;
     }
-    final maxY = selected.map((e) => e.position.y + _getEstimatedHeight(e)).reduce((a, b) => a > b ? a : b);
+    final maxY = selected.map((e) => e.position.yPercent + _getEstimatedHeight(e)).reduce((a, b) => a > b ? a : b);
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
         final h = _getEstimatedHeight(e);
-        return e.copyWith(position: e.position.copyWith(y: maxY - h));
+        return e.copyWith(position: e.position.copyWith(yPercent: maxY - h));
       }
       return e;
     }).toList();
@@ -592,15 +592,15 @@ class OverlayToolsController extends ChangeNotifier {
       final item = selected.first;
       if (!item.locked) {
         final h = _getEstimatedHeight(item);
-        await updateItem(item.copyWith(position: item.position.copyWith(y: 0.5 - h / 2)));
+        await updateItem(item.copyWith(position: item.position.copyWith(yPercent: 0.5 - h / 2)));
       }
       return;
     }
-    final avgCenterY = selected.map((e) => e.position.y + _getEstimatedHeight(e) / 2).reduce((a, b) => a + b) / selected.length;
+    final avgCenterY = selected.map((e) => e.position.yPercent + _getEstimatedHeight(e) / 2).reduce((a, b) => a + b) / selected.length;
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
         final h = _getEstimatedHeight(e);
-        return e.copyWith(position: e.position.copyWith(y: avgCenterY - h / 2));
+        return e.copyWith(position: e.position.copyWith(yPercent: avgCenterY - h / 2));
       }
       return e;
     }).toList();
@@ -610,16 +610,16 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> distributeHorizontal() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.length < 3) return;
-    selected.sort((a, b) => (a.position.x + a.width / 2).compareTo(b.position.x + b.width / 2));
-    final firstCenter = selected.first.position.x + selected.first.width / 2;
-    final lastCenter = selected.last.position.x + selected.last.width / 2;
+    selected.sort((a, b) => (a.position.xPercent + a.width / 2).compareTo(b.position.xPercent + b.width / 2));
+    final firstCenter = selected.first.position.xPercent + selected.first.width / 2;
+    final lastCenter = selected.last.position.xPercent + selected.last.width / 2;
     final spacing = (lastCenter - firstCenter) / (selected.length - 1);
 
     final nextItems = settings.items.map((e) {
       final index = selected.indexWhere((s) => s.id == e.id);
       if (index != -1 && !e.locked) {
         final targetCenter = firstCenter + index * spacing;
-        return e.copyWith(position: e.position.copyWith(x: targetCenter - e.width / 2));
+        return e.copyWith(position: e.position.copyWith(xPercent: targetCenter - e.width / 2));
       }
       return e;
     }).toList();
@@ -629,9 +629,9 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> distributeVertical() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.length < 3) return;
-    selected.sort((a, b) => (a.position.y + _getEstimatedHeight(a) / 2).compareTo(b.position.y + _getEstimatedHeight(b) / 2));
-    final firstCenter = selected.first.position.y + _getEstimatedHeight(selected.first) / 2;
-    final lastCenter = selected.last.position.y + _getEstimatedHeight(selected.last) / 2;
+    selected.sort((a, b) => (a.position.yPercent + _getEstimatedHeight(a) / 2).compareTo(b.position.yPercent + _getEstimatedHeight(b) / 2));
+    final firstCenter = selected.first.position.yPercent + _getEstimatedHeight(selected.first) / 2;
+    final lastCenter = selected.last.position.yPercent + _getEstimatedHeight(selected.last) / 2;
     final spacing = (lastCenter - firstCenter) / (selected.length - 1);
 
     final nextItems = settings.items.map((e) {
@@ -639,7 +639,7 @@ class OverlayToolsController extends ChangeNotifier {
       if (index != -1 && !e.locked) {
         final targetCenter = firstCenter + index * spacing;
         final h = _getEstimatedHeight(e);
-        return e.copyWith(position: e.position.copyWith(y: targetCenter - h / 2));
+        return e.copyWith(position: e.position.copyWith(yPercent: targetCenter - h / 2));
       }
       return e;
     }).toList();

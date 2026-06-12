@@ -796,10 +796,10 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('X Pos: ${(item.position.x * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 11)),
+                    Text('X Pos: ${(item.position.xPercent * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 11)),
                     Slider(
-                      value: item.position.x.clamp(0.0, 1.0),
-                      onChanged: (val) => widget.controller.moveItem(item.id, item.position.copyWith(x: val)),
+                      value: item.position.xPercent.clamp(0.0, 1.0),
+                      onChanged: (val) => widget.controller.moveItem(item.id, item.position.copyWith(xPercent: val)),
                     ),
                   ],
                 ),
@@ -808,10 +808,10 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Y Pos: ${(item.position.y * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 11)),
+                    Text('Y Pos: ${(item.position.yPercent * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 11)),
                     Slider(
-                      value: item.position.y.clamp(0.0, 1.0),
-                      onChanged: (val) => widget.controller.moveItem(item.id, item.position.copyWith(y: val)),
+                      value: item.position.yPercent.clamp(0.0, 1.0),
+                      onChanged: (val) => widget.controller.moveItem(item.id, item.position.copyWith(yPercent: val)),
                     ),
                   ],
                 ),

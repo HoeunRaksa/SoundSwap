@@ -17,10 +17,10 @@ class TextOverlaySettings {
     this.opacity = 1.0,
     this.layerOrder = 0,
     this.textAlignment = 'left',
-    this.titlePosition = const NormalizedPosition(x: 0.08, y: 0.12),
-    this.subtitlePosition = const NormalizedPosition(x: 0.08, y: 0.20),
-    this.promotionPosition = const NormalizedPosition(x: 0.08, y: 0.72),
-    this.pricePosition = const NormalizedPosition(x: 0.08, y: 0.82),
+    this.titlePosition = const NormalizedPosition(xPercent: 0.08, yPercent: 0.12),
+    this.subtitlePosition = const NormalizedPosition(xPercent: 0.08, yPercent: 0.20),
+    this.promotionPosition = const NormalizedPosition(xPercent: 0.08, yPercent: 0.72),
+    this.pricePosition = const NormalizedPosition(xPercent: 0.08, yPercent: 0.82),
   });
 
   final String title;
@@ -82,11 +82,11 @@ class TextOverlaySettings {
       textAlignment: json['textAlignment'] as String? ?? 'left',
       titlePosition: NormalizedPosition.fromJson(
         json['titlePosition'],
-        fallback: const NormalizedPosition(x: 0.08, y: 0.12),
+        fallback: const NormalizedPosition(xPercent: 0.08, yPercent: 0.12),
       ),
       subtitlePosition: NormalizedPosition.fromJson(
         json['subtitlePosition'],
-        fallback: const NormalizedPosition(x: 0.08, y: 0.20),
+        fallback: const NormalizedPosition(xPercent: 0.08, yPercent: 0.20),
       ),
       promotionPosition: NormalizedPosition.fromJson(
         json['promotionPosition'],
@@ -156,7 +156,7 @@ class TextOverlaySettings {
     return items
         .map(
           (item) =>
-              'drawtext=text="${item.text}":font="$fontFamily":fontsize=${fontSize.toStringAsFixed(0)}:fontcolor=$textColor:x=w*${item.position.x.toStringAsFixed(3)}:y=h*${item.position.y.toStringAsFixed(3)}',
+              'drawtext=text="${item.text}":font="$fontFamily":fontsize=${fontSize.toStringAsFixed(0)}:fontcolor=$textColor:x=w*${item.position.xPercent.toStringAsFixed(3)}:y=h*${item.position.yPercent.toStringAsFixed(3)}',
         )
         .join(',\n');
   }
@@ -171,8 +171,8 @@ class TextOverlaySettings {
       TextOverlayPosition.bottom => 0.76,
     };
     return NormalizedPosition(
-      x: 0.08,
-      y: (baseY + offset * 0.08).clamp(0, 1).toDouble(),
+      xPercent: 0.08,
+      yPercent: (baseY + offset * 0.08).clamp(0, 1).toDouble(),
     );
   }
 }

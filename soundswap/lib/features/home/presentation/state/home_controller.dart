@@ -911,8 +911,8 @@ class HomeController extends ChangeNotifier {
         if (!item.hasContent) continue;
         
         // Check overlay positions are valid
-        if (item.position.x.isNaN || item.position.x.isInfinite ||
-            item.position.y.isNaN || item.position.y.isInfinite) {
+        if (item.position.xPercent.isNaN || item.position.xPercent.isInfinite ||
+            item.position.yPercent.isNaN || item.position.yPercent.isInfinite) {
           throw FfmpegException('Failed: invalid position coordinates for overlay item ${item.name}');
         }
         if (item.width.isNaN || item.width.isInfinite || item.width < 0) {

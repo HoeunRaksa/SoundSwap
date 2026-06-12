@@ -96,9 +96,9 @@ class BrandingSettings {
   String buildOverlayPreview() {
     final parts = <String>[
       if (logoPath != null && logoPath!.isNotEmpty)
-        '-i "$logoPath" -filter_complex "[video][logo] overlay=x=w*${logoPosition.x.toStringAsFixed(3)}:y=h*${logoPosition.y.toStringAsFixed(3)}"',
+        '-i "$logoPath" -filter_complex "[video][logo] overlay=x=w*${logoPosition.xPercent.toStringAsFixed(3)}:y=h*${logoPosition.yPercent.toStringAsFixed(3)}"',
       if (hasContactText)
-        'drawtext=text="${contactText.replaceAll('\n', r'\n')}":font="$fontFamily":fontsize=${fontSize.toStringAsFixed(0)}:fontcolor=$textColor:x=w*${textPosition.x.toStringAsFixed(3)}:y=h*${textPosition.y.toStringAsFixed(3)}',
+        'drawtext=text="${contactText.replaceAll('\n', r'\n')}":font="$fontFamily":fontsize=${fontSize.toStringAsFixed(0)}:fontcolor=$textColor:x=w*${textPosition.xPercent.toStringAsFixed(3)}:y=h*${textPosition.yPercent.toStringAsFixed(3)}',
     ];
     return parts.isEmpty ? 'No branding overlay configured.' : parts.join('\n');
   }

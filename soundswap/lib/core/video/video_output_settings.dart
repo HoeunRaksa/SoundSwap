@@ -3,34 +3,40 @@ enum VideoOutputSize { original, vertical720, vertical1080, vertical2160 }
 enum VideoFitMode { keepOriginal, fitInsideBlurred, fillCrop, stretch }
 
 class NormalizedPosition {
-  const NormalizedPosition({required this.x, required this.y});
+  const NormalizedPosition({required this.xPercent, required this.yPercent});
 
-  final double x;
-  final double y;
+  final double xPercent;
+  final double yPercent;
 
-  static const topLeft = NormalizedPosition(x: 0.08, y: 0.08);
-  static const lowerLeft = NormalizedPosition(x: 0.08, y: 0.78);
-  static const center = NormalizedPosition(x: 0.5, y: 0.5);
+  static const topLeft = NormalizedPosition(xPercent: 0.08, yPercent: 0.08);
+  static const lowerLeft = NormalizedPosition(xPercent: 0.08, yPercent: 0.78);
+  static const center = NormalizedPosition(xPercent: 0.5, yPercent: 0.5);
 
-  Map<String, Object?> toJson() => {'x': x, 'y': y};
+  Map<String, Object?> toJson() => {'xPercent': xPercent, 'yPercent': yPercent};
 
   factory NormalizedPosition.fromJson(
     Object? value, {
     NormalizedPosition fallback = NormalizedPosition.topLeft,
   }) {
     if (value is! Map) return fallback;
-    final x = (value['x'] as num?)?.toDouble() ?? fallback.x;
-    final y = (value['y'] as num?)?.toDouble() ?? fallback.y;
+    
+    double x = (value['xPercent'] ?? value['x'])?.toDouble() ?? fallback.xPercent;
+    double y = (value['yPercent'] ?? value['y'])?.toDouble() ?? fallback.yPercent;
+
+    // Migrate from old absolute pixel coordinates (assuming 1080x1920 reference)
+    if (x > 1.0) x = x / 1080.0;
+    if (y > 1.0) y = y / 1920.0;
+
     return NormalizedPosition(
-      x: x,
-      y: y,
+      xPercent: x.clamp(0.0, 1.0),
+      yPercent: y.clamp(0.0, 1.0),
     );
   }
 
-  NormalizedPosition copyWith({double? x, double? y}) {
+  NormalizedPosition copyWith({double? xPercent, double? yPercent}) {
     return NormalizedPosition(
-      x: x ?? this.x,
-      y: y ?? this.y,
+      xPercent: xPercent ?? this.xPercent,
+      yPercent: yPercent ?? this.yPercent,
     );
   }
 }

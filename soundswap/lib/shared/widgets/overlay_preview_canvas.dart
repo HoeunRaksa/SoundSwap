@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
+import 'package:soundswap/features/overlay_tools/utils/overlay_position_calculator.dart';
 
 enum PreviewOverlayKind { logo, text }
 
@@ -290,10 +291,6 @@ class _DraggablePreviewItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = item.selected || selectedItemIds.contains(item.id);
-    final itemWidth = size.width * item.width;
-    final itemHeight = item.lockAspectRatio
-        ? itemWidth
-        : size.height * (item.customHeight ?? item.width);
 
     // Calculate animation values
     double animationOpacity = 1.0;
@@ -360,9 +357,15 @@ class _DraggablePreviewItem extends StatelessWidget {
       ),
     );
 
+    final targetPos = OverlayPositionCalculator.previewPosition(
+      videoRect: Rect.fromLTWH(0, 0, size.width, size.height),
+      xPercent: item.position.xPercent,
+      yPercent: item.position.yPercent,
+    );
+
     return Positioned(
-      left: item.position.x * size.width + animationOffsetX,
-      top: item.position.y * size.height + animationOffsetY,
+      left: targetPos.dx + animationOffsetX,
+      top: targetPos.dy + animationOffsetY,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -386,8 +389,8 @@ class _DraggablePreviewItem extends StatelessWidget {
                   final sibling = allItems.firstWhere((e) => e.id == selectedId, orElse: () => item);
                   if (sibling.locked) continue;
                   nextPositions[selectedId] = NormalizedPosition(
-                    x: (sibling.position.x + deltaX).clamp(0.0, 1.0),
-                    y: (sibling.position.y + deltaY).clamp(0.0, 1.0),
+                    xPercent: (sibling.position.xPercent + deltaX).clamp(0.0, 1.0),
+                    yPercent: (sibling.position.yPercent + deltaY).clamp(0.0, 1.0),
                   );
                 }
                 onMultiPositionChanged!(nextPositions);
@@ -395,8 +398,8 @@ class _DraggablePreviewItem extends StatelessWidget {
               }
 
               // Standard single item drag with snapping
-              double nextX = item.position.x + deltaX;
-              double nextY = item.position.y + deltaY;
+              double nextX = item.position.xPercent + deltaX;
+              double nextY = item.position.yPercent + deltaY;
 
               double? guideX;
               double? guideY;
@@ -419,11 +422,11 @@ class _DraggablePreviewItem extends StatelessWidget {
                 for (final other in allItems) {
                   if (other.id == item.id) continue;
                   // Horizontal snap
-                  if ((nextX - other.position.x).abs() < 0.015) {
-                    nextX = other.position.x;
+                  if ((nextX - other.position.xPercent).abs() < 0.015) {
+                    nextX = other.position.xPercent;
                     guideX = nextX;
-                  } else if ((nextX + item.width - (other.position.x + other.width)).abs() < 0.015) {
-                    nextX = other.position.x + other.width - item.width;
+                  } else if ((nextX + item.width - (other.position.xPercent + other.width)).abs() < 0.015) {
+                    nextX = other.position.xPercent + other.width - item.width;
                     guideX = nextX + item.width;
                   }
                 }
@@ -448,17 +451,17 @@ class _DraggablePreviewItem extends StatelessWidget {
                 for (final other in allItems) {
                   if (other.id == item.id) continue;
                   final otherH = other.lockAspectRatio ? other.width : (other.customHeight ?? other.width);
-                  if ((nextY - other.position.y).abs() < 0.015) {
-                    nextY = other.position.y;
+                  if ((nextY - other.position.yPercent).abs() < 0.015) {
+                    nextY = other.position.yPercent;
                     guideY = nextY;
-                  } else if ((nextY + computedHeight - (other.position.y + otherH)).abs() < 0.015) {
-                    nextY = other.position.y + otherH - computedHeight;
+                  } else if ((nextY + computedHeight - (other.position.yPercent + otherH)).abs() < 0.015) {
+                    nextY = other.position.yPercent + otherH - computedHeight;
                     guideY = nextY + computedHeight;
                   }
                 }
               }
 
-              onChanged(item.id, NormalizedPosition(x: nextX, y: nextY));
+              onChanged(item.id, NormalizedPosition(xPercent: nextX, yPercent: nextY));
               onSnapChanged(guideX, guideY);
             },
             onPanEnd: (_) => onSnapChanged(null, null),
@@ -469,45 +472,45 @@ class _DraggablePreviewItem extends StatelessWidget {
           ),
           // Selection handles (rendered on top of surface)
           if (isSelected)
-            _SelectionHandlesFrame(
-              width: itemWidth,
-              height: itemHeight,
-              locked: item.locked,
-              onResize: (dx, dy, left, right, top, bottom) {
-                if (item.locked) return;
+            Positioned.fill(
+              child: _SelectionHandlesFrame(
+                locked: item.locked,
+                onResize: (dx, dy, left, right, top, bottom) {
+                  if (item.locked) return;
 
-                double nextX = item.position.x;
-                double nextY = item.position.y;
-                double nextW = item.width;
-                double nextH = item.customHeight ?? item.width;
+                  double nextX = item.position.xPercent;
+                  double nextY = item.position.yPercent;
+                  double nextW = item.width;
+                  double nextH = item.customHeight ?? item.width;
 
-                final changeX = dx / size.width;
-                final changeY = dy / size.height;
+                  final changeX = dx / size.width;
+                  final changeY = dy / size.height;
 
-                if (left) {
-                  final oldMaxX = nextX + nextW;
-                  nextX = (nextX + changeX).clamp(0.0, oldMaxX - 0.05);
-                  nextW = oldMaxX - nextX;
-                }
-                if (right) {
-                  nextW = (nextW + changeX).clamp(0.05, 1.0);
-                }
-                if (top) {
-                  final oldMaxY = nextY + nextH;
-                  nextY = (nextY + changeY).clamp(0.0, oldMaxY - 0.05);
-                  nextH = oldMaxY - nextY;
-                }
-                if (bottom) {
-                  nextH = (nextH + changeY).clamp(0.05, 1.0);
-                }
+                  if (left) {
+                    final oldMaxX = nextX + nextW;
+                    nextX = (nextX + changeX).clamp(0.0, oldMaxX - 0.05);
+                    nextW = oldMaxX - nextX;
+                  }
+                  if (right) {
+                    nextW = (nextW + changeX).clamp(0.05, 1.0);
+                  }
+                  if (top) {
+                    final oldMaxY = nextY + nextH;
+                    nextY = (nextY + changeY).clamp(0.0, oldMaxY - 0.05);
+                    nextH = oldMaxY - nextY;
+                  }
+                  if (bottom) {
+                    nextH = (nextH + changeY).clamp(0.05, 1.0);
+                  }
 
-                if (onSizeChanged != null) {
-                  onSizeChanged!(item.id, nextW, item.lockAspectRatio ? null : nextH);
-                } else if (onWidthChanged != null) {
-                  onWidthChanged!(item.id, nextW);
-                }
-                onChanged(item.id, NormalizedPosition(x: nextX, y: nextY));
-              },
+                  if (onSizeChanged != null) {
+                    onSizeChanged!(item.id, nextW, item.lockAspectRatio ? null : nextH);
+                  } else if (onWidthChanged != null) {
+                    onWidthChanged!(item.id, nextW);
+                  }
+                  onChanged(item.id, NormalizedPosition(xPercent: nextX, yPercent: nextY));
+                },
+              ),
             ),
         ],
       ),
@@ -517,25 +520,16 @@ class _DraggablePreviewItem extends StatelessWidget {
 
 class _SelectionHandlesFrame extends StatelessWidget {
   const _SelectionHandlesFrame({
-    required this.width,
-    required this.height,
     required this.locked,
     required this.onResize,
   });
 
-  final double width;
-  final double height;
   final bool locked;
   final void Function(double dx, double dy, bool left, bool right, bool top, bool bottom) onResize;
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 0,
-      top: 0,
-      width: width,
-      height: height,
-      child: Stack(
+    return Stack(
         clipBehavior: Clip.none,
         children: [
           // Orange Selection Border
@@ -565,8 +559,7 @@ class _SelectionHandlesFrame extends StatelessWidget {
             _buildResizeHandle(Alignment.bottomCenter, false, false, false, true, SystemMouseCursors.resizeUpDown),
           ],
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildResizeHandle(
@@ -628,53 +621,55 @@ class _LogoPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final logoWidth = size.width * 0.18;
     final previewWidth = size.width * item.width;
-    final previewHeight = item.lockAspectRatio
-        ? previewWidth
-        : size.height * (item.customHeight ?? item.width);
 
     final imagePath = item.imagePath;
     final imageFile = imagePath == null ? null : File(imagePath);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        width: previewWidth,
-        height: previewHeight,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.grey.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Checkerboard pattern behind the image so transparent PNG transparency is clear
-            Positioned.fill(
-              child: CustomPaint(
-                painter: const _CheckerboardPainter(),
-              ),
-            ),
-            Positioned.fill(
-              child: imageFile != null && imageFile.existsSync()
-                  ? Image.file(
-                      imageFile,
-                      fit: switch (item.imageFitMode) {
-                        'cover' => BoxFit.cover,
-                        'stretch' => BoxFit.fill,
-                        _ => BoxFit.contain,
-                      },
-                    )
-                  : Center(
-                      child: Icon(
-                        Icons.image_outlined,
-                        size: logoWidth * 0.5,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-            ),
-          ],
+    return Container(
+      width: previewWidth,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.3),
+          width: 1,
         ),
       ),
+      child: imageFile != null && imageFile.existsSync()
+          ? Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: const _CheckerboardPainter(),
+                  ),
+                ),
+                Image.file(
+                  imageFile,
+                  fit: switch (item.imageFitMode) {
+                    'cover' => BoxFit.cover,
+                    'stretch' => BoxFit.fill,
+                    _ => BoxFit.contain,
+                  },
+                ),
+              ],
+            )
+          : AspectRatio(
+              aspectRatio: 1.0,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: const _CheckerboardPainter(),
+                    ),
+                  ),
+                  Center(
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: logoWidth * 0.5,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
