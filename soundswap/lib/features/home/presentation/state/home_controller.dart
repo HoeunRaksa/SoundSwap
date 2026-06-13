@@ -903,7 +903,7 @@ class HomeController extends ChangeNotifier {
       // Check default font path if specified
       if (overlaySettings.defaultFontPath != null && overlaySettings.defaultFontPath!.trim().isNotEmpty) {
         if (!File(overlaySettings.defaultFontPath!).existsSync()) {
-          throw FfmpegException('Failed: missing default font file (${overlaySettings.defaultFontPath})');
+          debugPrint('WARNING: Failed: missing default font file (${overlaySettings.defaultFontPath})');
         }
       }
 
@@ -929,7 +929,7 @@ class HomeController extends ChangeNotifier {
         } else if (item.type == OverlayItemType.text) {
           if (item.fontPath != null && item.fontPath!.trim().isNotEmpty) {
             if (!File(item.fontPath!).existsSync()) {
-              throw FfmpegException('Failed: missing font file for item ${item.name} (${item.fontPath})');
+              debugPrint('WARNING: Failed: missing font file for item ${item.name} (${item.fontPath})');
             }
           }
         }

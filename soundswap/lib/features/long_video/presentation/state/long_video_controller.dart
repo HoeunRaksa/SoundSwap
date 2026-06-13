@@ -308,14 +308,14 @@ class LongVideoController extends ChangeNotifier {
           if (item.type == OverlayItemType.text && item.fontPath != null && item.fontPath!.isNotEmpty) {
             final f = File(item.fontPath!);
             if (!f.existsSync()) {
-              return 'Template font file does not exist: ${p.basename(item.fontPath!)}';
+              debugPrint('WARNING: Template font file does not exist: ${p.basename(item.fontPath!)}');
             }
           }
         }
         if (t.overlaySettings.defaultFontPath != null && t.overlaySettings.defaultFontPath!.isNotEmpty) {
           final f = File(t.overlaySettings.defaultFontPath!);
           if (!f.existsSync()) {
-            return 'Template default font file does not exist: ${p.basename(t.overlaySettings.defaultFontPath!)}';
+            debugPrint('WARNING: Template default font file does not exist: ${p.basename(t.overlaySettings.defaultFontPath!)}');
           }
         }
       }
@@ -339,14 +339,14 @@ class LongVideoController extends ChangeNotifier {
           if (item.type == OverlayItemType.text && item.fontPath != null && item.fontPath!.isNotEmpty) {
             final f = File(item.fontPath!);
             if (!f.existsSync()) {
-              return 'Current font file does not exist: ${p.basename(item.fontPath!)}';
+              debugPrint('WARNING: Current font file does not exist: ${p.basename(item.fontPath!)}');
             }
           }
         }
         if (home.activeOverlaySettings!.defaultFontPath != null && home.activeOverlaySettings!.defaultFontPath!.isNotEmpty) {
           final f = File(home.activeOverlaySettings!.defaultFontPath!);
           if (!f.existsSync()) {
-            return 'Current default font file does not exist: ${p.basename(home.activeOverlaySettings!.defaultFontPath!)}';
+            debugPrint('WARNING: Current default font file does not exist: ${p.basename(home.activeOverlaySettings!.defaultFontPath!)}');
           }
         }
       }

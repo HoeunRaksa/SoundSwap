@@ -93,7 +93,7 @@ class OverlayItem {
     'text': text,
     'imagePath': imagePath,
     'fontFamily': fontFamily,
-    'fontPath': fontPath,
+    'fontPath': _sanitizeFontPath(fontPath),
     'fontSource': fontSource,
     'bold': bold,
     'italic': italic,
@@ -247,5 +247,15 @@ class OverlayItem {
       animationExit: clearAnimationExit ? null : (animationExit ?? this.animationExit),
       animationExitDuration: animationExitDuration ?? this.animationExitDuration,
     );
+  }
+
+  static String? _sanitizeFontPath(String? path) {
+    if (path == null) return null;
+    final lowerPath = path.toLowerCase();
+    if (lowerPath.contains(r'appdata\local\microsoft\windows\fonts') ||
+        lowerPath.contains(r'windows\fonts')) {
+      return null;
+    }
+    return path;
   }
 }

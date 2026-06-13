@@ -61,3 +61,3402 @@ flutter:
     - family: AKbalthom Choeung Ek
       fonts:
         - asset: "assets/fonts/AKbalthom Choeung Ek.ttf"
+    - family: !Khmer OS Siemreap
+      fonts:
+        - asset: assets/fonts/!KhmerOSSiemreap.ttf
+    - family: Adobe Devanagari
+      fonts:
+        - asset: assets/fonts/AdobeDevanagari-Regular.otf
+        - asset: assets/fonts/AdobeDevanagari-Bold.otf
+          weight: 700
+    - family: Agency FB
+      fonts:
+        - asset: assets/fonts/AGENCYR.TTF
+        - asset: assets/fonts/AGENCYB.TTF
+          weight: 700
+    - family: Ah Ja Thom Content
+      fonts:
+        - asset: assets/fonts/Ah Ja Thom Content.ttf
+    - family: Ah Ja Thom Prey Veng Small
+      fonts:
+        - asset: assets/fonts/Ah Ja Thom Prey Veng Small.ttf
+    - family: Ah Ja Thom Prey Veng
+      fonts:
+        - asset: assets/fonts/Ah Ja Thom Prey Veng.ttf
+    - family: Ah One
+      fonts:
+        - asset: assets/fonts/Ah One.ttf
+    - family: AKbalthom DaemPothi
+      fonts:
+        - asset: assets/fonts/AKbalthom DaemPothi.ttf
+    - family: AKbalthom Freehand
+      fonts:
+        - asset: assets/fonts/AKbalthom Freehand [Version 3.00].ttf
+    - family: AKbalthom HighSchool
+      fonts:
+        - asset: assets/fonts/AKbalthom HighSchool [Version 3.00].ttf
+    - family: AKbalthom HighSchool-Frame
+      fonts:
+        - asset: assets/fonts/AKbalthom HighSchool-Frame [Version 3.00].ttf
+    - family: AKbalthom HighSchool-Fun
+      fonts:
+        - asset: assets/fonts/AKbalthom HighSchool-Fun [Version 3.00].ttf
+    - family: AKbalthom Kampuchearath
+      fonts:
+        - asset: assets/fonts/AKbalthom Kampuchearath.ttf
+    - family: AKbalthom Kbach 1
+      fonts:
+        - asset: assets/fonts/AKbalthom Kbach 1.ttf
+    - family: AKbalthom Kbach
+      fonts:
+        - asset: assets/fonts/AKbalthom Kbach [Version 3.20].ttf
+    - family: AKbalthom Khmer 21st
+      fonts:
+        - asset: assets/fonts/AKbalthom Khmer 21st.ttf
+    - family: AKbalthom Khmer Krom Italic
+      fonts:
+        - asset: assets/fonts/AKbalthom Khmer Krom Italic V1.10.ttf
+    - family: AKbalthom Khmer Krom
+      fonts:
+        - asset: assets/fonts/AKbalthom Khmer Krom.ttf
+    - family: AKbalthom KhmerBasic
+      fonts:
+        - asset: assets/fonts/AKbalthom KhmerBasic [Version 3.00].ttf
+    - family: AKbalthom KhmerGothic
+      fonts:
+        - asset: assets/fonts/AKbalthom KhmerGothic [Version 3.10].ttf
+    - family: AKbalthom KhmerHand
+      fonts:
+        - asset: assets/fonts/AKbalthom KhmerHand [Version 3.00].ttf
+    - family: AKbalthom KhmerLer
+      fonts:
+        - asset: assets/fonts/AKbalthom KhmerLer [Version 3.00].ttf
+    - family: AKbalthom KhmerLight
+      fonts:
+        - asset: assets/fonts/AKbalthom KhmerLight [Version 3.00].ttf
+    - family: AKbalthom KhmerNew
+      fonts:
+        - asset: assets/fonts/AKbalthom KhmerNew [Version 3.10].ttf
+    - family: AKbalthom KhmerScript
+      fonts:
+        - asset: assets/fonts/AKbalthom KhmerScript.ttf
+    - family: AKbalthom KmengKmang
+      fonts:
+        - asset: assets/fonts/AKbalthom KmengKmang.ttf
+    - family: AKbalthom KonSmao
+      fonts:
+        - asset: assets/fonts/AKbalthom KonSmao.ttf
+    - family: AKbalthom Korea
+      fonts:
+        - asset: assets/fonts/AKBALTHOM Korea [Version 2.00].TTF
+    - family: AKbalthom Koulen 1 Plus
+      fonts:
+        - asset: assets/fonts/AKbalthom Koulen 1 Plus.ttf
+    - family: AKbalthom Koulen 1
+      fonts:
+        - asset: assets/fonts/AKbalthom Koulen 1.ttf
+    - family: AKbalthom Koulen 2 Plus
+      fonts:
+        - asset: assets/fonts/AKbalthom Koulen 2 Plus.ttf
+    - family: AKbalthom Koulen 2
+      fonts:
+        - asset: assets/fonts/AKbalthom Koulen 2.ttf
+    - family: AKbalthom KrorNhanh
+      fonts:
+        - asset: assets/fonts/AKbalthom KrorNhanh.ttf
+    - family: Akbalthom Molleak 1
+      fonts:
+        - asset: assets/fonts/Akbalthom Molleak 1.ttf
+    - family: AKbalthom Molleak 2
+      fonts:
+        - asset: assets/fonts/AKbalthom Molleak 2.ttf
+    - family: AKbalthom Molleak 3
+      fonts:
+        - asset: assets/fonts/AKbalthom Molleak 3 Version 1.10.ttf
+    - family: AKbalthom Moul 1 Plus
+      fonts:
+        - asset: assets/fonts/AKbalthom Moul 1 Plus Version 2.00.ttf
+    - family: AKbalthom Moul 1
+      fonts:
+        - asset: assets/fonts/AKbalthom Moul 1 Version 2.00.ttf
+    - family: AKbalthom Moul 2
+      fonts:
+        - asset: assets/fonts/AKbalthom Moul 2 Version 2.00.ttf
+    - family: AKbalthom Moul 3
+      fonts:
+        - asset: assets/fonts/AKbalthom Moul 3 Version 2.00.ttf
+    - family: AKbalthom Moul 4
+      fonts:
+        - asset: assets/fonts/AKbalthom Moul 4 Version 1.10.ttf
+    - family: AKbalthom Moul 5
+      fonts:
+        - asset: assets/fonts/AKbalthom Moul 5.ttf
+    - family: AKbalthom Moul 6
+      fonts:
+        - asset: assets/fonts/AKbalthom Moul 6 V1.05.ttf
+    - family: AKbalthom Naga
+      fonts:
+        - asset: assets/fonts/AKbalthom Naga Bold.ttf
+    - family: AKbalthom Pheatra C5
+      fonts:
+        - asset: assets/fonts/AKbalthom Pheatra C5.ttf
+    - family: AKbalthom Phnom Penh
+      fonts:
+        - asset: assets/fonts/AKbalthom Phnom Penh.ttf
+    - family: AKbalthom Phnom Sampow
+      fonts:
+        - asset: assets/fonts/AKbalthom Phnom Sampow.ttf
+    - family: AKbalthom Ream
+      fonts:
+        - asset: assets/fonts/AKbalthom Ream [Version 3.00].ttf
+    - family: AKbalthom Seoul
+      fonts:
+        - asset: assets/fonts/AKbalthom Seoul [Version 3.00].ttf
+    - family: AKbalthom Superhero
+      fonts:
+        - asset: assets/fonts/AKbalthom Superhero [Version 3.00].ttf
+    - family: AKbalthom SuperheroKH
+      fonts:
+        - asset: assets/fonts/AKbalthom SuperheroKH [Version 3.00].ttf
+    - family: AKbalthom Test Font 2019
+      fonts:
+        - asset: assets/fonts/AKbalthom Test Font 2019.ttf
+    - family: AKbalthom TNRB
+      fonts:
+        - asset: assets/fonts/AKBALTHOM TNRB [Version 2.00].TTF
+    - family: AKbalthom Vicheka
+      fonts:
+        - asset: assets/fonts/AKbalthom Vicheka.ttf
+    - family: Algerian
+      fonts:
+        - asset: assets/fonts/ALGER.TTF
+    - family: Ang DaunKeo
+      fonts:
+        - asset: assets/fonts/Ang DaunKeo [Version 1.000 2008].ttf
+    - family: Ang DaunPov
+      fonts:
+        - asset: assets/fonts/Ang DaunPov [Version 1.00 2008].ttf
+    - family: Ang Daunsok
+      fonts:
+        - asset: assets/fonts/Ang Daunsok [Version Version 1.00 2008].ttf
+    - family: Ang DaunTeav
+      fonts:
+        - asset: assets/fonts/Ang DaunTeav [Version 1.00 2008].ttf
+    - family: Ang DaunTep
+      fonts:
+        - asset: assets/fonts/Ang DaunTep[Version 1.00 2008].ttf
+    - family: Ang TaPich
+      fonts:
+        - asset: assets/fonts/Ang TaPich [Version 1.00 2008].ttf
+    - family: Ang Taso
+      fonts:
+        - asset: assets/fonts/Ang Taso [Version 1.00 2008].ttf
+    - family: Ang Tasom
+      fonts:
+        - asset: assets/fonts/Ang Tasom [Version 1.00 2008].ttf
+    - family: Angkor Sovann Fantasy_02
+      fonts:
+        - asset: assets/fonts/Angkor Sovann Fantasy.ttf
+    - family: Angkor Sovann Fantasy_03
+      fonts:
+        - asset: assets/fonts/Angkor Sovann Fantasy_0.ttf
+    - family: Angkor Sovann Fantasy_01
+      fonts:
+        - asset: assets/fonts/Angkor Sovann Fantasy_01 V2.00.ttf
+    - family: Angkor Sovann Preah Vihear
+      fonts:
+        - asset: assets/fonts/Angkor Sovann Preah Vihear.ttf
+    - family: Angkor Sovann Round_01
+      fonts:
+        - asset: assets/fonts/Angkor Sovann Round.ttf
+    - family: Angkor
+      fonts:
+        - asset: assets/fonts/Angkor.ttf
+    - family: Antioch Text
+      fonts:
+        - asset: assets/fonts/AntiochText.ttf
+    - family: Book Antiqua
+      fonts:
+        - asset: assets/fonts/BKANT.TTF
+        - asset: assets/fonts/ANTQUAB.TTF
+          weight: 700
+    - family: aphireak1
+      fonts:
+        - asset: assets/fonts/aphireak1.ttf
+    - family: Arial Narrow
+      fonts:
+        - asset: assets/fonts/ARIALN.TTF
+        - asset: assets/fonts/ARIALNB.TTF
+          weight: 700
+    - family: Arial Black
+      fonts:
+        - asset: assets/fonts/ariblk.ttf
+    - family: Arial Rounded MT Bold
+      fonts:
+        - asset: assets/fonts/ARLRDBD.TTF
+    - family: ASvadek Air
+      fonts:
+        - asset: assets/fonts/ASvadek Air [Version 1.20].ttf
+    - family: ASvadek Blade
+      fonts:
+        - asset: assets/fonts/ASvadek Blade.ttf
+    - family: ASvadek Bokornew
+      fonts:
+        - asset: assets/fonts/ASvadek Bokornew.ttf
+    - family: ASvadek Box
+      fonts:
+        - asset: assets/fonts/ASvadek Box.ttf
+    - family: ASvadek Brushline
+      fonts:
+        - asset: assets/fonts/ASvadek Brushline.ttf
+    - family: ASvadek Cartoon
+      fonts:
+        - asset: assets/fonts/ASvadek Cartoon Version 1.00.ttf
+    - family: ASvadek Cello
+      fonts:
+        - asset: assets/fonts/ASvadek Cello.ttf
+    - family: ASvadek Edge
+      fonts:
+        - asset: assets/fonts/ASvadek Edge.ttf
+    - family: ASvadek EdgeHollow
+      fonts:
+        - asset: assets/fonts/ASvadek EdgeHollow.ttf
+    - family: ASvadek FastHand
+      fonts:
+        - asset: assets/fonts/ASvadek FastHand.ttf
+        - asset: assets/fonts/ASvadek FastHand Bold.ttf
+          weight: 700
+    - family: ASvadek FreeHand
+      fonts:
+        - asset: assets/fonts/ASvadek FreeHand.ttf
+    - family: ASvadek FreeHand Bold
+      fonts:
+        - asset: assets/fonts/ASvadek FreeHandb.ttf
+    - family: ASvadek Frightened
+      fonts:
+        - asset: assets/fonts/ASvadek Frightened.ttf
+    - family: ASvadek Hindi
+      fonts:
+        - asset: assets/fonts/ASvadek Hindi.ttf
+    - family: ASvadek Hollow
+      fonts:
+        - asset: assets/fonts/ASvadek Hollow.ttf
+    - family: Asvadek Home
+      fonts:
+        - asset: assets/fonts/ASvadek Home.ttf
+    - family: ASvadek Hongkbach
+      fonts:
+        - asset: assets/fonts/ASvadek Hongkbach.ttf
+    - family: ASvadek KampucheaLove
+      fonts:
+        - asset: assets/fonts/ASvadek KampucheaLove.ttf
+    - family: ASvadek Kbach S
+      fonts:
+        - asset: assets/fonts/ASvadek Kbach S [Version 1.00].ttf
+    - family: ASvadek KbachVora
+      fonts:
+        - asset: assets/fonts/ASvadek KbachVora.ttf
+    - family: ASvadek Khmer Calligraphy
+      fonts:
+        - asset: assets/fonts/ASvadek Khmer Calligraphy [Version 1.00].ttf
+    - family: ASvadek Lazy
+      fonts:
+        - asset: assets/fonts/ASvadek Lazy.ttf
+    - family: ASvadek Momo
+      fonts:
+        - asset: assets/fonts/ASvadek Momo italic.ttf
+    - family: ASvadek Momo W
+      fonts:
+        - asset: assets/fonts/ASvadek Momo W.ttf
+    - family: ASvadek Moul Kbach Plus
+      fonts:
+        - asset: assets/fonts/ASvadek Moul Kbach Plus Version 1.00.ttf
+    - family: ASvadek Moul Kbach
+      fonts:
+        - asset: assets/fonts/ASvadek Moul Kbach Version 1.00.ttf
+    - family: ASvadek Moul
+      fonts:
+        - asset: assets/fonts/ASvadek Moul Version 1.00.ttf
+    - family: ASvadek Pixel
+      fonts:
+        - asset: assets/fonts/ASvadek Pixel.ttf
+    - family: ASvadek Ribbon Plus
+      fonts:
+        - asset: assets/fonts/ASvadek Ribbon Plus [Version 1.20].ttf
+    - family: ASvadek Ribbon
+      fonts:
+        - asset: assets/fonts/ASvadek Ribbon [Version 1.20].ttf
+    - family: ASvadek Samurai
+      fonts:
+        - asset: assets/fonts/ASvadek Samurai.ttf
+    - family: ASvadek Wave
+      fonts:
+        - asset: assets/fonts/ASvadek Wave [Version 1.30].ttf
+    - family: ASvadek Writehand
+      fonts:
+        - asset: assets/fonts/ASvadek Writehand.ttf
+    - family: ASvadek Zstorm
+      fonts:
+        - asset: assets/fonts/ASvadek Zstorm [Version 1.00].ttf
+        - asset: assets/fonts/ASvadek Zstorm Bold[Version 1.00].ttf
+          weight: 700
+    - family: AWLUnicode
+      fonts:
+        - asset: assets/fonts/AWLPhonetics3U.TTF
+    - family: Bahnschrift
+      fonts:
+        - asset: assets/fonts/bahnschrift.ttf
+    - family: Baiduk OT
+      fonts:
+        - asset: assets/fonts/BaidukOT.ttf
+    - family: Baskerville Old Face
+      fonts:
+        - asset: assets/fonts/BASKVILL.TTF
+    - family: Bauhaus 93
+      fonts:
+        - asset: assets/fonts/BAUHS93.TTF
+    - family: Bayon
+      fonts:
+        - asset: assets/fonts/Bayon.ttf
+    - family: Bell MT
+      fonts:
+        - asset: assets/fonts/BELL.TTF
+        - asset: assets/fonts/BELLB.TTF
+          weight: 700
+    - family: Bernard MT Condensed
+      fonts:
+        - asset: assets/fonts/BERNHC.TTF
+    - family: Bodoni MT
+      fonts:
+        - asset: assets/fonts/BOD_R.TTF
+        - asset: assets/fonts/BOD.TTF
+          weight: 700
+    - family: Bodoni Bd BT
+      fonts:
+        - asset: assets/fonts/Bodoni Bd BT Bold.ttf
+    - family: Bodoni Bk BT
+      fonts:
+        - asset: assets/fonts/Bodoni Bk BT Book.ttf
+    - family: Bodoni MT Condensed
+      fonts:
+        - asset: assets/fonts/BOD_CR.TTF
+        - asset: assets/fonts/BOD_0.TTF
+          weight: 700
+    - family: Bodoni MT Black
+      fonts:
+        - asset: assets/fonts/BOD_BLAR.TTF
+    - family: Bodoni MT Poster Compressed
+      fonts:
+        - asset: assets/fonts/BOD_PSTC.TTF
+    - family: Bokor
+      fonts:
+        - asset: assets/fonts/Bokor.ttf
+    - family: Bookman Old Style
+      fonts:
+        - asset: assets/fonts/BOOKOS.TTF
+    - family: Bowlby One SC
+      fonts:
+        - asset: assets/fonts/BowlbyOneSC-Regular.ttf
+    - family: Bradley Hand ITC
+      fonts:
+        - asset: assets/fonts/BRADHITC.TTF
+    - family: Britannic Bold
+      fonts:
+        - asset: assets/fonts/BRITANIC.TTF
+    - family: Berlin Sans FB
+      fonts:
+        - asset: assets/fonts/BRLNSR.TTF
+        - asset: assets/fonts/BRLNSB.TTF
+          weight: 700
+    - family: Berlin Sans FB Demi
+      fonts:
+        - asset: assets/fonts/BRLNSDB.TTF
+    - family: Broadway
+      fonts:
+        - asset: assets/fonts/BROADW.TTF
+    - family: Brush Script MT
+      fonts:
+        - asset: assets/fonts/BRUSHSCI.TTF
+    - family: Bookshelf Symbol 7
+      fonts:
+        - asset: assets/fonts/BSSYM7.TTF
+    - family: Bungee Inline
+      fonts:
+        - asset: assets/fonts/BungeeInline-Regular.ttf
+    - family: Cabin Sketch
+      fonts:
+        - asset: assets/fonts/CabinSketch-Regular.ttf
+    - family: Calibri Light
+      fonts:
+        - asset: assets/fonts/calibril.ttf
+    - family: Californian FB
+      fonts:
+        - asset: assets/fonts/CALIFR.TTF
+        - asset: assets/fonts/CALIFB.TTF
+          weight: 700
+    - family: Calisto MT
+      fonts:
+        - asset: assets/fonts/CALIST.TTF
+        - asset: assets/fonts/CALISTB.TTF
+          weight: 700
+    - family: Cambria
+      fonts:
+        - asset: assets/fonts/cambriai.ttf
+        - asset: assets/fonts/cambriab.ttf
+          weight: 700
+    - family: Candara
+      fonts:
+        - asset: assets/fonts/Candara.ttf
+        - asset: assets/fonts/Candarab.ttf
+          weight: 700
+    - family: Candara Light
+      fonts:
+        - asset: assets/fonts/Candaral.ttf
+    - family: Cascadia Code
+      fonts:
+        - asset: assets/fonts/CascadiaCode.ttf
+    - family: Cascadia Mono
+      fonts:
+        - asset: assets/fonts/CascadiaMono.ttf
+    - family: Castellar
+      fonts:
+        - asset: assets/fonts/CASTELAR.TTF
+    - family: Century Schoolbook
+      fonts:
+        - asset: assets/fonts/CENSCBK.TTF
+        - asset: assets/fonts/SCHLBKB.TTF
+          weight: 700
+    - family: Centaur
+      fonts:
+        - asset: assets/fonts/CENTAUR.TTF
+    - family: CentSchbkCyrill BT
+      fonts:
+        - asset: assets/fonts/CentSchbkCyrill BT Roman.ttf
+        - asset: assets/fonts/CentSchbkCyrill BT Bold.ttf
+          weight: 700
+    - family: Century
+      fonts:
+        - asset: assets/fonts/CENTURY.TTF
+    - family: Century725 Cn BT
+      fonts:
+        - asset: assets/fonts/Century725 Cn BT.ttf
+    - family: Century751 BT
+      fonts:
+        - asset: assets/fonts/Century751 BT Roman.ttf
+    - family: Century751 No2 BT
+      fonts:
+        - asset: assets/fonts/Century751 No2 BT Roman.ttf
+        - asset: assets/fonts/Century751 No2 BT Bold.ttf
+          weight: 700
+    - family: Century751 SeBd BT
+      fonts:
+        - asset: assets/fonts/Century751 SeBd BT Semi Bold.ttf
+    - family: Chantrea SR UI Low
+      fonts:
+        - asset: assets/fonts/ChantreaSRui_Low.ttf
+    - family: Chantrea SR UI
+      fonts:
+        - asset: assets/fonts/ChantreaSRui_New.ttf
+    - family: Chantrea UI
+      fonts:
+        - asset: assets/fonts/ChantreaUI.ttf
+    - family: Chenla
+      fonts:
+        - asset: assets/fonts/Chenla.ttf
+    - family: Chiller
+      fonts:
+        - asset: assets/fonts/CHILLER.TTF
+    - family: Cinzel Black
+      fonts:
+        - asset: assets/fonts/Cinzel-Black.ttf
+    - family: Clarendon Blk BT
+      fonts:
+        - asset: assets/fonts/Clarendon Blk BT Black.ttf
+    - family: Clarendon BT
+      fonts:
+        - asset: assets/fonts/Clarendon BT Roman.ttf
+        - asset: assets/fonts/Clarendon BT Bold.ttf
+          weight: 700
+    - family: Clarendon Lt BT
+      fonts:
+        - asset: assets/fonts/Clarendon Lt BT Light.ttf
+    - family: Colonna MT
+      fonts:
+        - asset: assets/fonts/COLONNA.TTF
+    - family: Comic Sans MS
+      fonts:
+        - asset: assets/fonts/comic.ttf
+        - asset: assets/fonts/comicbd.ttf
+          weight: 700
+    - family: Constantia
+      fonts:
+        - asset: assets/fonts/constan.ttf
+        - asset: assets/fonts/constanb.ttf
+          weight: 700
+    - family: Content
+      fonts:
+        - asset: assets/fonts/Content.ttf
+        - asset: assets/fonts/Content Bold.ttf
+          weight: 700
+    - family: Content S1
+      fonts:
+        - asset: assets/fonts/Content S1.ttf
+    - family: Cookie
+      fonts:
+        - asset: assets/fonts/Cookie-Regular.ttf
+    - family: Cooper Black
+      fonts:
+        - asset: assets/fonts/COOPBL.TTF
+    - family: Copperplate Gothic Bold
+      fonts:
+        - asset: assets/fonts/COPRGTB.TTF
+    - family: Copperplate Gothic Light
+      fonts:
+        - asset: assets/fonts/COPRGTL.TTF
+    - family: Corbel
+      fonts:
+        - asset: assets/fonts/corbel.ttf
+        - asset: assets/fonts/corbelb.ttf
+          weight: 700
+    - family: Corbel Light
+      fonts:
+        - asset: assets/fonts/corbell.ttf
+    - family: Courgette
+      fonts:
+        - asset: assets/fonts/Courgette-Regular.ttf
+    - family: Curlz MT
+      fonts:
+        - asset: assets/fonts/CURLZ__.TTF
+    - family: Dangrek
+      fonts:
+        - asset: assets/fonts/Dangrek.ttf
+    - family: DaunPenh
+      fonts:
+        - asset: assets/fonts/daunpenh.ttf
+    - family: DeVinne Txt BT
+      fonts:
+        - asset: assets/fonts/DeVinne Txt BT.ttf
+    - family: DH Rongdomrey
+      fonts:
+        - asset: assets/fonts/DH-Rongdomrey.ttf
+    - family: Doppio One
+      fonts:
+        - asset: assets/fonts/DoppioOne-Regular.ttf
+    - family: Doulos SIL
+      fonts:
+        - asset: assets/fonts/Doulos SIL Regular.ttf
+    - family: Dubai
+      fonts:
+        - asset: assets/fonts/DUBAI-REGULAR.TTF
+        - asset: assets/fonts/DUBAI-BOLD.TTF
+          weight: 700
+    - family: Dubai Light
+      fonts:
+        - asset: assets/fonts/DUBAI-LIGHT.TTF
+    - family: Dubai Medium
+      fonts:
+        - asset: assets/fonts/DUBAI-MEDIUM.TTF
+    - family: EB Garamond
+      fonts:
+        - asset: assets/fonts/EBGaramond-Regular.ttf
+        - asset: assets/fonts/EBGaramond-Bold.ttf
+          weight: 700
+    - family: EB Garamond Medium
+      fonts:
+        - asset: assets/fonts/EBGaramond-Medium.ttf
+    - family: EB Garamond SemiBold
+      fonts:
+        - asset: assets/fonts/EBGaramond-SemiBold.ttf
+    - family: Ebrima
+      fonts:
+        - asset: assets/fonts/ebrima.ttf
+        - asset: assets/fonts/ebrimabd.ttf
+          weight: 700
+    - family: Elephant
+      fonts:
+        - asset: assets/fonts/ELEPHNT.TTF
+    - family: Embassy BT
+      fonts:
+        - asset: assets/fonts/Embassy BT.ttf
+    - family: Engravers MT
+      fonts:
+        - asset: assets/fonts/ENGR.TTF
+    - family: EngraversGothic BT
+      fonts:
+        - asset: assets/fonts/EngraversGothic BT.ttf
+    - family: Eras Bold ITC
+      fonts:
+        - asset: assets/fonts/ERASBD.TTF
+    - family: Eras Demi ITC
+      fonts:
+        - asset: assets/fonts/ERASDEMI.TTF
+    - family: Eras Light ITC
+      fonts:
+        - asset: assets/fonts/ERASLGHT.TTF
+    - family: Eras Medium ITC
+      fonts:
+        - asset: assets/fonts/ERASMD.TTF
+    - family: Euphorigenic
+      fonts:
+        - asset: assets/fonts/euphorig.ttf
+    - family: Exotc350 Bd BT
+      fonts:
+        - asset: assets/fonts/Exotc350 Bd BT Bold.ttf
+    - family: Exotc350 DmBd BT
+      fonts:
+        - asset: assets/fonts/Exotc350 DmBd BT Demi-Bold.ttf
+    - family: Fasthand
+      fonts:
+        - asset: assets/fonts/Fasthand.ttf
+    - family: Felix Titling
+      fonts:
+        - asset: assets/fonts/FELIXTI.TTF
+    - family: Forte
+      fonts:
+        - asset: assets/fonts/FORTE.TTF
+    - family: Franklin Gothic Book
+      fonts:
+        - asset: assets/fonts/FRABK.TTF
+    - family: Franklin Gothic Demi
+      fonts:
+        - asset: assets/fonts/FRADM.TTF
+    - family: Franklin Gothic Demi Cond
+      fonts:
+        - asset: assets/fonts/FRADMCN.TTF
+    - family: Franklin Gothic Heavy
+      fonts:
+        - asset: assets/fonts/FRAHV.TTF
+    - family: Franklin Gothic Medium
+      fonts:
+        - asset: assets/fonts/framd.ttf
+    - family: Franklin Gothic Medium Cond
+      fonts:
+        - asset: assets/fonts/FRAMDCN.TTF
+    - family: Freehand
+      fonts:
+        - asset: assets/fonts/Freehand.ttf
+    - family: Freehand521 BT
+      fonts:
+        - asset: assets/fonts/Freehand521 BT.ttf
+    - family: Freestyle Script
+      fonts:
+        - asset: assets/fonts/FREESCPT.TTF
+    - family: French Script MT
+      fonts:
+        - asset: assets/fonts/FRSCRIPT.TTF
+    - family: Footlight MT Light
+      fonts:
+        - asset: assets/fonts/FTLTLT.TTF
+    - family: Fugaz One
+      fonts:
+        - asset: assets/fonts/FugazOne-Regular.ttf
+    - family: Futura Bk BT
+      fonts:
+        - asset: assets/fonts/Futura Bk BT Book.ttf
+    - family: Futura Md BT
+      fonts:
+        - asset: assets/fonts/Futura Md BT Medium.ttf
+        - asset: assets/fonts/Futura Md BT Bold.ttf
+          weight: 700
+    - family: FZShuTi
+      fonts:
+        - asset: assets/fonts/FZSTK.TTF
+    - family: FZYaoTi
+      fonts:
+        - asset: assets/fonts/FZYTK.TTF
+    - family: Gabriola
+      fonts:
+        - asset: assets/fonts/Gabriola.ttf
+    - family: Gadugi
+      fonts:
+        - asset: assets/fonts/gadugi.ttf
+        - asset: assets/fonts/gadugib.ttf
+          weight: 700
+    - family: Garamond
+      fonts:
+        - asset: assets/fonts/GARA.TTF
+        - asset: assets/fonts/GARABD.TTF
+          weight: 700
+    - family: Geometr212 BkCn BT
+      fonts:
+        - asset: assets/fonts/Geometr212 BkCn BT Book.ttf
+        - asset: assets/fonts/Geometr212 BkCn BT Heavy.ttf
+          weight: 700
+    - family: Geometr415 Blk BT
+      fonts:
+        - asset: assets/fonts/Geometr415 Blk BT Black.ttf
+    - family: Geometr706 BlkCn BT
+      fonts:
+        - asset: assets/fonts/Geometr706 BlkCn BT Black.ttf
+    - family: Georgia
+      fonts:
+        - asset: assets/fonts/georgia.ttf
+        - asset: assets/fonts/georgiab.ttf
+          weight: 700
+    - family: GeoSlab703 Md BT
+      fonts:
+        - asset: assets/fonts/GeoSlab703 Md BT Medium.ttf
+        - asset: assets/fonts/GeoSlab703 Md BT Bold.ttf
+          weight: 700
+    - family: GeoSlab703 MdCn BT
+      fonts:
+        - asset: assets/fonts/GeoSlab703 MdCn BT Medium.ttf
+        - asset: assets/fonts/GeoSlab703 MdCn BT Bold.ttf
+          weight: 700
+    - family: Gigi
+      fonts:
+        - asset: assets/fonts/GIGI.TTF
+    - family: Gill Sans MT
+      fonts:
+        - asset: assets/fonts/GIL____.TTF
+        - asset: assets/fonts/GILB___.TTF
+          weight: 700
+    - family: Gill Sans MT Condensed
+      fonts:
+        - asset: assets/fonts/GILC___.TTF
+    - family: Gill Sans Ultra Bold Condensed
+      fonts:
+        - asset: assets/fonts/GILLUBCD.TTF
+    - family: Gill Sans Ultra Bold
+      fonts:
+        - asset: assets/fonts/GILSANUB.TTF
+    - family: Gloucester MT Extra Condensed
+      fonts:
+        - asset: assets/fonts/GLECB.TTF
+    - family: Gill Sans MT Ext Condensed Bold
+      fonts:
+        - asset: assets/fonts/GLSNECB.TTF
+    - family: Century Gothic
+      fonts:
+        - asset: assets/fonts/GOTHIC.TTF
+        - asset: assets/fonts/GOTHICB.TTF
+          weight: 700
+    - family: Goudy Old Style
+      fonts:
+        - asset: assets/fonts/GOUDOS.TTF
+        - asset: assets/fonts/GOUDOSB.TTF
+          weight: 700
+    - family: Goudy Stout
+      fonts:
+        - asset: assets/fonts/GOUDYSTO.TTF
+    - family: Great Vibes
+      fonts:
+        - asset: assets/fonts/GreatVibes-Regular.ttf
+    - family: Hanuman UI
+      fonts:
+        - asset: assets/fonts/Hanuman UI.ttf
+        - asset: assets/fonts/Hanuman UI Bold.ttf
+          weight: 700
+    - family: Harlow Solid Italic
+      fonts:
+        - asset: assets/fonts/HARLOWSI.TTF
+    - family: Harrington
+      fonts:
+        - asset: assets/fonts/HARNGTON.TTF
+    - family: Haettenschweiler
+      fonts:
+        - asset: assets/fonts/HATTEN.TTF
+    - family: Microsoft Himalaya
+      fonts:
+        - asset: assets/fonts/himalaya.ttf
+    - family: High Tower Text
+      fonts:
+        - asset: assets/fonts/HTOWERT.TTF
+    - family: Humanst521 BT
+      fonts:
+        - asset: assets/fonts/Humanst521 BT Roman.ttf
+        - asset: assets/fonts/Humanst521 BT Bold.ttf
+          weight: 700
+    - family: Humanst521 Lt BT
+      fonts:
+        - asset: assets/fonts/Humanst521 Lt BT Light.ttf
+    - family: Humnst777 Blk BT
+      fonts:
+        - asset: assets/fonts/Humnst777 Blk BT Black Italic.ttf
+    - family: Humnst777 BlkCn BT
+      fonts:
+        - asset: assets/fonts/Humnst777 BlkCn BT Black.ttf
+    - family: Humnst777 BT
+      fonts:
+        - asset: assets/fonts/Humnst777 BT Roman.ttf
+    - family: Humnst777 Cn BT
+      fonts:
+        - asset: assets/fonts/Humnst777 Cn BT.ttf
+        - asset: assets/fonts/Humnst777 Cn BT Bold.ttf
+          weight: 700
+    - family: Humnst777 Lt BT
+      fonts:
+        - asset: assets/fonts/Humnst777 Lt BT Light.ttf
+    - family: iKampuchea001_O'Chrov
+      fonts:
+        - asset: assets/fonts/iKampuchea001_O'Chrov.ttf
+    - family: iKampuchea0001_O'Chrov
+      fonts:
+        - asset: assets/fonts/iKampuchea001_O'Chrov_0.ttf
+    - family: iKampuchea002 KhmerFeeling
+      fonts:
+        - asset: assets/fonts/iKampuchea002 KhmerFeeling.ttf
+    - family: iKampuchea002_KhmerFeeling
+      fonts:
+        - asset: assets/fonts/iKampuchea002_KhmerFeeling.ttf
+    - family: iKampuchea003_Digital_Ninja
+      fonts:
+        - asset: assets/fonts/iKampuchea003_Digital_Ninja.ttf
+    - family: iKampuchea004_ThinItalic
+      fonts:
+        - asset: assets/fonts/iKampuchea004_ThinItalic.ttf
+    - family: iKampuchea008_NeakPoan
+      fonts:
+        - asset: assets/fonts/iKampuchea008_NeakPoan.ttf
+    - family: iKampuchea_MetKnhom
+      fonts:
+        - asset: assets/fonts/iKampuchea_MetKnhom.ttf
+    - family: Impact
+      fonts:
+        - asset: assets/fonts/impact.ttf
+    - family: Imprint MT Shadow
+      fonts:
+        - asset: assets/fonts/IMPRISHA.TTF
+    - family: Informal Roman
+      fonts:
+        - asset: assets/fonts/INFROMAN.TTF
+    - family: Ink Free
+      fonts:
+        - asset: assets/fonts/Inkfree.ttf
+    - family: iSeth First
+      fonts:
+        - asset: assets/fonts/iSeth First.ttf
+    - family: iSeth Pi
+      fonts:
+        - asset: assets/fonts/iSeth Pi.ttf
+    - family: ISETH S1
+      fonts:
+        - asset: assets/fonts/ISETH S1.ttf
+    - family: ISETH Toul Sangke
+      fonts:
+        - asset: assets/fonts/ISETH Toul Sangke [Version 1.00].ttf
+    - family: iSeth Z11
+      fonts:
+        - asset: assets/fonts/iSeth Z11.ttf
+    - family: iSeth Kampong Cham
+      fonts:
+        - asset: assets/fonts/iSeth​ Kampong Cham.ttf
+    - family: Blackadder ITC
+      fonts:
+        - asset: assets/fonts/ITCBLKAD.TTF
+    - family: Edwardian Script ITC
+      fonts:
+        - asset: assets/fonts/ITCEDSCR.TTF
+    - family: Kristen ITC
+      fonts:
+        - asset: assets/fonts/ITCKRIST.TTF
+    - family: Javanese Text
+      fonts:
+        - asset: assets/fonts/javatext.ttf
+    - family: Jokerman
+      fonts:
+        - asset: assets/fonts/JOKERMAN.TTF
+    - family: Juice ITC
+      fonts:
+        - asset: assets/fonts/JUICE__.TTF
+    - family: Kalam Light
+      fonts:
+        - asset: assets/fonts/Kalam-Light.ttf
+    - family: Kalam
+      fonts:
+        - asset: assets/fonts/Kalam-Regular.ttf
+    - family: Kantumruy
+      fonts:
+        - asset: assets/fonts/Kantumruy.ttf
+    - family: Kantumruy Light
+      fonts:
+        - asset: assets/fonts/Kantumruy Light.ttf
+    - family: Kaufmann BT
+      fonts:
+        - asset: assets/fonts/Kaufmann BT.ttf
+    - family: Kbeung Eak
+      fonts:
+        - asset: assets/fonts/Kbeung Eak.ttf
+    - family: Kbeung Thom
+      fonts:
+        - asset: assets/fonts/KbeungThom-Regular.otf
+        - asset: assets/fonts/KbeungThom-Bold.otf
+          weight: 700
+    - family: Kbeung To
+      fonts:
+        - asset: assets/fonts/Kbeung​​ To.otf
+    - family: Kdam Thmor
+      fonts:
+        - asset: assets/fonts/Kdam Thmor.ttf
+    - family: KD Jayavarman I
+      fonts:
+        - asset: assets/fonts/KDJayavarman1.ttf
+    - family: Kh Writhand
+      fonts:
+        - asset: assets/fonts/Kh  Writhand.ttf
+    - family: Kh 02 April V.02
+      fonts:
+        - asset: assets/fonts/Kh 02 April V.02 [Version 2.00].ttf
+    - family: Kh 02 April
+      fonts:
+        - asset: assets/fonts/Kh 02 April [Version 2.00].ttf
+    - family: Kh 14 March
+      fonts:
+        - asset: assets/fonts/Kh 14 March [Version 1.10].ttf
+    - family: Kh Ang B.Rodtha
+      fonts:
+        - asset: assets/fonts/Kh Ang B.Rodtha.ttf
+    - family: Kh Ang Bokor New
+      fonts:
+        - asset: assets/fonts/Kh Ang Bokor New Version 2.00.ttf
+    - family: Kh Ang ChittBous
+      fonts:
+        - asset: assets/fonts/Kh Ang ChittBous.ttf
+    - family: Kh Ang FreeHand
+      fonts:
+        - asset: assets/fonts/Kh Ang FreeHand.ttf
+    - family: Kh Ang Friday Solo
+      fonts:
+        - asset: assets/fonts/Kh Ang Friday Solo.otf
+    - family: Kh Ang Friday
+      fonts:
+        - asset: assets/fonts/Kh Ang Friday.otf
+    - family: Kh Ang Hand-T.Chhim 2
+      fonts:
+        - asset: assets/fonts/Kh Ang Hand-T.Chhim 2.ttf
+    - family: Kh Ang Hand-T.Chhim
+      fonts:
+        - asset: assets/fonts/Kh Ang Hand-T.Chhim.ttf
+    - family: Kh Ang Kampaeng Thmor
+      fonts:
+        - asset: assets/fonts/Kh Ang Kampaeng Thmor.ttf
+    - family: Kh Ang KanTout
+      fonts:
+        - asset: assets/fonts/Kh Ang KanTout.ttf
+    - family: Kh Ang Kbach Seda
+      fonts:
+        - asset: assets/fonts/Kh Ang Kbach Seda.ttf
+    - family: Kh Ang Klen
+      fonts:
+        - asset: assets/fonts/Kh Ang Klen.ttf
+    - family: Kh Ang Komutt A
+      fonts:
+        - asset: assets/fonts/Kh Ang Komutt A.ttf
+    - family: Kh Ang Komutt B
+      fonts:
+        - asset: assets/fonts/Kh Ang Komutt B.ttf
+    - family: Kh Ang Kouteok
+      fonts:
+        - asset: assets/fonts/Kh Ang Kouteok.ttf
+    - family: Kh Ang Kraaochhouk
+      fonts:
+        - asset: assets/fonts/Kh Ang Kraaochhouk.ttf
+    - family: Kh Ang Ktomp
+      fonts:
+        - asset: assets/fonts/Kh Ang Ktomp.ttf
+    - family: Kh Ang LetfHand
+      fonts:
+        - asset: assets/fonts/Kh Ang LetfHand.ttf
+    - family: Kh Ang Link
+      fonts:
+        - asset: assets/fonts/Kh Ang Link.ttf
+    - family: Kh Ang MahaTherak
+      fonts:
+        - asset: assets/fonts/Kh Ang MahaTherak.ttf
+    - family: Kh Ang Moul 1
+      fonts:
+        - asset: assets/fonts/Kh Ang Moul 1.ttf
+    - family: Kh Ang Moul A1
+      fonts:
+        - asset: assets/fonts/Kh Ang Moul A1.ttf
+    - family: Kh Ang Moul Kdam
+      fonts:
+        - asset: assets/fonts/Kh Ang Moul Kdam.ttf
+    - family: Kh Ang Moul NeaVea
+      fonts:
+        - asset: assets/fonts/Kh Ang Moul NeaVea V2.00.ttf
+    - family: Kh Ang Moul Seda
+      fonts:
+        - asset: assets/fonts/Kh Ang Moul Seda [V.2.30].ttf
+    - family: Kh Ang Moul Toathmor
+      fonts:
+        - asset: assets/fonts/Kh Ang Moul Toathmor.ttf
+    - family: Kh Ang MoulHand 2
+      fonts:
+        - asset: assets/fonts/Kh Ang MoulHand 2.ttf
+    - family: Kh Ang MoulHand
+      fonts:
+        - asset: assets/fonts/Kh Ang MoulHand.ttf
+    - family: Kh Ang Mura
+      fonts:
+        - asset: assets/fonts/Kh Ang Mura.ttf
+    - family: Kh Ang MuraFastHand
+      fonts:
+        - asset: assets/fonts/Kh Ang MuraFastHand.ttf
+    - family: Kh Ang MuraHand 2
+      fonts:
+        - asset: assets/fonts/Kh Ang MuraHand 2.ttf
+    - family: Kh Ang MuraHand
+      fonts:
+        - asset: assets/fonts/Kh Ang MuraHand.ttf
+    - family: Kh Ang NaKry
+      fonts:
+        - asset: assets/fonts/Kh Ang NaKry.ttf
+    - family: Kh Ang NaKry Plus
+      fonts:
+        - asset: assets/fonts/Kh Ang NaKry​ Plus.ttf
+    - family: Kh Ang NiTean 2
+      fonts:
+        - asset: assets/fonts/Kh Ang NiTean 2.ttf
+    - family: Kh Ang NiTean
+      fonts:
+        - asset: assets/fonts/Kh Ang NiTean.ttf
+    - family: Kh Ang North
+      fonts:
+        - asset: assets/fonts/Kh Ang North.ttf
+    - family: Kh Ang PeaNor
+      fonts:
+        - asset: assets/fonts/Kh Ang PeaNor.ttf
+    - family: Kh Ang PeaNorent
+      fonts:
+        - asset: assets/fonts/Kh Ang PeaNorent.ttf
+    - family: Kh Ang Penh
+      fonts:
+        - asset: assets/fonts/Kh Ang Penh.ttf
+    - family: Kh Ang PheaSaKhmer
+      fonts:
+        - asset: assets/fonts/Kh Ang PheaSaKhmer.ttf
+    - family: Kh Ang PhkayProek
+      fonts:
+        - asset: assets/fonts/Kh Ang PhkayProek.ttf
+    - family: Kh Ang Pothisal
+      fonts:
+        - asset: assets/fonts/Kh Ang Pothisal [Version 2.00].ttf
+    - family: Kh Ang R.Jrung
+      fonts:
+        - asset: assets/fonts/Kh Ang R.Jrung.ttf
+    - family: Kh Ang Rooster
+      fonts:
+        - asset: assets/fonts/Kh Ang Rooster.ttf
+    - family: Kh Ang Samnadaichas
+      fonts:
+        - asset: assets/fonts/Kh Ang Samnadaichas.ttf
+    - family: Kh Ang Silbak
+      fonts:
+        - asset: assets/fonts/Kh Ang Silbak.ttf
+    - family: Kh Ang TaPenh
+      fonts:
+        - asset: assets/fonts/Kh Ang TaPenh.ttf
+    - family: Kh Ang Theara MS Plus
+      fonts:
+        - asset: assets/fonts/Kh Ang Theara MS Plus.ttf
+    - family: Kh Ang Theara MS
+      fonts:
+        - asset: assets/fonts/Kh Ang Theara MS.ttf
+    - family: Kh Ang Thmorkream
+      fonts:
+        - asset: assets/fonts/Kh Ang Thmorkream.ttf
+    - family: Kh Ang ToaThmor 2
+      fonts:
+        - asset: assets/fonts/Kh Ang ToaThmor 2.ttf
+    - family: Kh Ang ToaThmor 3
+      fonts:
+        - asset: assets/fonts/Kh Ang ToaThmor 3.ttf
+    - family: Kh Ang Toathmor Kbach
+      fonts:
+        - asset: assets/fonts/Kh Ang Toathmor Kbach.ttf
+    - family: Kh Ang ToaThmor
+      fonts:
+        - asset: assets/fonts/Kh Ang ToaThmor.ttf
+    - family: Kh Ang Vassa
+      fonts:
+        - asset: assets/fonts/Kh Ang Vassa.ttf
+    - family: Kh Ang Vihearsuor
+      fonts:
+        - asset: assets/fonts/Kh Ang Vihearsuor.ttf
+    - family: Kh Ang Writehand
+      fonts:
+        - asset: assets/fonts/Kh Ang Writehand.ttf
+    - family: Kh Ang Writehand2
+      fonts:
+        - asset: assets/fonts/Kh Ang Writehand2.ttf
+    - family: Kh Bamboo (Kakada's My love)
+      fonts:
+        - asset: assets/fonts/Kh Bamboo (Kakada's My love) [Version 2.00].ttf
+    - family: Kh Baphnom 01 First Font Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 01 First Font Italic.ttf
+    - family: Kh Baphnom 01 First Font
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 01 First Font.ttf
+    - family: Kh Baphnom 010 TeakPiseth Itali
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 010 TeakPiseth Italic.ttf
+    - family: Kh Baphnom 010 TeakPiseth
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 010 TeakPiseth.ttf
+    - family: Kh Baphnom 011 Srey Nith Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 011 Srey Nith Italic.ttf
+    - family: Kh Baphnom 011 Srey Nith
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 011 Srey Nith.ttf
+    - family: Kh Baphnom 012 SokNa Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 012 SokNa Italic.ttf
+    - family: Kh Baphnom 012 SokNa
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 012 SokNa.ttf
+    - family: Kh Baphnom 016 TrongKhla Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 016 TrongKhla Italic.ttf
+    - family: Kh Baphnom 016 TrongKhla
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 016 TrongKhla.ttf
+    - family: Kh Baphnom 017 EmEng Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 017 EmEng Italic.ttf
+    - family: Kh Baphnom 017 EmEng
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 017 EmEng.ttf
+    - family: Kh Baphnom 018 PenRan Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 018 Pen Ran Italic.ttf
+    - family: Kh Baphnom 018 PenRan
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 018 PenRan.ttf
+    - family: Kh Baphnom 019 KokSandek Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 019 KokSandek Italic.ttf
+    - family: Kh Baphnom 019 KokSandek
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 019 KokSandek.ttf
+    - family: Kh Baphnom 02 Pixel Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 02 Pixel Italic.ttf
+    - family: Kh Baphnom 02 Pixel
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 02 Pixel.ttf
+    - family: Kh Baphnom 020 MengSotin Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 020 MengSotin Italic.ttf
+    - family: Kh Baphnom 020 MengSotin
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 020 MengSotin.ttf
+    - family: Kh Baphnom 021 MengRotana Itali
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 021 MengRotana Italic.ttf
+    - family: Kh Baphnom 021 MengRotana
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 021 MengRotana.ttf
+    - family: Kh Baphnom 022 Champey Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 022 Champey Italic.ttf
+    - family: Kh Baphnom 022 Champey
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 022 Champey.ttf
+    - family: Kh Baphnom 023 ChanThou Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 023 ChanThou Italic.ttf
+    - family: Kh Baphnom 023 ChanThou
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 023 ChanThou.ttf
+    - family: Kh Baphnom 026 Theany Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 026 Theany Italic.ttf
+    - family: Kh Baphnom 026 Theany
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 026 Theany.ttf
+    - family: Kh Baphnom 03 MengSamorn Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 03 Meng Samorn Italic.ttf
+    - family: Kh Baphnom 03 Meng Samorn
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 03 Meng Samorn.ttf
+    - family: Kh Baphnom 034 Meng Nary Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 034 Meng Nary Italic.ttf
+    - family: Kh Baphnom 034 Meng Nary
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 034 Meng Nary.ttf
+    - family: Kh Baphnom 04 TeakDariya Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 04 Teak Dariya Italic.ttf
+    - family: Kh Baphnom 04 Teak Dariya
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 04 Teak Dariya.ttf
+    - family: Kh Baphnom 040 Darina Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 040 Darina Italic.ttf
+    - family: Kh Baphnom 040 Darina
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 040 Darina.ttf
+    - family: Kh Baphnom 041 Savy Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 041 Savy Italic.ttf
+    - family: Kh Baphnom 041 Savy
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 041 Savy.ttf
+    - family: Kh Baphnom 042 Vatey Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 042 Vatey Italic.ttf
+    - family: Kh Baphnom 042 Vatey
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 042 Vatey.ttf
+    - family: Kh Baphnom 043 Dany Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 043 Dany Italic.ttf
+    - family: Kh Baphnom 043 Dany
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 043 Dany.ttf
+    - family: Kh Baphnom 05 Dang Sophea Itali
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 05 Dang Sophea Italic.ttf
+    - family: Kh Baphnom 05 Dang Sophea
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 05 Dang Sophea.ttf
+    - family: Kh Baphnom 06 Veal-Sbouv Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 06 Veal-Sbouv Italic Version 2.30 September 07, 2016.ttf
+    - family: Kh Baphnom 06 Veal-Sbouv
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 06 Veal-Sbouv Version 2.30 September 07, 2016.ttf
+    - family: Kh Baphnom 07 MengRotanak Itali
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 07 MengRotanak Italic.ttf
+    - family: Kh Baphnom 07 MengRotanak
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 07 MengRotanak.ttf
+    - family: Kh Baphnom 08 RongDomrey Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 08 RongDomrey Italic Version 2.30 September 07, 2016.ttf
+    - family: Kh Baphnom 08 RongDomrey
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 08 RongDomrey Version 2.30 September 07, 2016.ttf
+    - family: Kh Baphnom 09 Teak-Sokna Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 09 Teak-Sokna Italic.ttf
+    - family: Kh Baphnom 09 Teak-Sokna
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 09 Teak-Sokna.ttf
+    - family: Kh Baphnom 14 February Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 14 February Italic.ttf
+    - family: Kh Baphnom 14 February
+      fonts:
+        - asset: assets/fonts/Kh Baphnom 14 February.ttf
+    - family: Kh Baphnom Baktouk Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Baktouk Italic.ttf
+    - family: Kh Baphnom Baktouk
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Baktouk.ttf
+    - family: Kh Baphnom Buddha Story Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Buddha Story Italic Version 2.30 May 26, 2016.ttf
+    - family: Kh Baphnom Buddha Story
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Buddha Story Version 2.30 May 26, 2016.ttf
+    - family: Kh Baphnom Chhuoktip New Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Chhuoktip New Italic Version 1.00 September 10, 2015.ttf
+    - family: Kh Baphnom Chhuoktip New
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Chhuoktip New Version 1.00 September 10, 2015.ttf
+    - family: Kh Baphnom Chom Mith Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Chom Mith Italic Version 2.30 September 13, 2016.ttf
+    - family: Kh Baphnom Chom Mith
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Chom Mith Version 2.30 September 13, 2016.ttf
+    - family: Kh Baphnom Dang Chenda Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Dang Chenda Italic.ttf
+    - family: Kh Baphnom Dang Chenda
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Dang Chenda.ttf
+    - family: Kh Baphnom Dang Kanha Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Dang Kanha Italic Version 2.30 January 16, 2016.ttf
+    - family: Kh Baphnom Dang Kanha
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Dang Kanha Version 2.30 January 16, 2016.ttf
+    - family: Kh Baphnom First 2017 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom First 2017 Italic.ttf
+    - family: Kh Baphnom First 2017
+      fonts:
+        - asset: assets/fonts/Kh Baphnom First 2017.ttf
+    - family: Kh Baphnom iChannli Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom iChannli Italic.ttf
+    - family: Kh Baphnom iChannli
+      fonts:
+        - asset: assets/fonts/Kh Baphnom iChannli.ttf
+    - family: Kh Baphnom Jrung Thom Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Jrung Thom Italic.ttf
+    - family: Kh Baphnom Jrung Thom
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Jrung Thom.ttf
+    - family: Kh Baphnom Keo Sarath Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Keo Sarath Italic.ttf
+    - family: Kh Baphnom Keo Sarath
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Keo Sarath.ttf
+    - family: Kh Baphnom Khveak Bold Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Khveak Bold Italic.ttf
+    - family: Kh Baphnom Khveak Bold
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Khveak Bold.ttf
+    - family: Kh Baphnom Khveak Thin Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Khveak Thin Italic.ttf
+    - family: Kh Baphnom Khveak Thin
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Khveak Thin.ttf
+    - family: Kh Baphnom Limon F1 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F1 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F1
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F1 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F2 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F2 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F2
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F2 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F2A Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F2A Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F2A
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F2A Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F3 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F3 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F3
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F3 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F4 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F4 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F4
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F4 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F5 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F5 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F5
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F5 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F6 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F6 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F6
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F6 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F7 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F7 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F7
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F7 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F8 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F8 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon F8
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon F8 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R1 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R1 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R1
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R1 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R2 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R2 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R2
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R2 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R3 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R3 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R3
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R3 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R4 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R4 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R4
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R4 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R5 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R5 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon R5
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon R5 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S1 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S1 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S1
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S1 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S2 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S2 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S2
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S2 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S3 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S3 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S3
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S3 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S4 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S4 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S4
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S4 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S5 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S5 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S5
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S5 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S6 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S6 Italic Version2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S6
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S6 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S7 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S7 Italic Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Limon S7
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Limon S7 Version 2.50 September 15, 2017.ttf
+    - family: Kh Baphnom Meng Tola
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Meng Tola Version 2.30 January 07, 2016.ttf
+    - family: Kh Baphnom Meng Tuon Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Meng Tuon Italic.ttf
+    - family: Kh Baphnom Meng Tuon
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Meng Tuon.ttf
+    - family: Kh Baphnom Neak Poan Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Neak Poan Italic Version 2.30 March 01, 2016.ttf
+    - family: Kh Baphnom Neak Poan
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Neak Poan Version 2.30 March 01, 2016.ttf
+    - family: Kh Baphnom Pali Bedok Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Pali Bedok Italic.ttf
+    - family: Kh Baphnom Pali Bedok
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Pali Bedok.ttf
+    - family: Kh Baphnom Pheaktra Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Pheaktra Italic Version 2.30 October 05, 2017.ttf
+    - family: Kh Baphnom Pheaktra
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Pheaktra Version 2.30 October 05, 2017.ttf
+    - family: Kh Baphnom Pixel1 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Pixel1 Italic.ttf
+    - family: Kh Baphnom Pixel1
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Pixel1.ttf
+    - family: Kh Baphnom Small Style Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Small Style Italic.ttf
+    - family: Kh Baphnom Small Style
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Small Style.ttf
+    - family: Kh Baphnom SnehRean Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom SnehRean Italic.ttf
+    - family: Kh Baphnom SnehRean
+      fonts:
+        - asset: assets/fonts/Kh Baphnom SnehRean.ttf
+    - family: Kh Baphnom Sophea My Mom Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Sophea My Mom Italic.ttf
+    - family: Kh Baphnom Sophea My Mom
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Sophea My Mom.ttf
+    - family: Kh Baphnom Vathana Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Vathana Italic Version 2.30 October 10, 2017.ttf
+    - family: Kh Baphnom Vathana
+      fonts:
+        - asset: assets/fonts/Kh Baphnom Vathana Version 2.30 October 10, 2017.ttf
+    - family: Kh Baphnom_Chheukach
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Chheukach.ttf
+    - family: Kh Baphnom_MengSocheath Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_MengSocheath Italic.ttf
+    - family: Kh Baphnom_MengSocheath
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_MengSocheath.ttf
+    - family: Kh Baphnom_Old Stye Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Old Stye Italic Version 2.30 October 26, 2015.ttf
+    - family: Kh Baphnom_Old Stye
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Old Stye Version 2.30 October 26, 2015.ttf
+    - family: Kh Baphnom_Prekluong Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Prekluong Italic.ttf
+    - family: Kh Baphnom_Prekluong
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Prekluong.ttf
+    - family: Kh Baphnom_SatraSlekrith Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_SatraSlekrith Italic.ttf
+    - family: Kh Baphnom_SatraSlekrith
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_SatraSlekrith.ttf
+    - family: Kh Baphnom_Sinsisamouth Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Sinsisamouth Italic.ttf
+    - family: Kh Baphnom_Sinsisamouth
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Sinsisamouth.ttf
+    - family: Kh Baphnom_Sinsisamouth1 Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Sinsisamouth1 Italic.ttf
+    - family: Kh Baphnom_Sinsisamouth1
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Sinsisamouth1.ttf
+    - family: Kh Baphnom_Style Italic
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Style Italic.ttf
+    - family: Kh Baphnom_Style
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Style.ttf
+    - family: Kh Baphnom_Writehand Pixel2
+      fonts:
+        - asset: assets/fonts/Kh Baphnom_Writehand Pixel2.ttf
+    - family: Kh Battambang
+      fonts:
+        - asset: assets/fonts/Kh Battambang.ttf
+        - asset: assets/fonts/Kh Battambang Blod.ttf
+          weight: 700
+    - family: Kh BL BrushHand
+      fonts:
+        - asset: assets/fonts/Kh BL BrushHand Version 1.20 June 10, 2013.ttf
+    - family: Kh BL LazyDistorted
+      fonts:
+        - asset: assets/fonts/Kh BL LazyDistorted Version 1.00 2014.ttf
+    - family: Kh BL LazyOutline
+      fonts:
+        - asset: assets/fonts/Kh BL LazyOutline Version 1.00 2014.ttf
+    - family: Kh BL LazySmooth
+      fonts:
+        - asset: assets/fonts/Kh BL LazySmooth Version 1.00 2014.ttf
+    - family: Kh Boeung
+      fonts:
+        - asset: assets/fonts/Kh Boeung.ttf
+    - family: Kh Chheurkach Baphnom Italic
+      fonts:
+        - asset: assets/fonts/Kh Chheurkach Baphnom Italic.ttf
+    - family: Kh Chheurkach Baphnom
+      fonts:
+        - asset: assets/fonts/Kh Chheurkach Baphnom.ttf
+    - family: Kh Chrung Thom
+      fonts:
+        - asset: assets/fonts/Kh Chrung Thom.ttf
+    - family: kh CN Star
+      fonts:
+        - asset: assets/fonts/kh CN Star.ttf
+    - family: Kh Content
+      fonts:
+        - asset: assets/fonts/Kh Content.ttf
+    - family: Kh Dangrek Jrung
+      fonts:
+        - asset: assets/fonts/Kh Dangrek Jrung Version 1.00.ttf
+    - family: Kh Dangrek
+      fonts:
+        - asset: assets/fonts/Kh Dangrek.ttf
+    - family: Kh Digital Thom
+      fonts:
+        - asset: assets/fonts/Kh Digital Thom [Version 1.10].ttf
+    - family: Kh Fasthand
+      fonts:
+        - asset: assets/fonts/Kh Fasthand.ttf
+    - family: Kh itkonkhmer
+      fonts:
+        - asset: assets/fonts/kh itkonkhmer.ttf
+    - family: Kh itseombel Jrung
+      fonts:
+        - asset: assets/fonts/Kh itseombel Jrung Version 1.10 2013.ttf
+    - family: kh itsupport4kh
+      fonts:
+        - asset: assets/fonts/kh itsupport4kh.ttf
+    - family: Kh Jrung Thom
+      fonts:
+        - asset: assets/fonts/Kh Jrung Thom [Version 2.00].ttf
+    - family: Kh Kakada (My's Love)
+      fonts:
+        - asset: assets/fonts/Kh Kakada (My's Love) [Version 2.00].ttf
+    - family: Kh KAKADA 08 April
+      fonts:
+        - asset: assets/fonts/Kh KAKADA 08 April [Version 2.00].ttf
+    - family: Kh KAKADA 10 May
+      fonts:
+        - asset: assets/fonts/Kh KAKADA 10 May [Version 2.00].ttf
+    - family: Kh KAKADA 25 March (Kakada's my
+      fonts:
+        - asset: assets/fonts/Kh KAKADA 25 March (Kakada's my love) [Version 2.00].ttf
+    - family: Kh KAKADA 27 Feb.
+      fonts:
+        - asset: assets/fonts/Kh KAKADA 27 Feb. [Version 2.00].ttf
+    - family: Kh Kakada Bati
+      fonts:
+        - asset: assets/fonts/Kh Kakada Bati [Version 1.10].ttf
+    - family: Kh Kampot Gras Chhor Italic
+      fonts:
+        - asset: assets/fonts/Kh Kampot Gras Chhor Italic.ttf
+    - family: Kh Kampot Gras Chhor
+      fonts:
+        - asset: assets/fonts/Kh Kampot Gras Chhor.ttf
+    - family: Kh Kangrey
+      fonts:
+        - asset: assets/fonts/Kh Kangrey.ttf
+    - family: Kh Kompong Chhnang(Teuk Phos)
+      fonts:
+        - asset: assets/fonts/Kh Kompong Chhnang.ttf
+    - family: Kh Kompong Thom - Bunly
+      fonts:
+        - asset: assets/fonts/Kh KompongThom - Bunly Version 1.20 2013.ttf
+    - family: Kh Koulen
+      fonts:
+        - asset: assets/fonts/Kh Koulen.ttf
+    - family: Kh KoulenL
+      fonts:
+        - asset: assets/fonts/Kh KoulenL.ttf
+    - family: Kh KrongSoung SinfuHand
+      fonts:
+        - asset: assets/fonts/Kh KrongSoung SinfuHand [Version1.10].ttf
+    - family: Kh KrouchChhmar Italic
+      fonts:
+        - asset: assets/fonts/Kh KrouchChhmar Italic [Version1.00].ttf
+    - family: Kh KrouchChhmar
+      fonts:
+        - asset: assets/fonts/Kh KrouchChhmar [Version1.00].ttf
+    - family: Kh Metal Chrieng
+      fonts:
+        - asset: assets/fonts/Kh Metal Chrieng.ttf
+    - family: Kh Mith Sala Pali
+      fonts:
+        - asset: assets/fonts/Kh Mith Sala Pali Version 2.ttf
+    - family: Kh MPS Fasthand
+      fonts:
+        - asset: assets/fonts/Kh MPS Fasthand.ttf
+    - family: Kh MPS Jrung
+      fonts:
+        - asset: assets/fonts/Kh MPS Jrung.ttf
+    - family: Kh MPS Lazy
+      fonts:
+        - asset: assets/fonts/Kh MPS Lazy.ttf
+    - family: Kh MPS Prey Veng
+      fonts:
+        - asset: assets/fonts/Kh MPS Prey Veng.ttf
+    - family: Kh MPS Russey
+      fonts:
+        - asset: assets/fonts/Kh MPS Russey.ttf
+    - family: Kh MPS Temple
+      fonts:
+        - asset: assets/fonts/Kh MPS Temple.ttf
+    - family: Kh MPS
+      fonts:
+        - asset: assets/fonts/Kh MPS.ttf
+    - family: Kh Muol Pali
+      fonts:
+        - asset: assets/fonts/Kh Muol Pali.ttf
+    - family: Kh Old Style (Kakada's My Love)
+      fonts:
+        - asset: assets/fonts/Kh Old Style (Kakada's My Love) [Version 2.00].ttf
+    - family: Kh OreangOv Italic
+      fonts:
+        - asset: assets/fonts/Kh OreangOv Italic [Version1.10].ttf
+    - family: Kh OreangOv Plus Italic
+      fonts:
+        - asset: assets/fonts/Kh OreangOv Plus Italic [Version1.10].ttf
+    - family: Kh OreangOv Plus
+      fonts:
+        - asset: assets/fonts/Kh OreangOv Plus [Version1.20].ttf
+    - family: Kh OreangOv Thmey Italic
+      fonts:
+        - asset: assets/fonts/Kh OreangOv Thmey Italic [Version1.10].ttf
+    - family: Kh OreangOv Thmey
+      fonts:
+        - asset: assets/fonts/Kh OreangOv Thmey [Version1.20].ttf
+    - family: Kh OreangOv
+      fonts:
+        - asset: assets/fonts/Kh OreangOv [Version1.60].ttf
+    - family: Kh Pen Wappathor
+      fonts:
+        - asset: assets/fonts/Kh Pen Wappathor.ttf
+    - family: Kh Prey Veng
+      fonts:
+        - asset: assets/fonts/Kh Prey Veng.ttf
+    - family: Kh Preyveng
+      fonts:
+        - asset: assets/fonts/Kh Preyveng.ttf
+    - family: Kh Siemreap
+      fonts:
+        - asset: assets/fonts/Kh Siemreap.ttf
+    - family: Kh SN Beysach
+      fonts:
+        - asset: assets/fonts/Kh SN Beysach 1.1.ttf
+    - family: Kh SN Kampongsom
+      fonts:
+        - asset: assets/fonts/Kh SN Kampongsom 1.1.ttf
+    - family: Kh SN Preytakoy
+      fonts:
+        - asset: assets/fonts/Kh SN Preytakoy 1.10.ttf
+    - family: Kh SomborPreyKok​​
+      fonts:
+        - asset: assets/fonts/Kh SomborPreyKok​​ Version 1.10 2013.ttf
+    - family: Kh Stueng Saen
+      fonts:
+        - asset: assets/fonts/Kh Stueng Saen Version 4.00.ttf
+    - family: Kh System
+      fonts:
+        - asset: assets/fonts/Kh System.ttf
+    - family: Kh Tambe
+      fonts:
+        - asset: assets/fonts/Kh Tambe [Version1.10].ttf
+    - family: Kh TbaungKhmum Thmey Italic
+      fonts:
+        - asset: assets/fonts/Kh TbaungKhmum Thmey Italic [Version1.00].ttf
+    - family: Kh TbaungKhmum Thmey P Italic
+      fonts:
+        - asset: assets/fonts/Kh TbaungKhmum Thmey Plus Italic [Version1.00].ttf
+    - family: Kh TbaungKhmum Thmey P P Italic
+      fonts:
+        - asset: assets/fonts/Kh TbaungKhmum Thmey Plus Plus Italic [Version1.00].ttf
+    - family: Kh TbaungKhmum Thmey P P
+      fonts:
+        - asset: assets/fonts/Kh TbaungKhmum Thmey Plus Plus [Version1.00].ttf
+    - family: Kh TbaungKhmum Thmey P
+      fonts:
+        - asset: assets/fonts/Kh TbaungKhmum Thmey Plus [Version1.60].ttf
+    - family: Kh TbaungKhmum Thmey
+      fonts:
+        - asset: assets/fonts/Kh TbaungKhmum Thmey [Version1.30].ttf
+    - family: Kh TbaungKhmum
+      fonts:
+        - asset: assets/fonts/Kh TbaungKhmum [Version3.30].ttf
+    - family: Kh TKM PonheaKrek Limon R5
+      fonts:
+        - asset: assets/fonts/Kh TKM PonheaKrek Limon R5 [Version1.00].ttf
+    - family: Kh virak​ folktale
+      fonts:
+        - asset: assets/fonts/Kh virak folktale.ttf
+    - family: Kh virak mono modern
+      fonts:
+        - asset: assets/fonts/Kh virak mono modern.ttf
+    - family: Kh virak nippon
+      fonts:
+        - asset: assets/fonts/Kh virak nippon.ttf
+    - family: Kh virak romaji cover
+      fonts:
+        - asset: assets/fonts/Kh virak romaji cover.ttf
+    - family: Kh virak sketline
+      fonts:
+        - asset: assets/fonts/Kh virak sketline.ttf
+    - family: Kh Writehand Jrung
+      fonts:
+        - asset: assets/fonts/Kh Writehand Jrung [Version 1.00].ttf
+    - family: Kh Writehand
+      fonts:
+        - asset: assets/fonts/Kh Writehand [Version 2.00].ttf
+    - family: Kh Baphnom 013 SrokSre Italic
+      fonts:
+        - asset: assets/fonts/Kh-Baphnom-013-SrokSre-Italic-Version-2.30-September-28-2016.ttf
+    - family: Kh Baphnom 013 SrokSre
+      fonts:
+        - asset: assets/fonts/Kh-Baphnom-013-SrokSre-Version-2.30-September-28-2016.ttf
+    - family: Kh Baphnom_BeungPreah Italic
+      fonts:
+        - asset: assets/fonts/Kh-Baphnom_BeungPreah-Italic.ttf
+    - family: Kh Baphnom_BeungPreah
+      fonts:
+        - asset: assets/fonts/Kh-Baphnom_BeungPreah.ttf
+    - family: Kh Baphnom_BroSre Italic
+      fonts:
+        - asset: assets/fonts/Kh-Baphnom_BroSre-Italic.ttf
+    - family: Kh Baphnom_BroSre
+      fonts:
+        - asset: assets/fonts/Kh-Baphnom_BroSre.ttf
+    - family: Kh Bokor
+      fonts:
+        - asset: assets/fonts/Kh-Bokor.ttf
+    - family: Kh Freehand
+      fonts:
+        - asset: assets/fonts/Kh-Freehand.ttf
+    - family: Kh Muol
+      fonts:
+        - asset: assets/fonts/Kh-Muol.ttf
+    - family: Khla
+      fonts:
+        - asset: assets/fonts/Khla Regular.ttf
+        - asset: assets/fonts/Khla Bold.ttf
+          weight: 700
+    - family: Khla Light
+      fonts:
+        - asset: assets/fonts/Khla Light.ttf
+    - family: Khmer Chantha
+      fonts:
+        - asset: assets/fonts/KHMCHANTHA.ttf
+    - family: Khmer Chrieng1
+      fonts:
+        - asset: assets/fonts/KHMCHRIENG1.ttf
+    - family: Khmer Angkulileka
+      fonts:
+        - asset: assets/fonts/Khmer Angkulileka v2.ttf
+    - family: Khmer Arrow
+      fonts:
+        - asset: assets/fonts/Khmer Arrow [Version 3.01].ttf
+    - family: Khmer Banteay Srey
+      fonts:
+        - asset: assets/fonts/Khmer Banteay Srey 3.1.ttf
+    - family: Khmer Banteay Srey B
+      fonts:
+        - asset: assets/fonts/Khmer Banteay Srey B 3.1.ttf
+    - family: Khmer Banteay Srey L
+      fonts:
+        - asset: assets/fonts/Khmer Banteay Srey L 3.1.ttf
+    - family: Khmer Beginner
+      fonts:
+        - asset: assets/fonts/Khmer Beginner.ttf
+    - family: Khmer Busra
+      fonts:
+        - asset: assets/fonts/Khmer Busra.ttf
+        - asset: assets/fonts/Khmer Busra Bold.ttf
+          weight: 700
+    - family: Khmer Chamnanit
+      fonts:
+        - asset: assets/fonts/Khmer chamnanit [Version 1.30].ttf
+    - family: Khmer Chhay Round 1
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Round 1.ttf
+    - family: Khmer Chhay Round 2
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Round 2.ttf
+    - family: Khmer Chhay Round 3
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Round 3.ttf
+    - family: Khmer Chhay Round 4
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Round 4.ttf
+    - family: Khmer Chhay Round 5
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Round 5.ttf
+    - family: Khmer Chhay Style 1
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 1.ttf
+    - family: Khmer Chhay Style 2
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 2.ttf
+    - family: Khmer Chhay Style 3
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 3.ttf
+    - family: Khmer Chhay Style 4
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 4.ttf
+    - family: Khmer Chhay Style 5
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 5.ttf
+    - family: Khmer Chhay Style 6
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 6.ttf
+    - family: Khmer Chhay Style 7
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 7.ttf
+    - family: Khmer Chhay Style 8
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Style 8.ttf
+    - family: Khmer Chhay Text 1
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 1.ttf
+    - family: Khmer Chhay Text 2
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 2.ttf
+    - family: Khmer Chhay Text 3
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 3.ttf
+    - family: Khmer Chhay Text 4
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 4.ttf
+    - family: Khmer Chhay Text 5
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 5.ttf
+    - family: Khmer Chhay Text 6
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 6.ttf
+    - family: Khmer Chhay Text 7
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 7.ttf
+    - family: Khmer Chhay Text 8
+      fonts:
+        - asset: assets/fonts/Khmer Chhay Text 8.ttf
+    - family: Khmer CN Battambang
+      fonts:
+        - asset: assets/fonts/Khmer CN Battambang [Version 1.30].ttf
+    - family: Khmer CN Bone
+      fonts:
+        - asset: assets/fonts/Khmer CN Bone [Version 1.30].ttf
+    - family: Khmer CN EkPhnom
+      fonts:
+        - asset: assets/fonts/Khmer CN EkPhnom [Version 1.30].ttf
+    - family: Khmer CN hand
+      fonts:
+        - asset: assets/fonts/Khmer CN hand [Version 1.30].ttf
+    - family: Khmer CN Kam Rieng V2
+      fonts:
+        - asset: assets/fonts/Khmer CN Kam Rieng V2[Version 1.30].ttf
+    - family: Khmer CN Kam Rieng
+      fonts:
+        - asset: assets/fonts/Khmer CN Kam Rieng [Version 1.30].ttf
+    - family: Khmer CN Kampingpouy
+      fonts:
+        - asset: assets/fonts/Khmer CN Kampingpouy [Version 1.30].ttf
+    - family: Khmer CN Kselus
+      fonts:
+        - asset: assets/fonts/Khmer CN Kselus [Version 1.30].ttf
+    - family: Khmer CN lazywrite
+      fonts:
+        - asset: assets/fonts/Khmer CN lazywrite [Version 1.30].ttf
+    - family: Khmer CN Mong Russey
+      fonts:
+        - asset: assets/fonts/Khmer CN Mong Russey [Version 1.30].ttf
+    - family: Khmer CN Otaki
+      fonts:
+        - asset: assets/fonts/Khmer CN Otaki [Version 1.30].ttf
+    - family: Khmer CN Phnom Prek
+      fonts:
+        - asset: assets/fonts/Khmer CN Phnom Prek [Version 1.30].ttf
+    - family: Khmer CN Phnom Sampao
+      fonts:
+        - asset: assets/fonts/Khmer CN Phnom Sampao [Version 1.30].ttf
+    - family: Khmer CN Poipet
+      fonts:
+        - asset: assets/fonts/Khmer CN Poipet [Version 1.30].ttf
+    - family: Khmer CN Preykonkla
+      fonts:
+        - asset: assets/fonts/Khmer CN Preykonkla [Version 1.30].ttf
+    - family: Khmer CN Samlot
+      fonts:
+        - asset: assets/fonts/Khmer CN Samlot [Version 1.30].ttf
+    - family: Khmer CN Star
+      fonts:
+        - asset: assets/fonts/Khmer CN Star [Version 1.30].ttf
+    - family: Khmer CN Stueng Songke
+      fonts:
+        - asset: assets/fonts/Khmer CN Stueng Songke [Version 1.30].ttf
+    - family: Khmer CN ThmorKol
+      fonts:
+        - asset: assets/fonts/Khmer CN ThmorKol [Version 1.30].ttf
+    - family: Khmer Compaq
+      fonts:
+        - asset: assets/fonts/Khmer Compaq.ttf
+    - family: Khmer DonBosco
+      fonts:
+        - asset: assets/fonts/Khmer DonBosco.ttf
+    - family: Khmer DottedExtend
+      fonts:
+        - asset: assets/fonts/Khmer DottedExtend [Version 3.01].ttf
+    - family: Khmer Element
+      fonts:
+        - asset: assets/fonts/Khmer Element.ttf
+    - family: Khmer Eng
+      fonts:
+        - asset: assets/fonts/Khmer Eng [Version 3.01].ttf
+    - family: Khmer HUYSAVY R
+      fonts:
+        - asset: assets/fonts/Khmer HUYSAVY R.ttf
+        - asset: assets/fonts/Khmer HUYSAVY R Bold.ttf
+          weight: 700
+    - family: Khmer HUYSAVY S
+      fonts:
+        - asset: assets/fonts/Khmer HUYSAVY S.ttf
+        - asset: assets/fonts/Khmer HUYSAVY S Bold.ttf
+          weight: 700
+    - family: khmer ikhmerstudents
+      fonts:
+        - asset: assets/fonts/khmer ikhmerstudents.ttf
+    - family: Khmer Kbach Style V.01
+      fonts:
+        - asset: assets/fonts/Khmer Kbach Style V.01 [Version 1.10].ttf
+    - family: Khmer KC Svay
+      fonts:
+        - asset: assets/fonts/Khmer KC Svay.ttf
+    - family: Khmer Khao I Dang
+      fonts:
+        - asset: assets/fonts/Khmer Khao I Dang.ttf
+    - family: Khmer KngChak Kbach
+      fonts:
+        - asset: assets/fonts/Khmer KngChak Kbach.ttf
+    - family: Khmer KngChakVS Kbach
+      fonts:
+        - asset: assets/fonts/Khmer KngChakVS Kbach.ttf
+    - family: Khmer M1
+      fonts:
+        - asset: assets/fonts/khmer M1.volt.ttf
+    - family: Khmer M2
+      fonts:
+        - asset: assets/fonts/khmer M2.volt.ttf
+    - family: Khmer Mondulkiri
+      fonts:
+        - asset: assets/fonts/Khmer Mondulkiri [Version 7.100 2013].ttf
+        - asset: assets/fonts/Khmer Mondulkiri Bold [Version 7.100 2013].ttf
+          weight: 700
+    - family: Khmer Mrokoth hand
+      fonts:
+        - asset: assets/fonts/Khmer Mrokoth hand.ttf
+    - family: Khmer Music
+      fonts:
+        - asset: assets/fonts/Khmer Music [Version 3.01].ttf
+    - family: Khmer Myanmar
+      fonts:
+        - asset: assets/fonts/Khmer Myanmar.ttf
+    - family: Khmer OS Bassac
+      fonts:
+        - asset: assets/fonts/Khmer OS Bassac.ttf
+    - family: Khmer OS Battambang
+      fonts:
+        - asset: assets/fonts/KhmerOSbattambang.ttf
+        - asset: assets/fonts/Khmer OS Battambang Bold.ttf
+          weight: 700
+    - family: Khmer OS Content
+      fonts:
+        - asset: assets/fonts/KhmerOScontent.ttf
+        - asset: assets/fonts/Khmer OS Content Bold.ttf
+          weight: 700
+    - family: Khmer OS Dangrek
+      fonts:
+        - asset: assets/fonts/Khmer OS Dangrek.ttf
+    - family: Khmer OS Kangrey
+      fonts:
+        - asset: assets/fonts/Khmer OS Kangrey.ttf
+    - family: Khmer OS Koulen
+      fonts:
+        - asset: assets/fonts/Khmer OS Koulen.ttf
+    - family: Khmer OS Metalchrieng
+      fonts:
+        - asset: assets/fonts/Khmer OS Metalchrieng.ttf
+    - family: Khmer OS Moul
+      fonts:
+        - asset: assets/fonts/Khmer OS Moul.ttf
+    - family: Khmer OS Moulpali
+      fonts:
+        - asset: assets/fonts/Khmer OS Moulpali.ttf
+    - family: Khmer OS New
+      fonts:
+        - asset: assets/fonts/Khmer OS New.ttf
+        - asset: assets/fonts/Khmer OS New Bold.ttf
+          weight: 700
+    - family: Khmer OS Pheatra C1
+      fonts:
+        - asset: assets/fonts/Khmer OS Pheatra C1.ttf
+    - family: Khmer OS Pheatra C5
+      fonts:
+        - asset: assets/fonts/Khmer OS Pheatra C5.ttf
+    - family: Khmer Oureang
+      fonts:
+        - asset: assets/fonts/Khmer Oureang Ultra-expanded UltraBlack [Version Version 5.300].ttf
+    - family: Khmer P Domrey-Sor
+      fonts:
+        - asset: assets/fonts/Khmer P Domrey-Sor.ttf
+    - family: Khmer P Doun-teav
+      fonts:
+        - asset: assets/fonts/Khmer P Doun-Teav.ttf
+    - family: Khmer P Kondomrey
+      fonts:
+        - asset: assets/fonts/Khmer P Kondomrey.ttf
+    - family: Khmer P Romchek4
+      fonts:
+        - asset: assets/fonts/Khmer P Romchek4.ttf
+    - family: Khmer Pailin
+      fonts:
+        - asset: assets/fonts/Khmer Pailin.ttf
+    - family: Khmer Pen Eng
+      fonts:
+        - asset: assets/fonts/Khmer Pen Eng.ttf
+    - family: Khmer Pen Hindi
+      fonts:
+        - asset: assets/fonts/Khmer Pen Hindi.ttf
+    - family: Khmer Pen Kang
+      fonts:
+        - asset: assets/fonts/Khmer Pen Kang.ttf
+    - family: Khmer Pen Lao
+      fonts:
+        - asset: assets/fonts/Khmer Pen Lao.ttf
+    - family: Khmer Pen Svayreing
+      fonts:
+        - asset: assets/fonts/Khmer Pen Svayreing.ttf
+    - family: Khmer Pen SvR
+      fonts:
+        - asset: assets/fonts/Khmer Pen SvR.ttf
+    - family: Khmer Pen-Surin
+      fonts:
+        - asset: assets/fonts/Khmer Pen-Surin Version 2.121.ttf
+    - family: Khmer Ratanakiri
+      fonts:
+        - asset: assets/fonts/Khmer Ratanakiri [Version 5.300].ttf
+    - family: Khmer Rayuth
+      fonts:
+        - asset: assets/fonts/Khmer Rayuth.ttf
+    - family: Khmer Rotanak Angkor
+      fonts:
+        - asset: assets/fonts/Khmer Rotanak Angkor 3.1.ttf
+    - family: Khmer S1
+      fonts:
+        - asset: assets/fonts/khmer s1.volt.ttf
+    - family: Khmer S2
+      fonts:
+        - asset: assets/fonts/khmer s2.volt.ttf
+    - family: Khmer S3
+      fonts:
+        - asset: assets/fonts/khmer s3.volt.ttf
+    - family: Khmer S4
+      fonts:
+        - asset: assets/fonts/khmer s4.volt.ttf
+    - family: Khmer Samady KS
+      fonts:
+        - asset: assets/fonts/khmer Samady KS.ttf
+    - family: khmer Savuth Brush
+      fonts:
+        - asset: assets/fonts/khmer Savuth Brush.ttf
+    - family: Khmer Savuth Pen V2
+      fonts:
+        - asset: assets/fonts/Khmer Savuth Pen V2.ttf
+    - family: Khmer Savuth Pen
+      fonts:
+        - asset: assets/fonts/Khmer Savuth Pen.ttf
+    - family: Khmer Savuth Romeas
+      fonts:
+        - asset: assets/fonts/Khmer Savuth Romeas.ttf
+    - family: Khmer Savuth
+      fonts:
+        - asset: assets/fonts/Khmer Savuth.ttf
+    - family: Khmer SBBIC System
+      fonts:
+        - asset: assets/fonts/Khmer SBBIC System.ttf
+    - family: Khmer SBBIC Serif
+      fonts:
+        - asset: assets/fonts/Khmer SBBICs Serif.ttf
+    - family: Khmer Sem Sarun
+      fonts:
+        - asset: assets/fonts/Khmer Sem Sarun.ttf
+    - family: Khmer sexy
+      fonts:
+        - asset: assets/fonts/Khmer sexy.ttf
+    - family: Khmer Sharp
+      fonts:
+        - asset: assets/fonts/Khmer Sharp.ttf
+    - family: Khmer SN Kampongcham
+      fonts:
+        - asset: assets/fonts/Khmer SN Kampongcham 1.1.ttf
+    - family: Khmer SN Kampot
+      fonts:
+        - asset: assets/fonts/Khmer SN Kampot 1.1.ttf
+    - family: Khmer Telecommunication
+      fonts:
+        - asset: assets/fonts/Khmer Telecommunication.ttf
+    - family: Khmer Victorya Jrung
+      fonts:
+        - asset: assets/fonts/Khmer Victorya Jrung [Version 1.00].ttf
+    - family: Khmer Victorya Treykrim
+      fonts:
+        - asset: assets/fonts/Khmer Victorya Treykrim [Version 2.00].ttf
+    - family: Khmer-Pen​​ Teu
+      fonts:
+        - asset: assets/fonts/Khmer-Pen Teu.ttf
+    - family: Khmer-Pen​​Chantrea
+      fonts:
+        - asset: assets/fonts/Khmer-PenChantrea.ttf
+    - family: Khmer
+      fonts:
+        - asset: assets/fonts/Khmer.ttf
+    - family: KhmerDLStation TNRB
+      fonts:
+        - asset: assets/fonts/KhmerDLStation TNRB.ttf
+    - family: Khmer Kep
+      fonts:
+        - asset: assets/fonts/KHMERKEP.ttf
+    - family: Khmer MEF1
+      fonts:
+        - asset: assets/fonts/KHMERMEF1.ttf
+    - family: Khmer MEF2
+      fonts:
+        - asset: assets/fonts/KHMERMEF2.ttf
+    - family: Khmer Moul
+      fonts:
+        - asset: assets/fonts/KhmerMoul.ttf
+    - family: Khmer Muol
+      fonts:
+        - asset: assets/fonts/KhmerMuol.ttf
+    - family: Khmer Nagari
+      fonts:
+        - asset: assets/fonts/KhmerNagari.ttf
+    - family: Khmer OS
+      fonts:
+        - asset: assets/fonts/KhmerOS.ttf
+    - family: Khmer OS Apsara
+      fonts:
+        - asset: assets/fonts/KhmerOSApsra.ttf
+    - family: Khmer OS Bokor
+      fonts:
+        - asset: assets/fonts/KhmerOSbokor.ttf
+    - family: Khmer OS Classic
+      fonts:
+        - asset: assets/fonts/KhmerOSclassic.ttf
+    - family: Khmer OS Fasthand
+      fonts:
+        - asset: assets/fonts/KhmerOSfasthand.ttf
+    - family: Khmer OS Freehand
+      fonts:
+        - asset: assets/fonts/KhmerOSfreehand.ttf
+    - family: Khmer OS Kien Svay
+      fonts:
+        - asset: assets/fonts/KhmerOSkiensvay.ttf
+    - family: Khmer OS Metal Chrieng
+      fonts:
+        - asset: assets/fonts/KhmerOSmetalchrieng.ttf
+    - family: Khmer OS Muol
+      fonts:
+        - asset: assets/fonts/KhmerOSmuol.ttf
+    - family: Khmer OS Muol Light
+      fonts:
+        - asset: assets/fonts/KhmerOSmuollight.ttf
+    - family: Khmer OS Muol Pali
+      fonts:
+        - asset: assets/fonts/KhmerOSmuolpali.ttf
+    - family: Khmer OS Niroth
+      fonts:
+        - asset: assets/fonts/KhmerOSniroth.ttf
+    - family: Khmer OS System
+      fonts:
+        - asset: assets/fonts/KhmerOSsys.ttf
+    - family: Khmer OS Wat Phnom
+      fonts:
+        - asset: assets/fonts/KhmerOSwatphnom.ttf
+    - family: Khmer Rotanak Traiy B
+      fonts:
+        - asset: assets/fonts/KhmerRotanakTraiyB.ttf
+    - family: Khmer Serif
+      fonts:
+        - asset: assets/fonts/KhmerSerif.ttf
+    - family: Khmer UI
+      fonts:
+        - asset: assets/fonts/KhmerUI.ttf
+        - asset: assets/fonts/KhmerUIb.ttf
+          weight: 700
+    - family: Khmer Kampongtrach
+      fonts:
+        - asset: assets/fonts/KHMKAMPONGTRACH.ttf
+    - family: Khmer Kampot
+      fonts:
+        - asset: assets/fonts/KHMKAMPOT.ttf
+    - family: Khmer Kolab
+      fonts:
+        - asset: assets/fonts/KHMKOLAB.ttf
+    - family: Khmer Mool
+      fonts:
+        - asset: assets/fonts/KHMMOOL.ttf
+    - family: Khmer Mool1
+      fonts:
+        - asset: assets/fonts/KHMMOOL1.ttf
+    - family: Khmer Nettra
+      fonts:
+        - asset: assets/fonts/KHMNETTRA.ttf
+    - family: Khmer Old Style
+      fonts:
+        - asset: assets/fonts/KHMOLD.ttf
+    - family: Khmer Vanara
+      fonts:
+        - asset: assets/fonts/Khmvanara.ttf
+    - family: Khmer Viravuth
+      fonts:
+        - asset: assets/fonts/Khmviravuth.ttf
+    - family: Khmer Wat Phnom
+      fonts:
+        - asset: assets/fonts/KHMWATPHNOM.ttf
+    - family: Khmer Unicode F1
+      fonts:
+        - asset: assets/fonts/KhUniF1.ttf
+    - family: Khmer Unicode L1
+      fonts:
+        - asset: assets/fonts/KhUniL1.ttf
+    - family: Khmer Unicode N2
+      fonts:
+        - asset: assets/fonts/KhUniN2.ttf
+    - family: Khmer Unicode R1
+      fonts:
+        - asset: assets/fonts/KhUniR1.ttf
+    - family: Khmer Unicode R2
+      fonts:
+        - asset: assets/fonts/KhUniR2.ttf
+    - family: Khmer Unicode Serif
+      fonts:
+        - asset: assets/fonts/KhUniSerif.ttf
+    - family: KmengKhmer_AhRyDaimondPL
+      fonts:
+        - asset: assets/fonts/KmengKhmer_AhRyDaimondPL.ttf
+    - family: KmengKhmer_Alt
+      fonts:
+        - asset: assets/fonts/KmengKhmer_Alt.ttf
+    - family: KmengKhmer_Control
+      fonts:
+        - asset: assets/fonts/KmengKhmer_Control.ttf
+    - family: KmengKhmer_Feeling
+      fonts:
+        - asset: assets/fonts/KmengKhmer_Feeling.ttf
+    - family: KmengKhmer_Shift
+      fonts:
+        - asset: assets/fonts/KmengKhmer_Shift.ttf
+    - family: KmengKhmer_Sorry
+      fonts:
+        - asset: assets/fonts/KmengKhmer_Sorry.ttf
+    - family: Khmer Mondulkiri-s xhigh
+      fonts:
+        - asset: assets/fonts/kMon40hV2E3s.ttf
+    - family: Khmer Mondulkiri-s xdict
+      fonts:
+        - asset: assets/fonts/kMons40dicV2E3s.ttf
+    - family: Khmer Mondulkiri-s xspace
+      fonts:
+        - asset: assets/fonts/kMons40spcV2E3s.ttf
+    - family: Khmer Mondulkiri-s
+      fonts:
+        - asset: assets/fonts/kMons40V2E3.ttf
+        - asset: assets/fonts/kMons60bV2E3s.ttf
+          weight: 700
+    - family: Khmer Mondulkiri-s Semibold
+      fonts:
+        - asset: assets/fonts/kMons80V1E2s.ttf
+    - family: Khmer Mondulkiri-s ultra
+      fonts:
+        - asset: assets/fonts/kMons99V1E2s.ttf
+    - family: KngChak Kingthings
+      fonts:
+        - asset: assets/fonts/KngChak Kingthings.ttf
+    - family: KngChakKP Kbalromeas
+      fonts:
+        - asset: assets/fonts/KngChakKP Kbalromeas.ttf
+    - family: Koh Santepheap
+      fonts:
+        - asset: assets/fonts/Koh Santepheap.ttf
+        - asset: assets/fonts/Koh Santepheap Bold.ttf
+          weight: 700
+    - family: KonKhmer_Aeka
+      fonts:
+        - asset: assets/fonts/KonKhmer_Aeka.ttf
+    - family: KonKhmer_AekReachAngKor
+      fonts:
+        - asset: assets/fonts/KonKhmer_AekReachAngKor.ttf
+    - family: KonKhmer_AksorKhnhom
+      fonts:
+        - asset: assets/fonts/KonKhmer_AksorKhnhom.ttf
+    - family: KonKhmer_Arom
+      fonts:
+        - asset: assets/fonts/KonKhmer_Arom.ttf
+    - family: KonKhmer_AS ME
+      fonts:
+        - asset: assets/fonts/KonKhmer_AS-ME.ttf
+    - family: KonKhmer_BesDong
+      fonts:
+        - asset: assets/fonts/KonKhmer_BesDong.ttf
+    - family: KonKhmer_ChokChey
+      fonts:
+        - asset: assets/fonts/KonKhmer_ChokChey.ttf
+    - family: KonKhmer_DuyMech
+      fonts:
+        - asset: assets/fonts/KonKhmer_DuyMech.ttf
+    - family: KonKhmer_JivitNis
+      fonts:
+        - asset: assets/fonts/KonKhmer_JivitNis.ttf
+    - family: KonKhmer_JunPor
+      fonts:
+        - asset: assets/fonts/KonKhmer_JunPor.ttf
+    - family: KonKhmer_KeanSvay
+      fonts:
+        - asset: assets/fonts/KonKhmer_KeanSvay.ttf
+    - family: KonKhmer_KeanSvay1
+      fonts:
+        - asset: assets/fonts/KonKhmer_KeanSvay1.ttf
+    - family: KonKhmer_KeanSvay2
+      fonts:
+        - asset: assets/fonts/KonKhmer_KeanSvay2.ttf
+    - family: KonKhmer_KeanSvay3
+      fonts:
+        - asset: assets/fonts/KonKhmer_KeanSvay3.ttf
+    - family: KonKhmer_Moul
+      fonts:
+        - asset: assets/fonts/KonKhmer_Moul.ttf
+    - family: KonKhmer_NakChomBang
+      fonts:
+        - asset: assets/fonts/KonKhmer_NakChomBang.ttf
+    - family: KonKhmer_PheasaKomnith
+      fonts:
+        - asset: assets/fonts/KonKhmer_Pheasakomnith.ttf
+    - family: KonKhmer_RorBongPhtaes
+      fonts:
+        - asset: assets/fonts/KonKhmer_RorBongPhtaes.ttf
+    - family: KonKhmer_SleokChher
+      fonts:
+        - asset: assets/fonts/KonKhmer_SleokChher.ttf
+    - family: KonKhmer_SongHa
+      fonts:
+        - asset: assets/fonts/KonKhmer_SongHa.ttf
+    - family: KonKhmer_STRESS
+      fonts:
+        - asset: assets/fonts/KonKhmer_STRESS.ttf
+    - family: Koulen
+      fonts:
+        - asset: assets/fonts/Koulen.ttf
+    - family: KS Bontey Kro 01
+      fonts:
+        - asset: assets/fonts/KS Bontey Kro 01.ttf
+    - family: KS Bontey Kro V1 Plus
+      fonts:
+        - asset: assets/fonts/KS Bontey Kro V1 Plus.ttf
+    - family: KS Bontey Kro V1
+      fonts:
+        - asset: assets/fonts/KS Bontey Kro V1.ttf
+    - family: KS Bontey Kro V2 Plus
+      fonts:
+        - asset: assets/fonts/KS Bontey Kro V2 Plus.ttf
+    - family: KS Bontey Kro V2
+      fonts:
+        - asset: assets/fonts/KS Bontey Kro V2.ttf
+    - family: KS Bontey Kro V5
+      fonts:
+        - asset: assets/fonts/KS Bontey Kro V5.ttf
+    - family: KS Bontey Kro
+      fonts:
+        - asset: assets/fonts/KS Bontey Kro.ttf
+    - family: KS Khmer Halowen
+      fonts:
+        - asset: assets/fonts/KS Khmer Halowen.ttf
+    - family: KS Khmer SX Italic
+      fonts:
+        - asset: assets/fonts/KS Khmer SX Italic.ttf
+    - family: KS Khmer TT R Italic
+      fonts:
+        - asset: assets/fonts/KS Khmer TT R Italic.ttf
+    - family: KS Khmer TTA
+      fonts:
+        - asset: assets/fonts/KS Khmer TTA.ttf
+    - family: KS Khmer TTB
+      fonts:
+        - asset: assets/fonts/KS Khmer TTB.ttf
+    - family: KS KhmerVN 01 Bold
+      fonts:
+        - asset: assets/fonts/KS KhmerVN 01 Bold.ttf
+    - family: KS KhmerVN 01 Italic
+      fonts:
+        - asset: assets/fonts/KS KhmerVN 01 Italic.ttf
+    - family: KS KhmerVN 01
+      fonts:
+        - asset: assets/fonts/KS KhmerVn 01.ttf
+    - family: KS KhmerVn 02 Italic
+      fonts:
+        - asset: assets/fonts/KS KhmerVn 02 Italic.ttf
+    - family: KS KhmerVn 02
+      fonts:
+        - asset: assets/fonts/KS KhmerVn 02.ttf
+    - family: KS KhmerVn 02​​ Bold
+      fonts:
+        - asset: assets/fonts/KS KhmerVn 02​​ Bold.ttf
+    - family: KS​​ HamGiang R
+      fonts:
+        - asset: assets/fonts/KS​​ HamGiang R.ttf
+    - family: សម្រាប់កូនខ្មែរ
+      fonts:
+        - asset: assets/fonts/KunKhmer.ttf
+    - family: Kunstler Script
+      fonts:
+        - asset: assets/fonts/KUNSTLER.TTF
+    - family: Lucida Sans Unicode
+      fonts:
+        - asset: assets/fonts/l.ttf
+    - family: Wide Latin
+      fonts:
+        - asset: assets/fonts/LATINWD.TTF
+    - family: Lucida Bright
+      fonts:
+        - asset: assets/fonts/LBRITE.TTF
+    - family: Lucida Calligraphy
+      fonts:
+        - asset: assets/fonts/LCALLIG.TTF
+    - family: Leelawadee UI
+      fonts:
+        - asset: assets/fonts/LeelawUI.ttf
+        - asset: assets/fonts/LeelaUIb.ttf
+          weight: 700
+    - family: Leelawadee UI Semilight
+      fonts:
+        - asset: assets/fonts/LeelUIsl.ttf
+    - family: Lemon
+      fonts:
+        - asset: assets/fonts/Lemon-Regular.ttf
+    - family: Lucida Fax
+      fonts:
+        - asset: assets/fonts/LFAX.TTF
+    - family: Lucida Handwriting
+      fonts:
+        - asset: assets/fonts/LHANDW.TTF
+    - family: Limelight
+      fonts:
+        - asset: assets/fonts/Limelight-Regular.ttf
+    - family: Limon S1
+      fonts:
+        - asset: assets/fonts/Limon S1.ttf
+    - family: Limon F1
+      fonts:
+        - asset: assets/fonts/limonf1.TTF
+    - family: LimonF2
+      fonts:
+        - asset: assets/fonts/limonf2.TTF
+    - family: LimonF3
+      fonts:
+        - asset: assets/fonts/limonf3.TTF
+    - family: LimonF4
+      fonts:
+        - asset: assets/fonts/limonf4.TTF
+    - family: LimonF5
+      fonts:
+        - asset: assets/fonts/limonf5.TTF
+    - family: Limon R5
+      fonts:
+        - asset: assets/fonts/limonr5.TTF
+    - family: LimonS4
+      fonts:
+        - asset: assets/fonts/limons4.TTF
+    - family: LimonS5
+      fonts:
+        - asset: assets/fonts/limons5.TTF
+    - family: LimonS6
+      fonts:
+        - asset: assets/fonts/limons6.TTF
+    - family: LimonS7
+      fonts:
+        - asset: assets/fonts/limons7.TTF
+    - family: Limon F2
+      fonts:
+        - asset: assets/fonts/lmnf2.ttf
+    - family: Limon F3
+      fonts:
+        - asset: assets/fonts/lmnf3.ttf
+    - family: Limon F5
+      fonts:
+        - asset: assets/fonts/lmnf5.ttf
+    - family: Limon F6
+      fonts:
+        - asset: assets/fonts/lmnf6.ttf
+    - family: Limon F7
+      fonts:
+        - asset: assets/fonts/lmnf7.ttf
+    - family: Limon F8
+      fonts:
+        - asset: assets/fonts/lmnf8.ttf
+    - family: Limon R1
+      fonts:
+        - asset: assets/fonts/lmnr1.ttf
+    - family: Limon R2
+      fonts:
+        - asset: assets/fonts/lmnr2.ttf
+    - family: Limon R3
+      fonts:
+        - asset: assets/fonts/lmnr3.ttf
+    - family: Limon R4
+      fonts:
+        - asset: assets/fonts/lmnr4.ttf
+    - family: Limon S2
+      fonts:
+        - asset: assets/fonts/lmns2.ttf
+    - family: Limon S3
+      fonts:
+        - asset: assets/fonts/lmns3.ttf
+    - family: Limon S4
+      fonts:
+        - asset: assets/fonts/lmns4.ttf
+    - family: Limon S5
+      fonts:
+        - asset: assets/fonts/lmns5.ttf
+    - family: Limon S6
+      fonts:
+        - asset: assets/fonts/lmns6.ttf
+    - family: Limon S7
+      fonts:
+        - asset: assets/fonts/lmns7.ttf
+    - family: Lucida Sans
+      fonts:
+        - asset: assets/fonts/LSANS.TTF
+    - family: Lucida Sans Typewriter
+      fonts:
+        - asset: assets/fonts/LTYPE.TTF
+    - family: Lucida Console
+      fonts:
+        - asset: assets/fonts/lucon.ttf
+    - family: Magneto
+      fonts:
+        - asset: assets/fonts/MAGNETOB.TTF
+    - family: Maiandra GD
+      fonts:
+        - asset: assets/fonts/MAIAN.TTF
+    - family: Malgun Gothic Semilight
+      fonts:
+        - asset: assets/fonts/malgunsl.ttf
+    - family: Marcellus SC
+      fonts:
+        - asset: assets/fonts/MarcellusSC-Regular.ttf
+    - family: Matura MT Script Capitals
+      fonts:
+        - asset: assets/fonts/MATURASC.TTF
+    - family: Mealea D
+      fonts:
+        - asset: assets/fonts/Mealea D.ttf
+    - family: Mealea D1
+      fonts:
+        - asset: assets/fonts/Mealea D1.ttf
+    - family: Mealea D2
+      fonts:
+        - asset: assets/fonts/Mealea D2.ttf
+    - family: Mealea D3
+      fonts:
+        - asset: assets/fonts/Mealea D3.ttf
+    - family: Mealea D4
+      fonts:
+        - asset: assets/fonts/Mealea D4.ttf
+    - family: Mealea D5
+      fonts:
+        - asset: assets/fonts/Mealea D5.ttf
+    - family: Metal
+      fonts:
+        - asset: assets/fonts/Metal.ttf
+    - family: Mistral
+      fonts:
+        - asset: assets/fonts/MISTRAL.TTF
+    - family: Myanmar Text
+      fonts:
+        - asset: assets/fonts/mmrtext.ttf
+        - asset: assets/fonts/mmrtextb.ttf
+          weight: 700
+    - family: Khmer Busra Bunong
+      fonts:
+        - asset: assets/fonts/Mo5V56Bu.ttf
+    - family: Khmer Busra dict
+      fonts:
+        - asset: assets/fonts/Mo5V56dc.ttf
+    - family: Khmer Busra diagnostic
+      fonts:
+        - asset: assets/fonts/Mo5V56di.ttf
+    - family: Khmer Busra dot
+      fonts:
+        - asset: assets/fonts/Mo5V56do.ttf
+    - family: Khmer Busra high
+      fonts:
+        - asset: assets/fonts/Mo5V56hi.ttf
+    - family: Khmer Busra MOE
+      fonts:
+        - asset: assets/fonts/Mo5V56MO.ttf
+    - family: Khmer Busra xspace
+      fonts:
+        - asset: assets/fonts/Mo5V56xs.ttf
+    - family: Modern No. 20
+      fonts:
+        - asset: assets/fonts/MOD20.TTF
+    - family: Mongolian Baiti
+      fonts:
+        - asset: assets/fonts/monbaiti.ttf
+    - family: Montserrat Subrayada
+      fonts:
+        - asset: assets/fonts/MontserratSubrayada-Bold.ttf
+    - family: MoolBoran
+      fonts:
+        - asset: assets/fonts/moolbor.ttf
+    - family: Moul Pali
+      fonts:
+        - asset: assets/fonts/Moul Pali.ttf
+    - family: Moul
+      fonts:
+        - asset: assets/fonts/Moul.ttf
+    - family: Microsoft Yi Baiti
+      fonts:
+        - asset: assets/fonts/msyi.ttf
+    - family: Monotype Corsiva
+      fonts:
+        - asset: assets/fonts/MTCORSVA.TTF
+    - family: MT Extra
+      fonts:
+        - asset: assets/fonts/MTEXTRA.TTF
+    - family: MV Boli
+      fonts:
+        - asset: assets/fonts/mvboli.ttf
+    - family: Myanmar Sans Pro
+      fonts:
+        - asset: assets/fonts/MyanmarSansPro.ttf
+    - family: News701 BT
+      fonts:
+        - asset: assets/fonts/News701 BT Italic.ttf
+        - asset: assets/fonts/News701 BT Bold.ttf
+          weight: 700
+    - family: News706 BT
+      fonts:
+        - asset: assets/fonts/News706 BT Bold.ttf
+    - family: NewsGoth BT
+      fonts:
+        - asset: assets/fonts/NewsGoth BT Roman.ttf
+        - asset: assets/fonts/NewsGoth BT Bold.ttf
+          weight: 700
+    - family: NewsGoth Lt BT
+      fonts:
+        - asset: assets/fonts/NewsGoth Lt BT Light.ttf
+    - family: Niagara Engraved
+      fonts:
+        - asset: assets/fonts/NIAGENG.TTF
+    - family: Niagara Solid
+      fonts:
+        - asset: assets/fonts/NIAGSOL.TTF
+    - family: NiDA OdorMeanChey
+      fonts:
+        - asset: assets/fonts/NiDA OdorMeanChey Version 6.00.ttf
+    - family: NiDA Preahvihear
+      fonts:
+        - asset: assets/fonts/NiDA Preahvihear Version 6.00.ttf
+    - family: NiDA Sowannaphum
+      fonts:
+        - asset: assets/fonts/NiDA Sowannaphum Version 6.00.ttf
+    - family: NiDA Taprom
+      fonts:
+        - asset: assets/fonts/NiDA Taprom Version 6.00.ttf
+    - family: NiDA Angkor
+      fonts:
+        - asset: assets/fonts/NiDAAngkor.ttf
+    - family: NiDA Bayon
+      fonts:
+        - asset: assets/fonts/NiDABayon.ttf
+    - family: NiDA Chenla
+      fonts:
+        - asset: assets/fonts/NiDAChenla.ttf
+    - family: NiDA Funan
+      fonts:
+        - asset: assets/fonts/NiDAFunan.ttf
+    - family: NiDA Khmer Empire
+      fonts:
+        - asset: assets/fonts/NiDAKhmerEmpire.ttf
+    - family: NiDA Sowanaphum
+      fonts:
+        - asset: assets/fonts/NiDASowanaphum.ttf
+    - family: Nokia Pure S40 KHMR
+      fonts:
+        - asset: assets/fonts/Nokia Pure S40 KHMR [Version 1.003].ttf
+        - asset: assets/fonts/Nokia Pure S40 KHMR Bold [Version 1.003].ttf
+          weight: 700
+    - family: Nokora
+      fonts:
+        - asset: assets/fonts/Nokora-Regular.ttf
+        - asset: assets/fonts/Nokora-Bold.ttf
+          weight: 700
+    - family: NokorReach Angkor 1 Plus
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 1 Plus.ttf
+    - family: NokorReach Angkor 1
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 1.ttf
+    - family: NokorReach Angkor 2 Plus
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 2 Plus.ttf
+    - family: NokorReach Angkor 2
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 2.ttf
+    - family: NokorReach Angkor 3 Plus
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 3 Plus.ttf
+    - family: NokorReach Angkor 3
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 3.ttf
+    - family: NokorReach Angkor 4 Plus
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 4 Plus.ttf
+    - family: NokorReach Angkor 4
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 4.ttf
+    - family: NokorReach Angkor 5 Plus
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 5 Plus.ttf
+    - family: NokorReach Angkor 5
+      fonts:
+        - asset: assets/fonts/NokorReach Angkor 5.ttf
+    - family: NokorReach Khmer Pali Plus
+      fonts:
+        - asset: assets/fonts/NokorReach Khmer Pali Plus.ttf
+    - family: NokorReach Khmer Pali
+      fonts:
+        - asset: assets/fonts/NokorReach Khmer Pali.ttf
+    - family: NokorReach Papreay 2
+      fonts:
+        - asset: assets/fonts/NokorReach Papreay 2 Version 1.00.ttf
+    - family: NokorReach Papreay
+      fonts:
+        - asset: assets/fonts/NokorReach Papreay Version 1.00.ttf
+    - family: NokorReach Romchang
+      fonts:
+        - asset: assets/fonts/NokorReach Romchang Version 1.00.ttf
+    - family: NokorReach Vann Molyvann Plus
+      fonts:
+        - asset: assets/fonts/NokorReach Vann Molyvann Plus.ttf
+    - family: NokorReach Vann Molyvann
+      fonts:
+        - asset: assets/fonts/NokorReach Vann Molyvann.ttf
+    - family: NorkorReach Papreay
+      fonts:
+        - asset: assets/fonts/NorkorReach Papreay 1 Version 1.00.ttf
+    - family: NorkorReach Papreay 2
+      fonts:
+        - asset: assets/fonts/NorkorReach Papreay 2 Version 1.00.ttf
+    - family: NorkorReach Romchang
+      fonts:
+        - asset: assets/fonts/NorkorReach Romchang Version 1.00.ttf
+    - family: Noto Sans Khmer
+      fonts:
+        - asset: assets/fonts/Noto Sans Khmer.ttf
+        - asset: assets/fonts/Noto Sans Khmer Bold.ttf
+          weight: 700
+    - family: Noto Serif Khmer
+      fonts:
+        - asset: assets/fonts/Noto Serif Khmer.ttf
+        - asset: assets/fonts/Noto Serif Khmer Bold.ttf
+          weight: 700
+    - family: Noto Sans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+    - family: Noto Sans Cham
+      fonts:
+        - asset: assets/fonts/NotoSansCham-Regular.ttf
+    - family: Noto Sans Khmer UI
+      fonts:
+        - asset: assets/fonts/NotoSansKhmerUI-Regular.ttf
+        - asset: assets/fonts/NotoSansKhmerUI-Bold.ttf
+          weight: 700
+    - family: Microsoft New Tai Lue
+      fonts:
+        - asset: assets/fonts/ntailu.ttf
+        - asset: assets/fonts/ntailub.ttf
+          weight: 700
+    - family: OCR-A BT
+      fonts:
+        - asset: assets/fonts/OCR-A BT.ttf
+    - family: OCR-B 10 BT
+      fonts:
+        - asset: assets/fonts/OCR-B 10 BT.ttf
+    - family: OCR A Extended
+      fonts:
+        - asset: assets/fonts/OCRAEXT.TTF
+    - family: OdorMeanChey
+      fonts:
+        - asset: assets/fonts/OdorMeanChey.ttf
+    - family: Old English Text MT
+      fonts:
+        - asset: assets/fonts/OLDENGL.TTF
+    - family: Onyx
+      fonts:
+        - asset: assets/fonts/ONYX.TTF
+    - family: Open Sans
+      fonts:
+        - asset: assets/fonts/OpenSans-VariableFont_wdth,wght.ttf
+        - asset: assets/fonts/OpenSans-Bold.ttf
+          weight: 700
+    - family: Open Sans ExtraBold
+      fonts:
+        - asset: assets/fonts/OpenSans-ExtraBold.ttf
+    - family: Open Sans Light
+      fonts:
+        - asset: assets/fonts/OpenSans-Light.ttf
+    - family: Open Sans Medium
+      fonts:
+        - asset: assets/fonts/OpenSans-Medium.ttf
+    - family: Open Sans SemiBold
+      fonts:
+        - asset: assets/fonts/OpenSans-SemiBold.ttf
+    - family: Open Sans Condensed Condensed ExtraBold
+      fonts:
+        - asset: assets/fonts/OpenSans_Condensed-ExtraBold.ttf
+    - family: Open Sans Condensed Condensed
+      fonts:
+        - asset: assets/fonts/OpenSans_Condensed-Regular.ttf
+    - family: Open Sans Condensed Condensed Light
+      fonts:
+        - asset: assets/fonts/OpenSans_Condensed-Light.ttf
+    - family: Open Sans Condensed Condensed Medium
+      fonts:
+        - asset: assets/fonts/OpenSans_Condensed-Medium.ttf
+    - family: Open Sans Condensed Condensed SemiBold
+      fonts:
+        - asset: assets/fonts/OpenSans_Condensed-SemiBold.ttf
+    - family: Open Sans SemiCondensed SemiCondensed
+      fonts:
+        - asset: assets/fonts/OpenSans_SemiCondensed-Regular.ttf
+        - asset: assets/fonts/OpenSans_SemiCondensed-Bold.ttf
+          weight: 700
+    - family: Open Sans SemiCondensed SemiCondensed ExtraBold
+      fonts:
+        - asset: assets/fonts/OpenSans_SemiCondensed-ExtraBold.ttf
+    - family: Open Sans SemiCondensed SemiCondensed Light
+      fonts:
+        - asset: assets/fonts/OpenSans_SemiCondensed-Light.ttf
+    - family: Open Sans SemiCondensed SemiCondensed Medium
+      fonts:
+        - asset: assets/fonts/OpenSans_SemiCondensed-Medium.ttf
+    - family: Open Sans SemiCondensed SemiCondensed SemiBold
+      fonts:
+        - asset: assets/fonts/OpenSans_SemiCondensed-SemiBold.ttf
+    - family: Orbitron
+      fonts:
+        - asset: assets/fonts/Orbitron-Bold.ttf
+    - family: MS Outlook
+      fonts:
+        - asset: assets/fonts/OUTLOOK.TTF
+    - family: Palatino Linotype
+      fonts:
+        - asset: assets/fonts/pala.ttf
+        - asset: assets/fonts/palab.ttf
+          weight: 700
+    - family: Palace Script MT
+      fonts:
+        - asset: assets/fonts/PALSCRI.TTF
+    - family: Papyrus
+      fonts:
+        - asset: assets/fonts/PAPYRUS.TTF
+    - family: Parchment
+      fonts:
+        - asset: assets/fonts/PARCHM.TTF
+    - family: Perpetua
+      fonts:
+        - asset: assets/fonts/PER____.TTF
+        - asset: assets/fonts/PERB___.TTF
+          weight: 700
+    - family: Permanent Marker
+      fonts:
+        - asset: assets/fonts/PermanentMarker.ttf
+    - family: Perpetua Titling MT
+      fonts:
+        - asset: assets/fonts/PERTIBD.TTF
+    - family: Microsoft PhagsPa
+      fonts:
+        - asset: assets/fonts/phagspa.ttf
+        - asset: assets/fonts/phagspab.ttf
+          weight: 700
+    - family: PhnomPenh OT
+      fonts:
+        - asset: assets/fonts/PhnomPOT_Krung_gr.ttf
+    - family: Playball
+      fonts:
+        - asset: assets/fonts/Playball-Regular.ttf
+    - family: Playbill
+      fonts:
+        - asset: assets/fonts/PLAYBILL.TTF
+    - family: Poor Richard
+      fonts:
+        - asset: assets/fonts/POORICH.TTF
+    - family: Poppins Black
+      fonts:
+        - asset: assets/fonts/Poppins-Black.ttf
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+    - family: Poppins ExtraBold
+      fonts:
+        - asset: assets/fonts/Poppins-ExtraBold.ttf
+    - family: Poppins ExtraLight
+      fonts:
+        - asset: assets/fonts/Poppins-ExtraLight.ttf
+    - family: Poppins Light
+      fonts:
+        - asset: assets/fonts/Poppins-Light.ttf
+    - family: Poppins Medium
+      fonts:
+        - asset: assets/fonts/Poppins-Medium.ttf
+    - family: Poppins SemiBold
+      fonts:
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+    - family: Poppins Thin
+      fonts:
+        - asset: assets/fonts/Poppins-Thin.ttf
+    - family: Preah Vihear
+      fonts:
+        - asset: assets/fonts/Preahvihear.ttf
+    - family: Pristina
+      fonts:
+        - asset: assets/fonts/PRISTINA.TTF
+    - family: Quicksand Light
+      fonts:
+        - asset: assets/fonts/Quicksand-Light.ttf
+    - family: Quicksand Medium
+      fonts:
+        - asset: assets/fonts/Quicksand-Medium.ttf
+    - family: Quicksand
+      fonts:
+        - asset: assets/fonts/Quicksand-Regular.ttf
+    - family: Rage Italic
+      fonts:
+        - asset: assets/fonts/RAGE.TTF
+    - family: Ravie
+      fonts:
+        - asset: assets/fonts/RAVIE.TTF
+    - family: Rayuth HD T2
+      fonts:
+        - asset: assets/fonts/Rayuth HD T2.ttf
+    - family: Rayuth HD T3
+      fonts:
+        - asset: assets/fonts/Rayuth HD T3.ttf
+    - family: Rayuth HD T5
+      fonts:
+        - asset: assets/fonts/Rayuth HD T5.ttf
+    - family: Rayuth HD T7
+      fonts:
+        - asset: assets/fonts/Rayuth HD T7.ttf
+    - family: RAYUTH HD T4
+      fonts:
+        - asset: assets/fonts/RAYUTH-HD-T4.ttf
+    - family: MS Reference Sans Serif
+      fonts:
+        - asset: assets/fonts/REFSAN.TTF
+    - family: MS Reference Specialty
+      fonts:
+        - asset: assets/fonts/REFSPCL.TTF
+    - family: Rockwell Condensed
+      fonts:
+        - asset: assets/fonts/ROCC___.TTF
+        - asset: assets/fonts/ROCCB__.TTF
+          weight: 700
+    - family: Rockwell
+      fonts:
+        - asset: assets/fonts/ROCK.TTF
+        - asset: assets/fonts/ROCKB.TTF
+          weight: 700
+    - family: Rockwell Extra Bold
+      fonts:
+        - asset: assets/fonts/ROCKEB.TTF
+    - family: ROG Fonts
+      fonts:
+        - asset: assets/fonts/ROGFonts-Regular.otf
+    - family: Romnea
+      fonts:
+        - asset: assets/fonts/Romnea.ttf
+    - family: Russo One
+      fonts:
+        - asset: assets/fonts/RussoOne-Regular.ttf
+    - family: Samsung Khmer
+      fonts:
+        - asset: assets/fonts/SamsungKhmer-Regular.ttf
+    - family: Sankor
+      fonts:
+        - asset: assets/fonts/Sankor.ttf
+    - family: Sans Serif Collection
+      fonts:
+        - asset: assets/fonts/SansSerifCollection.ttf
+    - family: Schadow BT
+      fonts:
+        - asset: assets/fonts/Schadow BT Roman.ttf
+        - asset: assets/fonts/Schadow BT Bold.ttf
+          weight: 700
+    - family: Script MT Bold
+      fonts:
+        - asset: assets/fonts/SCRIPTBL.TTF
+    - family: Segoe MDL2 Assets
+      fonts:
+        - asset: assets/fonts/segmdl2.ttf
+    - family: Segoe Fluent Icons
+      fonts:
+        - asset: assets/fonts/SegoeIcons.ttf
+    - family: Segoe Print
+      fonts:
+        - asset: assets/fonts/segoepr.ttf
+        - asset: assets/fonts/segoeprb.ttf
+          weight: 700
+    - family: Segoe Script
+      fonts:
+        - asset: assets/fonts/segoesc.ttf
+        - asset: assets/fonts/segoescb.ttf
+          weight: 700
+    - family: Segoe UI Light
+      fonts:
+        - asset: assets/fonts/segoeuil.ttf
+    - family: Segoe UI Semilight
+      fonts:
+        - asset: assets/fonts/segoeuisl.ttf
+    - family: Segoe UI Black
+      fonts:
+        - asset: assets/fonts/seguibl.ttf
+    - family: Segoe UI Emoji
+      fonts:
+        - asset: assets/fonts/seguiemj.ttf
+    - family: Segoe UI Historic
+      fonts:
+        - asset: assets/fonts/seguihis.ttf
+    - family: Segoe UI Semibold
+      fonts:
+        - asset: assets/fonts/seguisb.ttf
+    - family: Segoe UI Symbol
+      fonts:
+        - asset: assets/fonts/seguisym.ttf
+    - family: Segoe UI Variable Text
+      fonts:
+        - asset: assets/fonts/SegUIVar.ttf
+    - family: Showcard Gothic
+      fonts:
+        - asset: assets/fonts/SHOWG.TTF
+    - family: Shrikhand
+      fonts:
+        - asset: assets/fonts/Shrikhand-Regular.ttf
+    - family: Siemreap
+      fonts:
+        - asset: assets/fonts/Siemreap.ttf
+    - family: Sigmar One
+      fonts:
+        - asset: assets/fonts/SigmarOne-Regular.ttf
+    - family: LiSu
+      fonts:
+        - asset: assets/fonts/SIMLI.TTF
+    - family: SimSun-ExtB
+      fonts:
+        - asset: assets/fonts/simsunb.ttf
+    - family: SimSun-ExtG
+      fonts:
+        - asset: assets/fonts/SimsunExtG.ttf
+    - family: YouYuan
+      fonts:
+        - asset: assets/fonts/SIMYOU.TTF
+    - family: Sithi Manuss
+      fonts:
+        - asset: assets/fonts/Sithi Manuss.ttf
+    - family: Sitka Text
+      fonts:
+        - asset: assets/fonts/SitkaVF.ttf
+    - family: SN Kh Damril Pagoda
+      fonts:
+        - asset: assets/fonts/SN Kh Damril-Pagoda.ttf
+    - family: SN KH KAMPONG CHAM
+      fonts:
+        - asset: assets/fonts/SN KH KAMPONG CHAM.otf
+    - family: SN Kh Khviek
+      fonts:
+        - asset: assets/fonts/SN Kh Khviek.ttf
+    - family: SN-Kh-Menghorn
+      fonts:
+        - asset: assets/fonts/SN Kh Menghorn.ttf
+    - family: SN Kh New
+      fonts:
+        - asset: assets/fonts/SN Kh New.otf
+    - family: SN KH NYHORN
+      fonts:
+        - asset: assets/fonts/SN KH NYHORN.ttf
+    - family: SN KH RANGERFORCE
+      fonts:
+        - asset: assets/fonts/SN KH RANGERFORCE.ttf
+    - family: SN KH SIMPLE-HAIR
+      fonts:
+        - asset: assets/fonts/SN KH SIMPLE-HAIR.ttf
+    - family: SN KH SIMPLE
+      fonts:
+        - asset: assets/fonts/SN KH SIMPLE.otf
+    - family: SN Kh SONY Moul
+      fonts:
+        - asset: assets/fonts/SN Kh SONY Moul.ttf
+    - family: SN KH WAT CHROY THMOR
+      fonts:
+        - asset: assets/fonts/SN KH WAT CHROY THMOR V1.10.ttf
+    - family: SN KH WAT DEYDOS
+      fonts:
+        - asset: assets/fonts/SN KH WAT DEYDOS.ttf
+    - family: SN Kh Writhand 2
+      fonts:
+        - asset: assets/fonts/SN Kh Writhand 2.ttf
+    - family: SN Kh Writhand
+      fonts:
+        - asset: assets/fonts/SN Kh Writhand.otf
+    - family: Snap ITC
+      fonts:
+        - asset: assets/fonts/SNAP___.TTF
+    - family: Sovannaroth KhmerEN
+      fonts:
+        - asset: assets/fonts/Sovannaroth KhmerEN.ttf
+    - family: Square721 BT
+      fonts:
+        - asset: assets/fonts/Square721 BT Roman.ttf
+        - asset: assets/fonts/Square721 BT Bold.ttf
+          weight: 700
+    - family: Square721 Cn BT
+      fonts:
+        - asset: assets/fonts/Square721 Cn BT Roman.ttf
+        - asset: assets/fonts/Square721 Cn BT Bold.ttf
+          weight: 700
+    - family: Srok Sre Hanphy
+      fonts:
+        - asset: assets/fonts/Srok Sre Hanphy [Version 1.50].ttf
+    - family: STCaiyun
+      fonts:
+        - asset: assets/fonts/STCAIYUN.TTF
+    - family: Stencil
+      fonts:
+        - asset: assets/fonts/STENCIL.TTF
+    - family: STFangsong
+      fonts:
+        - asset: assets/fonts/STFANGSO.TTF
+    - family: STHupo
+      fonts:
+        - asset: assets/fonts/STHUPO.TTF
+    - family: STKaiti
+      fonts:
+        - asset: assets/fonts/STKAITI.TTF
+    - family: STLiti
+      fonts:
+        - asset: assets/fonts/STLITI.TTF
+    - family: STSong
+      fonts:
+        - asset: assets/fonts/STSONG.TTF
+    - family: STXihei
+      fonts:
+        - asset: assets/fonts/STXIHEI.TTF
+    - family: STXingkai
+      fonts:
+        - asset: assets/fonts/STXINGKA.TTF
+    - family: STXinwei
+      fonts:
+        - asset: assets/fonts/STXINWEI.TTF
+    - family: STZhongsong
+      fonts:
+        - asset: assets/fonts/STZHONGS.TTF
+    - family: Swis721 Blk BT
+      fonts:
+        - asset: assets/fonts/Swis721 Blk BT Black.ttf
+    - family: Swis721 BlkCn BT
+      fonts:
+        - asset: assets/fonts/Swis721 BlkCn BT Black.ttf
+    - family: Swis721 BT
+      fonts:
+        - asset: assets/fonts/Swis721 BT Roman.ttf
+        - asset: assets/fonts/Swis721 BT Bold.ttf
+          weight: 700
+    - family: Swis721 Cn BT
+      fonts:
+        - asset: assets/fonts/Swis721 Cn BT Roman.ttf
+        - asset: assets/fonts/Swis721 Cn BT Bold.ttf
+          weight: 700
+    - family: Swis721 Hv BT
+      fonts:
+        - asset: assets/fonts/Swis721 Hv BT Heavy.ttf
+    - family: Swis721 Lt BT
+      fonts:
+        - asset: assets/fonts/Swis721 Lt BT Light.ttf
+    - family: Swis721 LtEx BT
+      fonts:
+        - asset: assets/fonts/Swis721 LtEx BT Light.ttf
+    - family: Swis721 WGL4 BT
+      fonts:
+        - asset: assets/fonts/Swis721 WGL4 BT Roman.ttf
+        - asset: assets/fonts/Swis721 WGL4 BT Bold.ttf
+          weight: 700
+    - family: Sylfaen
+      fonts:
+        - asset: assets/fonts/sylfaen.ttf
+    - family: Symbol
+      fonts:
+        - asset: assets/fonts/symbol.ttf
+    - family: Tacteing
+      fonts:
+        - asset: assets/fonts/tacteng.ttf
+    - family: Microsoft Tai Le
+      fonts:
+        - asset: assets/fonts/taile.ttf
+        - asset: assets/fonts/taileb.ttf
+          weight: 700
+    - family: Taprom
+      fonts:
+        - asset: assets/fonts/Taprom.ttf
+    - family: Tw Cen MT
+      fonts:
+        - asset: assets/fonts/TCM____.TTF
+        - asset: assets/fonts/TCB____.TTF
+          weight: 700
+    - family: Tw Cen MT Condensed
+      fonts:
+        - asset: assets/fonts/TCCM___.TTF
+        - asset: assets/fonts/TCCB___.TTF
+          weight: 700
+    - family: Tw Cen MT Condensed Extra Bold
+      fonts:
+        - asset: assets/fonts/TCCEB.TTF
+    - family: Teko SemiBold
+      fonts:
+        - asset: assets/fonts/Teko-SemiBold.ttf
+    - family: Tempus Sans ITC
+      fonts:
+        - asset: assets/fonts/TEMPSITC.TTF
+    - family: ABC-TEXT-05A
+      fonts:
+        - asset: assets/fonts/text05a.ttf
+    - family: Timbre Kampuchea
+      fonts:
+        - asset: assets/fonts/Timbre Kampuchea.ttf
+    - family: Tlok
+      fonts:
+        - asset: assets/fonts/Tlok.ttf
+    - family: Trebuchet MS
+      fonts:
+        - asset: assets/fonts/trebuc.ttf
+        - asset: assets/fonts/trebucbd.ttf
+          weight: 700
+    - family: TypoUpright BT
+      fonts:
+        - asset: assets/fonts/TypoUpright BT.ttf
+    - family: U4 Svayton New
+      fonts:
+        - asset: assets/fonts/U4SvaytonNew.ttf
+    - family: Ubuntu Mono
+      fonts:
+        - asset: assets/fonts/UbuntuMono-Regular.ttf
+    - family: Viner Hand ITC
+      fonts:
+        - asset: assets/fonts/VINERITC.TTF
+    - family: Vivaldi
+      fonts:
+        - asset: assets/fonts/VIVALDII.TTF
+    - family: Vladimir Script
+      fonts:
+        - asset: assets/fonts/VLADIMIR.TTF
+    - family: VNI Russia
+      fonts:
+        - asset: assets/fonts/VNI Russia.ttf
+    - family: Wingdings 2
+      fonts:
+        - asset: assets/fonts/WINGDNG2.TTF
+    - family: Wingdings 3
+      fonts:
+        - asset: assets/fonts/WINGDNG3.TTF
+    - family: Yellowtail
+      fonts:
+        - asset: assets/fonts/Yellowtail-Regular.ttf
+    - family: ZWAdobeF
+      fonts:
+        - asset: assets/fonts/ZWAdobeF.TTF

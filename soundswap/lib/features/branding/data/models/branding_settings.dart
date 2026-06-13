@@ -37,7 +37,7 @@ class BrandingSettings {
     'telegram': telegram,
     'facebookPage': facebookPage,
     'fontFamily': fontFamily,
-    'fontPath': fontPath,
+    'fontPath': _sanitizeFontPath(fontPath),
     'fontSource': fontSource,
     'bold': bold,
     'italic': italic,
@@ -125,5 +125,15 @@ class BrandingSettings {
         'drawtext=text="${contactText.replaceAll('\n', r'\n')}":font="$fontFamily":fontsize=${fontSize.toStringAsFixed(0)}:fontcolor=$textColor:x=w*${textPosition.xPercent.toStringAsFixed(3)}:y=h*${textPosition.yPercent.toStringAsFixed(3)}',
     ];
     return parts.isEmpty ? 'No branding overlay configured.' : parts.join('\n');
+  }
+
+  static String? _sanitizeFontPath(String? path) {
+    if (path == null) return null;
+    final lowerPath = path.toLowerCase();
+    if (lowerPath.contains(r'appdata\local\microsoft\windows\fonts') ||
+        lowerPath.contains(r'windows\fonts')) {
+      return null;
+    }
+    return path;
   }
 }

@@ -1,0 +1,83 @@
+Widget _buildLayersTab(BuildContext context) {
+    final controller = widget.controller;
+
+    if (controller.settings.items.isEmpty) {
+      return const EmptyState(
+        icon: Icons.layers_clear_outlined,
+        title: 'No overlays yet',
+        message: 'Add text or image layers to start editing.',
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _folderNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Create Group Folder',
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.create_new_folder_outlined),
+                onPressed: () {
+                  final name = _folderNameController.text.trim();
+                  if (name.isNotEmpty) {
+                    // Creating folders is done by setting items' folder names
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Folder "$name" ready. Set items to this folder.')),
+                    );
+                    _folderNameController.clear();
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Active Layer Stack (drag to reorder)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+              itemCount: controller.settings.items.length,
+              onReorder: controller.reorderItems,
+              itemBuilder: (context, index) {
+                final overlay = controller.settings.items[index];
+                final isSelected = controller.selectedItemIds.contains(overlay.id);
+
+                return _OverlayListTile(
+                  key: ValueKey(overlay.id),
+                  item: overlay,
+                  index: index,
+                  selected: isSelected,
+                  onTap: () => controller.selectItem(overlay.id),
+                  onLockToggled: () => controller.toggleLock(overlay.id),
+                  onHiddenToggled: () => controller.toggleHidden(overlay.id),
+                  onDuplicate: () => controller.duplicateItem(overlay.id),
+                  onDelete: () async {
+                    controller.selectItem(overlay.id);
+                    await controller.removeSelected();
+                  },
+                  onFolderChanged: (folder) => controller.setItemFolder(overlay.id, folder),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- TAB 2: Transform / Properties Tab ---
+  

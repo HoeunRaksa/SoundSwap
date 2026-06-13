@@ -1,0 +1,261 @@
+class _OverlayListTile extends StatelessWidget {
+  const _OverlayListTile({
+    required this.item,
+    required this.index,
+    required this.selected,
+    required this.onTap,
+    required this.onLockToggled,
+    required this.onHiddenToggled,
+    required this.onDuplicate,
+    required this.onDelete,
+    required this.onFolderChanged,
+    super.key,
+  });
+
+  final OverlayItem item;
+  final int index;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onLockToggled;
+  final VoidCallback onHiddenToggled;
+  final VoidCallback onDuplicate;
+  final VoidCallback onDelete;
+  final ValueChanged<String?> onFolderChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: Material(
+        color: selected
+            ? colorScheme.primaryContainer.withValues(alpha: 0.18)
+            : colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: selected ? colorScheme.primary : colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: selected ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            size: 18,
+                            color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    _buildThumbnail(context),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (item.folder != null && item.folder!.isNotEmpty) ...[
+                                Icon(Icons.folder_open, size: 12, color: colorScheme.primary),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '[${item.folder}] ',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  item.name.isEmpty
+                                      ? (item.type == OverlayItemType.text ? 'Text Layer' : 'Image Layer')
+                                      : item.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                                    fontSize: 12,
+                                    color: selected ? colorScheme.primary : colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _previewText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Quick Action Buttons
+                    IconButton(
+                      icon: Icon(item.hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      color: item.hidden ? Colors.grey : colorScheme.primary,
+                      onPressed: onHiddenToggled,
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: Icon(item.locked ? Icons.lock : Icons.lock_open, size: 18),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      color: item.locked ? Colors.red : Colors.grey,
+                      onPressed: onLockToggled,
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 18),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: onDuplicate,
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: onDelete,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Folder Selection Dropdown
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const Text('Folder: ', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    const SizedBox(width: 4),
+                    SizedBox(
+                      height: 24,
+                      child: DropdownButton<String?>(
+                        value: item.folder,
+                        underline: const SizedBox(),
+                        style: const TextStyle(fontSize: 10, color: Colors.black87),
+                        hint: const Text('None', style: TextStyle(fontSize: 10)),
+                        items: const [
+                          DropdownMenuItem(value: null, child: Text('None', style: TextStyle(fontSize: 10))),
+                          DropdownMenuItem(value: 'Branding', child: Text('Branding', style: TextStyle(fontSize: 10))),
+                          DropdownMenuItem(value: 'Subtitles', child: Text('Subtitles', style: TextStyle(fontSize: 10))),
+                          DropdownMenuItem(value: 'Watermarks', child: Text('Watermarks', style: TextStyle(fontSize: 10))),
+                          DropdownMenuItem(value: 'CTA', child: Text('CTA', style: TextStyle(fontSize: 10))),
+                        ],
+                        onChanged: onFolderChanged,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThumbnail(BuildContext context) {
+    if (item.type == OverlayItemType.image && item.imagePath != null) {
+      final file = File(item.imagePath!);
+      if (file.existsSync()) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: Image.file(file, fit: BoxFit.cover),
+            ),
+          ),
+        );
+      }
+    }
+
+    if (item.type == OverlayItemType.text && item.text.trim().isNotEmpty) {
+      final color = _colorFromHex(item.colorHex);
+      final rawText = item.text.trim();
+      final previewString = rawText.substring(0, rawText.length.clamp(0, 2)).toUpperCase();
+      return Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: Colors.black87,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          previewString,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Icon(
+        item.type == OverlayItemType.text ? Icons.text_fields : Icons.image_outlined,
+        size: 16,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
+  String get _previewText {
+    if (item.type == OverlayItemType.text) {
+      return item.text.trim().isEmpty ? 'Empty text' : item.text.trim();
+    }
+    return p.basename(item.imagePath ?? 'No image');
+  }
+
+  static Color _colorFromHex(String value) {
+    final hex = value.replaceFirst('#', '').trim();
+    if (hex.length != 6) return Colors.white;
+    final parsed = int.tryParse('FF$hex', radix: 16);
+    return parsed == null ? Colors.white : Color(parsed);
+  }
+}
+

@@ -52,6 +52,8 @@ class OverlaySettings {
     this.safeAreaPreset = 'none',
     this.showSafeAreaGuides = false,
     this.customSafeAreaPadding,
+    this.showFullScreenLayersPanel = true,
+    this.showFullScreenPropertiesPanel = true,
   });
 
   final List<OverlayItem> items;
@@ -60,6 +62,8 @@ class OverlaySettings {
   final String safeAreaPreset;
   final bool showSafeAreaGuides;
   final SafeAreaPadding? customSafeAreaPadding;
+  final bool showFullScreenLayersPanel;
+  final bool showFullScreenPropertiesPanel;
 
   SafeAreaPadding? get activeSafeArea {
     if (!showSafeAreaGuides) return null;
@@ -81,11 +85,13 @@ class OverlaySettings {
 
   Map<String, Object?> toJson() => {
     'items': items.map((item) => item.toJson()).toList(),
-    'defaultFontPath': defaultFontPath,
+    'defaultFontPath': _sanitizeFontPath(defaultFontPath),
     'defaultFontFamily': defaultFontFamily,
     'safeAreaPreset': safeAreaPreset,
     'showSafeAreaGuides': showSafeAreaGuides,
     'customSafeAreaPadding': customSafeAreaPadding?.toJson(),
+    'showFullScreenLayersPanel': showFullScreenLayersPanel,
+    'showFullScreenPropertiesPanel': showFullScreenPropertiesPanel,
   };
 
   factory OverlaySettings.fromJson(Map<String, Object?> json) {
@@ -108,6 +114,8 @@ class OverlaySettings {
           ? SafeAreaPadding.fromJson(
               (json['customSafeAreaPadding'] as Map).cast<String, Object?>())
           : null,
+      showFullScreenLayersPanel: json['showFullScreenLayersPanel'] as bool? ?? true,
+      showFullScreenPropertiesPanel: json['showFullScreenPropertiesPanel'] as bool? ?? true,
     );
   }
 
@@ -119,6 +127,8 @@ class OverlaySettings {
     String? safeAreaPreset,
     bool? showSafeAreaGuides,
     SafeAreaPadding? customSafeAreaPadding,
+    bool? showFullScreenLayersPanel,
+    bool? showFullScreenPropertiesPanel,
   }) {
     return OverlaySettings(
       items: items ?? this.items,
@@ -129,7 +139,19 @@ class OverlaySettings {
       safeAreaPreset: safeAreaPreset ?? this.safeAreaPreset,
       showSafeAreaGuides: showSafeAreaGuides ?? this.showSafeAreaGuides,
       customSafeAreaPadding: customSafeAreaPadding ?? this.customSafeAreaPadding,
+      showFullScreenLayersPanel: showFullScreenLayersPanel ?? this.showFullScreenLayersPanel,
+      showFullScreenPropertiesPanel: showFullScreenPropertiesPanel ?? this.showFullScreenPropertiesPanel,
     );
+  }
+
+  static String? _sanitizeFontPath(String? path) {
+    if (path == null) return null;
+    final lowerPath = path.toLowerCase();
+    if (lowerPath.contains(r'appdata\local\microsoft\windows\fonts') ||
+        lowerPath.contains(r'windows\fonts')) {
+      return null;
+    }
+    return path;
   }
 
   OverlaySettings deepCopy() {

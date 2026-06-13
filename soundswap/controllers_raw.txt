@@ -1,0 +1,58 @@
+void _syncFromState() {
+    final items = widget.controller.settings.items;
+    bool hasCustomTiming = false;
+    for (final item in items) {
+      if (item.startTime > 0 || item.endTime != null || item.animationEntrance != null || item.animationExit != null) {
+        hasCustomTiming = true;
+        break;
+      }
+    }
+    if (hasCustomTiming && !_showAdvancedTiming) {
+      _showAdvancedTiming = true;
+    }
+
+    if (_nameFocus.hasFocus ||
+        _textFocus.hasFocus ||
+        _fontSizeFocus.hasFocus ||
+        _colorFocus.hasFocus ||
+        _widthFocus.hasFocus ||
+        _customHeightFocus.hasFocus ||
+        _opacityFocus.hasFocus ||
+        _rotationFocus.hasFocus ||
+        _startTimeFocus.hasFocus ||
+        _endTimeFocus.hasFocus) {
+      return;
+    }
+    final item = widget.controller.selectedItem;
+    if (item == null) {
+      _setText(_nameController, '');
+      _setText(_textController, '');
+      _setText(_fontSizeController, '');
+      _setText(_colorController, '');
+      _setText(_widthController, '');
+      _setText(_customHeightController, '');
+      _setText(_opacityController, '');
+      _setText(_rotationController, '');
+      _setText(_startTimeController, '');
+      _setText(_endTimeController, '');
+      return;
+    }
+    _setText(_nameController, item.name);
+    _setText(_textController, item.text);
+    _setText(_fontSizeController, item.fontSize.toStringAsFixed(0));
+    _setText(_colorController, item.colorHex);
+    _setText(_widthController, (item.width * 100).toStringAsFixed(0));
+    _setText(_customHeightController, item.customHeight != null ? (item.customHeight! * 100).toStringAsFixed(0) : '');
+    _setText(_opacityController, (item.opacity * 100).toStringAsFixed(0));
+    _setText(_rotationController, item.rotation.toStringAsFixed(0));
+    _setText(_startTimeController, item.startTime.toStringAsFixed(1));
+    _setText(_endTimeController, (item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1));
+    widget.templatesController.markTemplateAsDirty();
+  }
+
+  void _setText(TextEditingController controller, String value) {
+    if (controller.text != value) controller.text = value;
+  }
+
+  @override
+  

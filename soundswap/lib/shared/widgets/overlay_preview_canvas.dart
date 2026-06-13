@@ -97,6 +97,7 @@ class OverlayPreviewCanvas extends StatefulWidget {
     this.onSizeChanged,
     this.onHeightReported,
     this.onDragEnd,
+    this.fillConstraints = false,
     super.key,
   });
 
@@ -115,6 +116,7 @@ class OverlayPreviewCanvas extends StatefulWidget {
   final void Function(String itemId, double width, double? customHeight)? onSizeChanged;
   final void Function(String itemId, double heightPercent)? onHeightReported;
   final VoidCallback? onDragEnd;
+  final bool fillConstraints;
 
   @override
   State<OverlayPreviewCanvas> createState() => _OverlayPreviewCanvasState();
@@ -141,9 +143,29 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 360.0;
-        final baseWidth = maxWidth.clamp(220.0, 420.0);
-        final width = baseWidth * widget.zoomScale;
+        double width;
+        if (widget.fillConstraints) {
+          if (widget.zoomScale <= 0.0) {
+            // Fit Screen
+            final availableWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 1080.0;
+            final availableHeight = constraints.maxHeight.isFinite ? constraints.maxHeight : 1920.0;
+            
+            width = availableWidth;
+            if (width / aspectRatio > availableHeight) {
+              width = availableHeight * aspectRatio;
+            }
+            // Minor padding so it doesn't touch edges
+            width = (width - 32.0).clamp(100.0, double.infinity);
+          } else {
+            // Absolute scale relative to output width
+            width = widget.outputSize.previewWidth * widget.zoomScale;
+          }
+        } else {
+          // Standard constrained preview
+          final maxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 360.0;
+          final baseWidth = maxWidth.clamp(220.0, 420.0);
+          width = baseWidth * widget.zoomScale;
+        }
 
         Widget canvasWidget = AspectRatio(
           aspectRatio: aspectRatio,
@@ -238,11 +260,21 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
           ),
         );
 
+        if (widget.fillConstraints) {
+          debugPrint('OverlayPreviewCanvas: fillConstraints=true constraints.maxWidth=${constraints.maxWidth} constraints.maxHeight=${constraints.maxHeight}');
+          return Center(
+            child: SizedBox(
+              width: width,
+              child: canvasWidget,
+            ),
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '${widget.outputSize.previewWidth} x ${widget.outputSize.previewHeight} preview (${(widget.zoomScale * 100).toInt()}%)',
+              '${widget.outputSize.previewWidth} x ${widget.outputSize.previewHeight} preview (${widget.zoomScale <= 0.0 ? "Fit" : "${(widget.zoomScale * 100).toInt()}%"})',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 fontSize: AppResponsive.bodySize(context) - 1,

@@ -56,7 +56,7 @@ class TextOverlaySettings {
     'priceText': priceText,
     'position': position.name,
     'fontFamily': fontFamily,
-    'fontPath': fontPath,
+    'fontPath': _sanitizeFontPath(fontPath),
     'fontSource': fontSource,
     'bold': bold,
     'italic': italic,
@@ -198,5 +198,15 @@ class TextOverlaySettings {
       xPercent: 0.08,
       yPercent: (baseY + offset * 0.08).clamp(0, 1).toDouble(),
     );
+  }
+
+  static String? _sanitizeFontPath(String? path) {
+    if (path == null) return null;
+    final lowerPath = path.toLowerCase();
+    if (lowerPath.contains(r'appdata\local\microsoft\windows\fonts') ||
+        lowerPath.contains(r'windows\fonts')) {
+      return null;
+    }
+    return path;
   }
 }
