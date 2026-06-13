@@ -10,8 +10,11 @@ class OverlayItem {
     this.name = '',
     this.text = '',
     this.imagePath,
-    this.fontFamily = 'Arial',
+    this.fontFamily = 'Battambang',
     this.fontPath,
+    this.fontSource,
+    this.bold = false,
+    this.italic = false,
     this.fontSize = 46,
     this.colorHex = '#FFFFFF',
     this.width = 0.3,
@@ -46,6 +49,9 @@ class OverlayItem {
   final String? imagePath;
   final String fontFamily;
   final String? fontPath;
+  final String? fontSource;
+  final bool bold;
+  final bool italic;
   final double fontSize;
   final String colorHex;
   final double width;
@@ -88,6 +94,9 @@ class OverlayItem {
     'imagePath': imagePath,
     'fontFamily': fontFamily,
     'fontPath': fontPath,
+    'fontSource': fontSource,
+    'bold': bold,
+    'italic': italic,
     'fontSize': fontSize,
     'colorHex': colorHex,
     'width': width,
@@ -126,8 +135,11 @@ class OverlayItem {
       name: json['name'] as String? ?? '',
       text: json['text'] as String? ?? '',
       imagePath: json['imagePath'] as String?,
-      fontFamily: json['fontFamily'] as String? ?? 'Arial',
+      fontFamily: json['fontFamily'] as String? ?? 'Battambang',
       fontPath: json['fontPath'] as String?,
+      fontSource: json['fontSource'] as String?,
+      bold: json['bold'] as bool? ?? false,
+      italic: json['italic'] as bool? ?? false,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 46,
       colorHex: json['colorHex'] as String? ?? '#FFFFFF',
       width: (json['width'] as num?)?.toDouble() ?? 0.3,
@@ -163,6 +175,9 @@ class OverlayItem {
     String? imagePath,
     String? fontFamily,
     String? fontPath,
+    String? fontSource,
+    bool? bold,
+    bool? italic,
     double? fontSize,
     String? colorHex,
     double? width,
@@ -202,6 +217,9 @@ class OverlayItem {
       imagePath: imagePath ?? this.imagePath,
       fontFamily: fontFamily ?? this.fontFamily,
       fontPath: fontPath ?? this.fontPath,
+      fontSource: fontSource ?? this.fontSource,
+      bold: bold ?? this.bold,
+      italic: italic ?? this.italic,
       fontSize: fontSize ?? this.fontSize,
       colorHex: colorHex ?? this.colorHex,
       width: width ?? this.width,

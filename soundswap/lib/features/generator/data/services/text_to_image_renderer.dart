@@ -11,13 +11,15 @@ class TextToImageRenderer {
     required String text,
     required double width,
     required String fontFamily,
-    required String? fontPath,
+    required bool bold,
+    required bool italic,
     required double fontSize,
     required String colorHex,
     required String textAlignment,
     required bool shadow,
     required bool backgroundBox,
   }) async {
+    debugPrint('PNG Renderer Applied Font - Family: $fontFamily, Bold: $bold, Italic: $italic');
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
@@ -33,8 +35,10 @@ class TextToImageRenderer {
       style: TextStyle(
         color: color,
         fontSize: fontSize,
-        fontFamily: (fontPath != null && fontPath.trim().isNotEmpty) ? null : fontFamily,
-        fontWeight: FontWeight.w700,
+        fontFamily: fontFamily,
+        fontFamilyFallback: const ['Battambang'],
+        fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+        fontStyle: italic ? FontStyle.italic : FontStyle.normal,
         shadows: shadow
             ? const [
                 Shadow(

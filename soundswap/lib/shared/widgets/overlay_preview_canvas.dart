@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/overlay_tools/utils/overlay_position_calculator.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 
 enum PreviewOverlayKind { logo, text }
 
@@ -15,6 +16,9 @@ class PreviewOverlayItem {
     required this.position,
     this.text,
     this.imagePath,
+    this.fontFamily = 'Battambang',
+    this.bold = false,
+    this.italic = false,
     this.colorHex = '#FFFFFF',
     this.fontSize = 42,
     this.width = 0.24,
@@ -47,6 +51,9 @@ class PreviewOverlayItem {
   final NormalizedPosition position;
   final String? text;
   final String? imagePath;
+  final String fontFamily;
+  final bool bold;
+  final bool italic;
   final String colorHex;
   final double fontSize;
   final double width;
@@ -81,7 +88,7 @@ class OverlayPreviewCanvas extends StatefulWidget {
     this.onSelected,
     this.onWidthChanged,
     this.showGrid = false,
-    this.safeAreaMode = 'none',
+    this.safeAreaPadding,
     this.enableSnapping = true,
     this.zoomScale = 1.0,
     this.currentTime = 0.0,
@@ -99,7 +106,7 @@ class OverlayPreviewCanvas extends StatefulWidget {
   final ValueChanged<String>? onSelected;
   final void Function(String itemId, double width)? onWidthChanged;
   final bool showGrid;
-  final String safeAreaMode;
+  final SafeAreaPadding? safeAreaPadding;
   final bool enableSnapping;
   final double zoomScale;
   final double currentTime;
@@ -168,10 +175,10 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                           ),
                         ),
                       // Safe Area Guidelines
-                      if (widget.safeAreaMode != 'none')
+                      if (widget.safeAreaPadding != null)
                         Positioned.fill(
                           child: CustomPaint(
-                            painter: _SafeAreaPainter(mode: widget.safeAreaMode),
+                            painter: _SafeAreaPainter(padding: widget.safeAreaPadding!),
                           ),
                         ),
                       // Active Snapping Guides (X axis alignment)
@@ -204,6 +211,7 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                           size: previewSize,
                           canvasKey: _canvasKey,
                           enableSnapping: widget.enableSnapping,
+                          safeAreaPadding: widget.safeAreaPadding,
                           onChanged: widget.onPositionChanged,
                           onSelected: widget.onSelected,
                           onWidthChanged: widget.onWidthChanged,
@@ -278,6 +286,7 @@ class _DraggablePreviewItem extends StatefulWidget {
     required this.size,
     required this.canvasKey,
     required this.enableSnapping,
+    this.safeAreaPadding,
     required this.onChanged,
     this.onSelected,
     this.onWidthChanged,
@@ -294,6 +303,7 @@ class _DraggablePreviewItem extends StatefulWidget {
   final List<PreviewOverlayItem> allItems;
   final Size size;
   final bool enableSnapping;
+  final SafeAreaPadding? safeAreaPadding;
   final void Function(String itemId, NormalizedPosition position) onChanged;
   final ValueChanged<String>? onSelected;
   final void Function(String itemId, double width)? onWidthChanged;
@@ -557,6 +567,31 @@ class _DraggablePreviewItemState extends State<_DraggablePreviewItem> {
                   } else if ((nextY + heightPercent - (other.position.yPercent + otherH)).abs() < 0.015) {
                     nextY = other.position.yPercent + otherH - heightPercent;
                     guideY = nextY + heightPercent;
+                  }
+                }
+
+                if (widget.safeAreaPadding != null) {
+                  final sLeft = widget.safeAreaPadding!.left / 1080.0;
+                  final sRight = 1.0 - (widget.safeAreaPadding!.right / 1080.0);
+                  final sTop = widget.safeAreaPadding!.top / 1920.0;
+                  final sBottom = 1.0 - (widget.safeAreaPadding!.bottom / 1920.0);
+
+                  // Horizontal snap to safe area
+                  if ((nextX - sLeft).abs() < 0.015) {
+                    nextX = sLeft;
+                    guideX = sLeft;
+                  } else if ((nextX + item.width - sRight).abs() < 0.015) {
+                    nextX = sRight - item.width;
+                    guideX = sRight;
+                  }
+
+                  // Vertical snap to safe area
+                  if ((nextY - sTop).abs() < 0.015) {
+                    nextY = sTop;
+                    guideY = sTop;
+                  } else if ((nextY + heightPercent - sBottom).abs() < 0.015) {
+                    nextY = sBottom - heightPercent;
+                    guideY = sBottom;
                   }
                 }
               }
@@ -829,6 +864,9 @@ class _TextPreview extends StatelessWidget {
     final scale = previewSize.height / referenceHeight;
     final previewFontSize = (item.fontSize * scale).clamp(8.0, 120.0);
     final width = previewSize.width * item.width;
+    
+    // Debug log for font applied to preview
+    debugPrint('Preview Applied Font - Family: ${item.fontFamily}, Bold: ${item.bold}, Italic: ${item.italic}');
 
     return SizedBox(
       width: width,
@@ -854,7 +892,10 @@ class _TextPreview extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: previewFontSize,
-              fontWeight: FontWeight.w700,
+              fontFamily: item.fontFamily,
+              fontFamilyFallback: const ['Battambang'],
+              fontWeight: item.bold ? FontWeight.w700 : FontWeight.normal,
+              fontStyle: item.italic ? FontStyle.italic : FontStyle.normal,
               shadows: item.shadow
                   ? const [
                       Shadow(
@@ -927,14 +968,12 @@ class _GridPainter extends CustomPainter {
 }
 
 class _SafeAreaPainter extends CustomPainter {
-  const _SafeAreaPainter({required this.mode});
+  const _SafeAreaPainter({required this.padding});
 
-  final String mode;
+  final SafeAreaPadding padding;
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (mode == 'none') return;
-
     final paintLine = Paint()
       ..color = Colors.red.withValues(alpha: 0.6)
       ..strokeWidth = 1.5
@@ -944,29 +983,54 @@ class _SafeAreaPainter extends CustomPainter {
       ..color = Colors.black.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
 
-    if (mode == 'tiktok') {
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height * 0.10), paintUnsafe);
-      canvas.drawRect(Rect.fromLTWH(0, size.height * 0.80, size.width, size.height * 0.20), paintUnsafe);
-      canvas.drawRect(Rect.fromLTWH(size.width * 0.82, size.height * 0.10, size.width * 0.18, size.height * 0.70), paintUnsafe);
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: 'Safe area',
+        style: TextStyle(
+          color: Colors.red,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
 
-      canvas.drawRect(Rect.fromLTRB(0, size.height * 0.10, size.width * 0.82, size.height * 0.80), paintLine);
-    } else if (mode == 'shorts') {
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height * 0.12), paintUnsafe);
-      canvas.drawRect(Rect.fromLTWH(0, size.height * 0.85, size.width, size.height * 0.15), paintUnsafe);
-      canvas.drawRect(Rect.fromLTWH(size.width * 0.85, size.height * 0.12, size.width * 0.15, size.height * 0.73), paintUnsafe);
+    final safeLeft = size.width * (padding.left / 1080.0);
+    final safeRight = size.width * (1.0 - padding.right / 1080.0);
+    final safeTop = size.height * (padding.top / 1920.0);
+    final safeBottom = size.height * (1.0 - padding.bottom / 1920.0);
 
-      canvas.drawRect(Rect.fromLTRB(0, size.height * 0.12, size.width * 0.85, size.height * 0.85), paintLine);
-    } else if (mode == 'reels') {
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height * 0.10), paintUnsafe);
-      canvas.drawRect(Rect.fromLTWH(0, size.height * 0.80, size.width, size.height * 0.20), paintUnsafe);
-      canvas.drawRect(Rect.fromLTWH(size.width * 0.85, size.height * 0.10, size.width * 0.15, size.height * 0.70), paintUnsafe);
+    // Draw Unsafe Area Shading
+    // Top
+    canvas.drawRect(Rect.fromLTRB(0, 0, size.width, safeTop), paintUnsafe);
+    // Bottom
+    canvas.drawRect(Rect.fromLTRB(0, safeBottom, size.width, size.height), paintUnsafe);
+    // Left (between top and bottom)
+    canvas.drawRect(Rect.fromLTRB(0, safeTop, safeLeft, safeBottom), paintUnsafe);
+    // Right (between top and bottom)
+    canvas.drawRect(Rect.fromLTRB(safeRight, safeTop, size.width, safeBottom), paintUnsafe);
 
-      canvas.drawRect(Rect.fromLTRB(0, size.height * 0.10, size.width * 0.85, size.height * 0.80), paintLine);
-    }
+    // Draw Safe Area Outline (dashed would require custom math, using solid for now or a dashed path)
+    final path = Path()..addRect(Rect.fromLTRB(safeLeft, safeTop, safeRight, safeBottom));
+    
+    // Draw solid line
+    canvas.drawPath(path, paintLine);
+
+    // Draw label near top right of the safe area
+    textPainter.paint(
+      canvas,
+      Offset(safeRight - textPainter.width - 4, safeTop + 4),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _SafeAreaPainter oldDelegate) => mode != oldDelegate.mode;
+  bool shouldRepaint(covariant _SafeAreaPainter oldDelegate) {
+    return padding.top != oldDelegate.padding.top ||
+           padding.bottom != oldDelegate.padding.bottom ||
+           padding.left != oldDelegate.padding.left ||
+           padding.right != oldDelegate.padding.right;
+  }
 }
 
 Color _colorFromHex(String value) {

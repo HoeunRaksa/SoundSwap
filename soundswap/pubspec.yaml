@@ -26,3 +26,38 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  fonts:
+    - family: Battambang
+      fonts:
+        - asset: assets/fonts/Battambang-Regular.ttf
+        - asset: assets/fonts/Battambang-Bold.ttf
+          weight: 700
+    - family: Hanuman
+      fonts:
+        - asset: assets/fonts/Hanuman-Regular.ttf
+        - asset: assets/fonts/Hanuman-Bold.ttf
+          weight: 700
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+    - family: KhmerOS
+      fonts:
+        - asset: assets/fonts/KhmerOS.ttf
+    - family: Khmer OS Siemreap
+      fonts:
+        - asset: "assets/fonts/KhmerOSSiemreap.ttf"
+    - family: .Mondulkiri U h
+      fonts:
+        - asset: "assets/fonts/mond40uhgs.ttf"
+    - family: KunKhmer
+      fonts:
+        - asset: "assets/fonts/KunKhmer.ttf"
+    - family: AKbalthom Chamnap Chhun
+      fonts:
+        - asset: "assets/fonts/AKbalthom Chamnap Chhun Version 1.10.ttf"
+    - family: AKbalthom Choeung Ek
+      fonts:
+        - asset: "assets/fonts/AKbalthom Choeung Ek.ttf"

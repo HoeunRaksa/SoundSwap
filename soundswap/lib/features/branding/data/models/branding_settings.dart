@@ -6,8 +6,12 @@ class BrandingSettings {
     this.phoneNumber = '',
     this.telegram = '',
     this.facebookPage = '',
-    this.fontFamily = 'Arial',
-    this.fontSize = 42,
+    this.fontFamily = 'Battambang',
+    this.fontPath,
+    this.fontSource,
+    this.bold = false,
+    this.italic = false,
+    this.fontSize = 24.2,
     this.textColor = '#FFFFFF',
     this.logoPosition = NormalizedPosition.topLeft,
     this.textPosition = NormalizedPosition.lowerLeft,
@@ -18,6 +22,10 @@ class BrandingSettings {
   final String telegram;
   final String facebookPage;
   final String fontFamily;
+  final String? fontPath;
+  final String? fontSource;
+  final bool bold;
+  final bool italic;
   final double fontSize;
   final String textColor;
   final NormalizedPosition logoPosition;
@@ -29,6 +37,10 @@ class BrandingSettings {
     'telegram': telegram,
     'facebookPage': facebookPage,
     'fontFamily': fontFamily,
+    'fontPath': fontPath,
+    'fontSource': fontSource,
+    'bold': bold,
+    'italic': italic,
     'fontSize': fontSize,
     'textColor': textColor,
     'logoPosition': logoPosition.toJson(),
@@ -41,8 +53,12 @@ class BrandingSettings {
       phoneNumber: json['phoneNumber'] as String? ?? '',
       telegram: json['telegram'] as String? ?? '',
       facebookPage: json['facebookPage'] as String? ?? '',
-      fontFamily: json['fontFamily'] as String? ?? 'Arial',
-      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 42,
+      fontFamily: json['fontFamily'] as String? ?? 'Battambang',
+      fontPath: json['fontPath'] as String?,
+      fontSource: json['fontSource'] as String?,
+      bold: json['bold'] as bool? ?? false,
+      italic: json['italic'] as bool? ?? false,
+      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 24.2,
       textColor: json['textColor'] as String? ?? '#FFFFFF',
       logoPosition: NormalizedPosition.fromJson(json['logoPosition']),
       textPosition: NormalizedPosition.fromJson(
@@ -58,6 +74,10 @@ class BrandingSettings {
     String? telegram,
     String? facebookPage,
     String? fontFamily,
+    String? fontPath,
+    String? fontSource,
+    bool? bold,
+    bool? italic,
     double? fontSize,
     String? textColor,
     NormalizedPosition? logoPosition,
@@ -69,6 +89,10 @@ class BrandingSettings {
       telegram: telegram ?? this.telegram,
       facebookPage: facebookPage ?? this.facebookPage,
       fontFamily: fontFamily ?? this.fontFamily,
+      fontPath: fontPath ?? this.fontPath,
+      fontSource: fontSource ?? this.fontSource,
+      bold: bold ?? this.bold,
+      italic: italic ?? this.italic,
       fontSize: fontSize ?? this.fontSize,
       textColor: textColor ?? this.textColor,
       logoPosition: logoPosition ?? this.logoPosition,

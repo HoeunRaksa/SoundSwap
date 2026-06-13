@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_preset.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
+import 'package:soundswap/shared/widgets/font_dropdown_widget.dart';
 import 'package:soundswap/shared/widgets/empty_state.dart';
 import 'package:soundswap/shared/widgets/feature_page.dart';
 import 'package:soundswap/shared/widgets/overlay_preview_canvas.dart';
@@ -171,24 +173,10 @@ class _TextOverlayScreenState extends State<TextOverlayScreen> {
           onChanged: (value) =>
               widget.controller.update(settings.copyWith(priceText: value)),
         ),
-        DropdownButtonFormField<String>(
-          key: ValueKey(settings.fontFamily),
-          initialValue: settings.fontFamily,
-          decoration: const InputDecoration(labelText: 'Font family'),
-          items: const [
-            DropdownMenuItem(value: 'Arial', child: Text('Arial')),
-            DropdownMenuItem(value: 'Segoe UI', child: Text('Segoe UI')),
-            DropdownMenuItem(value: 'Tahoma', child: Text('Tahoma')),
-            DropdownMenuItem(value: 'Verdana', child: Text('Verdana')),
-            DropdownMenuItem(
-              value: 'Times New Roman',
-              child: Text('Times New Roman'),
-            ),
-          ],
+        FontDropdownWidget(
+          currentFontFamily: settings.fontFamily,
           onChanged: (value) {
-            if (value != null) {
-              widget.controller.update(settings.copyWith(fontFamily: value));
-            }
+            widget.controller.update(settings.copyWith(fontFamily: value));
           },
         ),
         TextField(
@@ -229,6 +217,26 @@ class _TextOverlayScreenState extends State<TextOverlayScreen> {
           onChanged: (value) =>
               widget.controller.update(settings.copyWith(backgroundBox: value)),
         ),
+        Row(
+          children: [
+            Expanded(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Bold'),
+                value: settings.bold,
+                onChanged: (value) => widget.controller.update(settings.copyWith(bold: value)),
+              ),
+            ),
+            Expanded(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Italic'),
+                value: settings.italic,
+                onChanged: (value) => widget.controller.update(settings.copyWith(italic: value)),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -261,6 +269,9 @@ class _TextOverlayScreenState extends State<TextOverlayScreen> {
                 position: settings.titlePosition,
                 text: settings.title,
                 colorHex: settings.textColor,
+                fontFamily: settings.fontFamily,
+                bold: settings.bold,
+                italic: settings.italic,
                 fontSize: settings.fontSize,
                 backgroundBox: settings.backgroundBox,
                 shadow: settings.shadow,
@@ -272,6 +283,9 @@ class _TextOverlayScreenState extends State<TextOverlayScreen> {
                 position: settings.subtitlePosition,
                 text: settings.subtitle,
                 colorHex: settings.textColor,
+                fontFamily: settings.fontFamily,
+                bold: settings.bold,
+                italic: settings.italic,
                 fontSize: settings.fontSize,
                 backgroundBox: settings.backgroundBox,
                 shadow: settings.shadow,
@@ -283,6 +297,9 @@ class _TextOverlayScreenState extends State<TextOverlayScreen> {
                 position: settings.promotionPosition,
                 text: settings.promotionText,
                 colorHex: settings.textColor,
+                fontFamily: settings.fontFamily,
+                bold: settings.bold,
+                italic: settings.italic,
                 fontSize: settings.fontSize,
                 backgroundBox: settings.backgroundBox,
                 shadow: settings.shadow,
@@ -294,6 +311,9 @@ class _TextOverlayScreenState extends State<TextOverlayScreen> {
                 position: settings.pricePosition,
                 text: settings.priceText,
                 colorHex: settings.textColor,
+                fontFamily: settings.fontFamily,
+                bold: settings.bold,
+                italic: settings.italic,
                 fontSize: settings.fontSize,
                 backgroundBox: settings.backgroundBox,
                 shadow: settings.shadow,

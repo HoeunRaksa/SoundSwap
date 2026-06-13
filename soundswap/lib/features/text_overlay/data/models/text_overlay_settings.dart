@@ -9,7 +9,11 @@ class TextOverlaySettings {
     this.promotionText = '',
     this.priceText = '',
     this.position = TextOverlayPosition.bottom,
-    this.fontFamily = 'Arial',
+    this.fontFamily = 'Battambang',
+    this.fontPath,
+    this.fontSource,
+    this.bold = false,
+    this.italic = false,
     this.fontSize = 46,
     this.textColor = '#FFFFFF',
     this.shadow = true,
@@ -29,6 +33,10 @@ class TextOverlaySettings {
   final String priceText;
   final TextOverlayPosition position;
   final String fontFamily;
+  final String? fontPath;
+  final String? fontSource;
+  final bool bold;
+  final bool italic;
   final double fontSize;
   final String textColor;
   final bool shadow;
@@ -48,6 +56,10 @@ class TextOverlaySettings {
     'priceText': priceText,
     'position': position.name,
     'fontFamily': fontFamily,
+    'fontPath': fontPath,
+    'fontSource': fontSource,
+    'bold': bold,
+    'italic': italic,
     'fontSize': fontSize,
     'textColor': textColor,
     'shadow': shadow,
@@ -72,7 +84,11 @@ class TextOverlaySettings {
       promotionText: json['promotionText'] as String? ?? '',
       priceText: json['priceText'] as String? ?? '',
       position: legacyPosition,
-      fontFamily: json['fontFamily'] as String? ?? 'Arial',
+      fontFamily: json['fontFamily'] as String? ?? 'Battambang',
+      fontPath: json['fontPath'] as String?,
+      fontSource: json['fontSource'] as String?,
+      bold: json['bold'] as bool? ?? false,
+      italic: json['italic'] as bool? ?? false,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 46,
       textColor: json['textColor'] as String? ?? '#FFFFFF',
       shadow: json['shadow'] as bool? ?? true,
@@ -106,6 +122,10 @@ class TextOverlaySettings {
     String? priceText,
     TextOverlayPosition? position,
     String? fontFamily,
+    String? fontPath,
+    String? fontSource,
+    bool? bold,
+    bool? italic,
     double? fontSize,
     String? textColor,
     bool? shadow,
@@ -125,6 +145,10 @@ class TextOverlaySettings {
       priceText: priceText ?? this.priceText,
       position: position ?? this.position,
       fontFamily: fontFamily ?? this.fontFamily,
+      fontPath: fontPath ?? this.fontPath,
+      fontSource: fontSource ?? this.fontSource,
+      bold: bold ?? this.bold,
+      italic: italic ?? this.italic,
       fontSize: fontSize ?? this.fontSize,
       textColor: textColor ?? this.textColor,
       shadow: shadow ?? this.shadow,

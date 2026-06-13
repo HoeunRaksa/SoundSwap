@@ -19,6 +19,7 @@ import 'package:soundswap/features/templates/data/models/project_template.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/branding/presentation/state/branding_controller.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
+import 'package:soundswap/features/fonts/data/services/font_service.dart';
 
 class OverlayToolsController extends ChangeNotifier {
   OverlayToolsController({
@@ -73,6 +74,14 @@ class OverlayToolsController extends ChangeNotifier {
       errorMessage = null;
     } catch (error) {
       errorMessage = error.toString();
+    }
+    notifyListeners();
+  }
+
+  Future<void> updateSettings(OverlaySettings newSettings, {bool saveToDisk = true}) async {
+    settings = newSettings;
+    if (saveToDisk) {
+      await _settingsService.save(settings);
     }
     notifyListeners();
   }
@@ -320,6 +329,10 @@ class OverlayToolsController extends ChangeNotifier {
   }
 
   Future<void> updateItem(OverlayItem item, {bool saveToDisk = true}) async {
+    final oldItem = settings.items.firstWhere((e) => e.id == item.id, orElse: () => item);
+    if (oldItem.fontFamily != item.fontFamily) {
+      await FontService().copyWindowsFontIfSelected(item.fontFamily);
+    }
     await _replaceSettings(
       settings.copyWith(
         items: [

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:soundswap/shared/widgets/font_dropdown_widget.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/branding/data/models/branding_preset.dart';
@@ -168,24 +170,11 @@ class _BrandingToolsScreenState extends State<BrandingToolsScreen> {
           onChanged: (value) =>
               widget.controller.update(settings.copyWith(facebookPage: value)),
         ),
-        DropdownButtonFormField<String>(
-          key: ValueKey(settings.fontFamily),
-          initialValue: settings.fontFamily,
-          decoration: const InputDecoration(labelText: 'Font family'),
-          items: const [
-            DropdownMenuItem(value: 'Arial', child: Text('Arial')),
-            DropdownMenuItem(value: 'Segoe UI', child: Text('Segoe UI')),
-            DropdownMenuItem(value: 'Tahoma', child: Text('Tahoma')),
-            DropdownMenuItem(value: 'Verdana', child: Text('Verdana')),
-            DropdownMenuItem(
-              value: 'Times New Roman',
-              child: Text('Times New Roman'),
-            ),
-          ],
+        FontDropdownWidget(
+          currentFontFamily: settings.fontFamily,
           onChanged: (value) {
-            if (value != null) {
-              widget.controller.update(settings.copyWith(fontFamily: value));
-            }
+            debugPrint('Selected fontFamily: $value');
+            widget.controller.update(settings.copyWith(fontFamily: value));
           },
         ),
         TextField(
@@ -212,6 +201,26 @@ class _BrandingToolsScreenState extends State<BrandingToolsScreen> {
           onChanged: (value) =>
               widget.controller.update(settings.copyWith(textColor: value)),
         ),
+        Row(
+          children: [
+            Expanded(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Bold'),
+                value: settings.bold,
+                onChanged: (value) => widget.controller.update(settings.copyWith(bold: value)),
+              ),
+            ),
+            Expanded(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Italic'),
+                value: settings.italic,
+                onChanged: (value) => widget.controller.update(settings.copyWith(italic: value)),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -232,6 +241,9 @@ class _BrandingToolsScreenState extends State<BrandingToolsScreen> {
         position: settings.textPosition,
         text: settings.contactText,
         colorHex: settings.textColor,
+        fontFamily: settings.fontFamily,
+        bold: settings.bold,
+        italic: settings.italic,
         fontSize: settings.fontSize,
         backgroundBox: true,
         shadow: true,

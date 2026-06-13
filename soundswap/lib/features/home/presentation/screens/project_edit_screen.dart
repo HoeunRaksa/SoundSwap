@@ -39,7 +39,6 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
   final _dialogFolderPicker = FolderPickerService();
   
   final bool _showGrid = false;
-  String _safeAreaMode = 'none';
   final bool _enableSnapping = true;
   double _zoomScale = 1.0;
 
@@ -168,17 +167,6 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
                           if (value != null) setState(() => _zoomScale = value);
                         },
                       ),
-                      DropdownButton<String>(
-                        value: _safeAreaMode,
-                        items: const [
-                          DropdownMenuItem(value: 'none', child: Text('No guides')),
-                          DropdownMenuItem(value: 'tiktok', child: Text('TikTok guides')),
-                          DropdownMenuItem(value: 'shorts', child: Text('Shorts guides')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) setState(() => _safeAreaMode = value);
-                        },
-                      ),
                     ],
                   ),
                 ),
@@ -272,7 +260,7 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
                 onPositionChanged: _overlayController.moveItem,
                 onWidthChanged: _overlayController.resizeItem,
                 showGrid: _showGrid,
-                safeAreaMode: _safeAreaMode,
+                safeAreaPadding: _overlayController.settings.activeSafeArea,
                 enableSnapping: _enableSnapping,
                 zoomScale: _zoomScale,
                 currentTime: _overlayController.currentTime,

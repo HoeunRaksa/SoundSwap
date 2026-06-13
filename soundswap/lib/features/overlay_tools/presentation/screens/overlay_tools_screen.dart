@@ -2,15 +2,19 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/branding/presentation/state/branding_controller.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
 import 'package:soundswap/features/templates/data/models/project_template.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
+
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
+import 'package:soundswap/shared/widgets/font_dropdown_widget.dart';
 import 'package:soundswap/shared/widgets/empty_state.dart';
 import 'package:soundswap/shared/widgets/feature_page.dart';
 import 'package:soundswap/shared/widgets/overlay_preview_canvas.dart';
@@ -63,7 +67,6 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
 
   VideoOutputSize _previewSize = VideoOutputSize.vertical1080;
   bool _showGrid = false;
-  String _safeAreaMode = 'none';
   bool _enableSnapping = true;
   double _zoomScale = 1.0;
   bool _showAdvancedTiming = false;
@@ -218,17 +221,41 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                             if (value != null) setState(() => _zoomScale = value);
                           },
                         ),
-                        DropdownButton<String>(
-                          value: _safeAreaMode,
-                          items: const [
-                            DropdownMenuItem(value: 'none', child: Text('No guides')),
-                            DropdownMenuItem(value: 'tiktok', child: Text('TikTok guides')),
-                            DropdownMenuItem(value: 'shorts', child: Text('Shorts guides')),
-                            DropdownMenuItem(value: 'reels', child: Text('Reels guides')),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
+                              value: widget.controller.settings.showSafeAreaGuides,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  widget.controller.updateSettings(
+                                    widget.controller.settings.copyWith(showSafeAreaGuides: value),
+                                    saveToDisk: true,
+                                  );
+                                }
+                              },
+                            ),
+                            const Text('Guides:'),
+                            const SizedBox(width: 8),
+                            DropdownButton<String>(
+                              value: widget.controller.settings.safeAreaPreset,
+                              items: const [
+                                DropdownMenuItem(value: 'none', child: Text('No guides')),
+                                DropdownMenuItem(value: 'facebook_reels', child: Text('Facebook Reels')),
+                                DropdownMenuItem(value: 'tiktok', child: Text('TikTok')),
+                                DropdownMenuItem(value: 'youtube_shorts', child: Text('YouTube Shorts')),
+                                DropdownMenuItem(value: 'custom', child: Text('Custom')),
+                              ],
+                              onChanged: widget.controller.settings.showSafeAreaGuides ? (value) {
+                                if (value != null) {
+                                  widget.controller.updateSettings(
+                                    widget.controller.settings.copyWith(safeAreaPreset: value),
+                                    saveToDisk: true,
+                                  );
+                                }
+                              } : null,
+                            ),
                           ],
-                          onChanged: (value) {
-                            if (value != null) setState(() => _safeAreaMode = value);
-                          },
                         ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -258,6 +285,19 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                     ),
                   ),
                 ),
+                if (widget.controller.settings.showSafeAreaGuides && widget.controller.settings.safeAreaPreset == 'custom')
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          const Text('Custom Safe Area Padding:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 16),
+                          ..._buildCustomPaddingInputs(context),
+                        ],
+                      ),
+                    ),
+                  ),
                 ResponsiveLayout(
                   small: Column(
                     children: [
@@ -284,6 +324,59 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
     );
   }
 
+  List<Widget> _buildCustomPaddingInputs(BuildContext context) {
+    final padding = widget.controller.settings.customSafeAreaPadding ?? const SafeAreaPadding(top: 0, bottom: 0, left: 0, right: 0);
+    
+    Widget buildInput(String label, double value, void Function(double) onChanged) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label: '),
+          SizedBox(
+            width: 60,
+            child: TextField(
+              controller: TextEditingController(text: value.toStringAsFixed(0)),
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.all(8)),
+              onSubmitted: (val) {
+                final parsed = double.tryParse(val);
+                if (parsed != null) onChanged(parsed);
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+      );
+    }
+
+    return [
+      buildInput('Top', padding.top, (v) {
+        widget.controller.updateSettings(
+          widget.controller.settings.copyWith(customSafeAreaPadding: padding.copyWith(top: v)),
+          saveToDisk: true,
+        );
+      }),
+      buildInput('Bottom', padding.bottom, (v) {
+        widget.controller.updateSettings(
+          widget.controller.settings.copyWith(customSafeAreaPadding: padding.copyWith(bottom: v)),
+          saveToDisk: true,
+        );
+      }),
+      buildInput('Left', padding.left, (v) {
+        widget.controller.updateSettings(
+          widget.controller.settings.copyWith(customSafeAreaPadding: padding.copyWith(left: v)),
+          saveToDisk: true,
+        );
+      }),
+      buildInput('Right', padding.right, (v) {
+        widget.controller.updateSettings(
+          widget.controller.settings.copyWith(customSafeAreaPadding: padding.copyWith(right: v)),
+          saveToDisk: true,
+        );
+      }),
+    ];
+  }
+
   Widget _buildPreviewAndTimeline(BuildContext context) {
     final controller = widget.controller;
     final gap = AppResponsive.cardGap(context);
@@ -297,6 +390,9 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
           position: item.position,
           text: item.text,
           imagePath: item.imagePath,
+          fontFamily: item.fontFamily,
+          bold: item.bold,
+          italic: item.italic,
           colorHex: item.colorHex,
           fontSize: item.fontSize,
           width: item.width,
@@ -353,7 +449,7 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 onHeightReported: controller.reportExactHeight,
                 onDragEnd: controller.saveSettingsToDisk,
                 showGrid: _showGrid,
-                safeAreaMode: _safeAreaMode,
+                safeAreaPadding: widget.controller.settings.activeSafeArea,
                 enableSnapping: _enableSnapping,
                 zoomScale: _zoomScale,
                 currentTime: controller.currentTime,
@@ -630,11 +726,53 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
 
     final isText = item.type == OverlayItemType.text;
 
+    bool isOutOfBounds = false;
+    if (widget.controller.settings.activeSafeArea != null) {
+      final safe = widget.controller.settings.activeSafeArea!;
+      final sLeft = safe.left / 1080.0;
+      final sRight = 1.0 - (safe.right / 1080.0);
+      final sTop = safe.top / 1920.0;
+      final sBottom = 1.0 - (safe.bottom / 1920.0);
+
+      final itemRight = item.position.xPercent + item.width;
+      final itemBottom = item.position.yPercent + (item.lockAspectRatio ? item.width : (item.customHeight ?? item.width));
+
+      if (item.position.xPercent < sLeft - 0.001 || 
+          itemRight > sRight + 0.001 || 
+          item.position.yPercent < sTop - 0.001 || 
+          itemBottom > sBottom + 0.001) {
+        isOutOfBounds = true;
+      }
+    }
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(gap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (isOutOfBounds) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.yellow.withValues(alpha: 0.1),
+                border: Border.all(color: Colors.yellow.shade700),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.yellow.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      '⚠️ Overlay may be hidden by platform UI',
+                      style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: gap),
+          ],
           TextField(
             controller: _nameController,
             focusNode: _nameFocus,
@@ -677,24 +815,10 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
               },
             ),
             SizedBox(height: gap),
-            DropdownButtonFormField<String>(
-              initialValue: item.fontFamily,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Font Family',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'Arial', child: Text('Arial')),
-                DropdownMenuItem(value: 'Segoe UI', child: Text('Segoe UI')),
-                DropdownMenuItem(value: 'Tahoma', child: Text('Tahoma')),
-                DropdownMenuItem(value: 'Verdana', child: Text('Verdana')),
-                DropdownMenuItem(value: 'Times New Roman', child: Text('Times New Roman')),
-              ],
+            FontDropdownWidget(
+              currentFontFamily: item.fontFamily,
               onChanged: (value) {
-                if (value != null) {
-                  widget.controller.updateSelected(item.copyWith(fontFamily: value));
-                }
+                widget.controller.updateItem(item.copyWith(fontFamily: value));
               },
             ),
             SizedBox(height: gap),
@@ -746,14 +870,25 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
               value: item.backgroundBox,
               onChanged: (value) => widget.controller.updateSelected(item.copyWith(backgroundBox: value)),
             ),
-            OutlinedButton.icon(
-              onPressed: widget.controller.pickDefaultFont,
-              icon: const Icon(Icons.font_download_outlined),
-              label: Text(
-                widget.controller.settings.defaultFontPath == null
-                    ? 'Choose Custom Font File'
-                    : 'Font: ${p.basename(widget.controller.settings.defaultFontPath!)}',
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Bold'),
+                    value: item.bold,
+                    onChanged: (value) => widget.controller.updateSelected(item.copyWith(bold: value)),
+                  ),
+                ),
+                Expanded(
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Italic'),
+                    value: item.italic,
+                    onChanged: (value) => widget.controller.updateSelected(item.copyWith(italic: value)),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: gap),
           ] else ...[

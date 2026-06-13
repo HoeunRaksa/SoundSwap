@@ -4,6 +4,7 @@ import 'package:soundswap/features/branding/data/models/branding_preset.dart';
 import 'package:soundswap/features/branding/data/models/branding_settings.dart';
 import 'package:soundswap/features/branding/data/services/branding_preset_service.dart';
 import 'package:soundswap/features/branding/data/services/branding_settings_service.dart';
+import 'package:soundswap/features/fonts/data/services/font_service.dart';
 
 class BrandingController extends ChangeNotifier {
   BrandingController({
@@ -44,6 +45,9 @@ class BrandingController extends ChangeNotifier {
   }
 
   Future<void> update(BrandingSettings value) async {
+    if (value.fontFamily != settings.fontFamily) {
+      await FontService().copyWindowsFontIfSelected(value.fontFamily);
+    }
     settings = value;
     notifyListeners();
     await _service.save(settings);

@@ -3,6 +3,7 @@ import 'package:soundswap/features/text_overlay/data/models/text_overlay_preset.
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
 import 'package:soundswap/features/text_overlay/data/services/text_overlay_preset_service.dart';
 import 'package:soundswap/features/text_overlay/data/services/text_overlay_settings_service.dart';
+import 'package:soundswap/features/fonts/data/services/font_service.dart';
 
 class TextOverlayController extends ChangeNotifier {
   TextOverlayController({
@@ -35,6 +36,9 @@ class TextOverlayController extends ChangeNotifier {
   }
 
   Future<void> update(TextOverlaySettings value) async {
+    if (value.fontFamily != settings.fontFamily) {
+      await FontService().copyWindowsFontIfSelected(value.fontFamily);
+    }
     settings = value;
     notifyListeners();
     await _service.save(settings);

@@ -23,6 +23,8 @@ import 'package:soundswap/features/folder_organizer/presentation/screens/folder_
 import 'package:soundswap/features/folder_organizer/presentation/state/folder_organizer_controller.dart';
 import 'package:soundswap/features/organizer_watch/presentation/screens/organizer_watch_screen.dart';
 import 'package:soundswap/features/organizer_watch/presentation/state/organizer_watch_controller.dart';
+import 'package:soundswap/features/fonts/presentation/screens/fonts_screen.dart';
+import 'package:soundswap/features/fonts/presentation/state/fonts_controller.dart';
 import 'package:soundswap/shared/widgets/custom_title_bar.dart';
 
 class AppShell extends StatefulWidget {
@@ -45,6 +47,7 @@ class _AppShellState extends State<AppShell> {
   late final LongVideoController _longVideoController;
   late final FolderOrganizerController _folderOrganizerController;
   late final OrganizerWatchController _organizerWatchController;
+  late final FontsController _fontsController;
 
   var _selectedIndex = 0;
 
@@ -152,6 +155,13 @@ class _AppShellState extends State<AppShell> {
         historyController: _resultHistoryController,
       ),
     ),
+    _NavigationItem(
+      label: 'Fonts',
+      icon: Icons.font_download_outlined,
+      selectedIcon: Icons.font_download,
+      group: _NavGroup.tools,
+      child: FontsScreen(fontsController: _fontsController),
+    ),
   ];
 
   @override
@@ -176,6 +186,7 @@ class _AppShellState extends State<AppShell> {
     );
     _folderOrganizerController = FolderOrganizerController();
     _organizerWatchController = OrganizerWatchController();
+    _fontsController = FontsController();
     
     _homeController.initialize();
     _brandingController.load();
