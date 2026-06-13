@@ -40,6 +40,10 @@ class OverlayItem {
     this.animationEntranceDuration = 0.5,
     this.animationExit,
     this.animationExitDuration = 0.5,
+    this.lineHeight = 1.2,
+    this.letterSpacing = 0.0,
+    this.strokeWidth = 0.0,
+    this.strokeColorHex = '#000000',
   });
 
   final String id;
@@ -78,6 +82,10 @@ class OverlayItem {
   final double animationEntranceDuration;
   final String? animationExit;
   final double animationExitDuration;
+  final double lineHeight;
+  final double letterSpacing;
+  final double strokeWidth;
+  final String strokeColorHex;
 
   bool get hasContent {
     return switch (type) {
@@ -123,6 +131,10 @@ class OverlayItem {
     'animationEntranceDuration': animationEntranceDuration,
     'animationExit': animationExit,
     'animationExitDuration': animationExitDuration,
+    'lineHeight': lineHeight,
+    'letterSpacing': letterSpacing,
+    'strokeWidth': strokeWidth,
+    'strokeColorHex': strokeColorHex,
   };
 
   factory OverlayItem.fromJson(Map<String, Object?> json) {
@@ -166,6 +178,10 @@ class OverlayItem {
       animationEntranceDuration: (json['animationEntranceDuration'] as num?)?.toDouble() ?? 0.5,
       animationExit: json['animationExit'] as String?,
       animationExitDuration: (json['animationExitDuration'] as num?)?.toDouble() ?? 0.5,
+      lineHeight: (json['lineHeight'] as num?)?.toDouble() ?? 1.2,
+      letterSpacing: (json['letterSpacing'] as num?)?.toDouble() ?? 0.0,
+      strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 0.0,
+      strokeColorHex: json['strokeColorHex'] as String? ?? '#000000',
     );
   }
 
@@ -208,6 +224,10 @@ class OverlayItem {
     String? animationExit,
     bool clearAnimationExit = false,
     double? animationExitDuration,
+    double? lineHeight,
+    double? letterSpacing,
+    double? strokeWidth,
+    String? strokeColorHex,
   }) {
     return OverlayItem(
       id: id,
@@ -246,6 +266,10 @@ class OverlayItem {
       animationEntranceDuration: animationEntranceDuration ?? this.animationEntranceDuration,
       animationExit: clearAnimationExit ? null : (animationExit ?? this.animationExit),
       animationExitDuration: animationExitDuration ?? this.animationExitDuration,
+      lineHeight: lineHeight ?? this.lineHeight,
+      letterSpacing: letterSpacing ?? this.letterSpacing,
+      strokeWidth: strokeWidth ?? this.strokeWidth,
+      strokeColorHex: strokeColorHex ?? this.strokeColorHex,
     );
   }
 

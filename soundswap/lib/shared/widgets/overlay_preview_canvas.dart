@@ -6,6 +6,8 @@ import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/overlay_tools/utils/overlay_position_calculator.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
 
+import 'package:soundswap/shared/widgets/overlay_render_widget.dart';
+
 enum PreviewOverlayKind { logo, text }
 
 class PreviewOverlayItem {
@@ -26,6 +28,8 @@ class PreviewOverlayItem {
     this.lockAspectRatio = true,
     this.backgroundBox = false,
     this.shadow = false,
+    this.lineHeight = 1.2,
+    this.letterSpacing = 0.0,
     this.selected = false,
     this.opacity = 1.0,
     this.layerOrder = 0,
@@ -43,6 +47,8 @@ class PreviewOverlayItem {
     this.animationEntranceDuration = 0.5,
     this.animationExit,
     this.animationExitDuration = 0.5,
+    this.strokeWidth = 0.0,
+    this.strokeColorHex = '#000000',
   });
 
   final String id;
@@ -61,6 +67,8 @@ class PreviewOverlayItem {
   final bool lockAspectRatio;
   final bool backgroundBox;
   final bool shadow;
+  final double lineHeight;
+  final double letterSpacing;
   final bool selected;
   final double opacity;
   final int layerOrder;
@@ -78,6 +86,8 @@ class PreviewOverlayItem {
   final double animationEntranceDuration;
   final String? animationExit;
   final double animationExitDuration;
+  final double strokeWidth;
+  final String strokeColorHex;
 }
 
 class OverlayPreviewCanvas extends StatefulWidget {
@@ -138,6 +148,15 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
       if (item.hidden) return false;
       if (widget.currentTime < item.startTime) return false;
       if (item.endTime != null && widget.currentTime > item.endTime!) return false;
+      
+      // If it is an image overlay, only show if the image file exists
+      if (item.kind == PreviewOverlayKind.logo) {
+        final imagePath = item.imagePath;
+        final imageFile = imagePath == null ? null : File(imagePath);
+        if (imageFile == null || !imageFile.existsSync()) {
+          return false;
+        }
+      }
       return true;
     }).toList();
 
@@ -189,6 +208,23 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                           painter: const _CheckerboardPainter(),
                         ),
                       ),
+                      if (visibleItems.isEmpty)
+                        const Positioned.fill(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text(
+                                'No overlays yet. Add Text or Add Image.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       // Grid Lines
                       if (widget.showGrid)
                         Positioned.fill(
@@ -825,58 +861,26 @@ class _LogoPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logoWidth = size.width * 0.18;
     final previewWidth = size.width * item.width;
 
     final imagePath = item.imagePath;
     final imageFile = imagePath == null ? null : File(imagePath);
 
-    return Container(
+    if (imageFile == null || !imageFile.existsSync()) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
       width: previewWidth,
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.3),
-          width: 1,
-        ),
+      child: Image.file(
+        imageFile,
+        key: ValueKey('${item.id}-${item.imagePath}'),
+        fit: switch (item.imageFitMode) {
+          'cover' => BoxFit.cover,
+          'stretch' => BoxFit.fill,
+          _ => BoxFit.contain,
+        },
       ),
-      child: imageFile != null && imageFile.existsSync()
-          ? Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: const _CheckerboardPainter(),
-                  ),
-                ),
-                Image.file(
-                  imageFile,
-                  key: ValueKey('${item.id}-${item.imagePath}'),
-                  fit: switch (item.imageFitMode) {
-                    'cover' => BoxFit.cover,
-                    'stretch' => BoxFit.fill,
-                    _ => BoxFit.contain,
-                  },
-                ),
-              ],
-            )
-          : AspectRatio(
-              aspectRatio: 1.0,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: const _CheckerboardPainter(),
-                    ),
-                  ),
-                  Center(
-                    child: Icon(
-                      Icons.image_outlined,
-                      size: logoWidth * 0.5,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }
@@ -890,11 +894,11 @@ class _TextPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = (item.text == null || item.text!.trim().isEmpty) ? item.label : item.text!;
-    final color = _colorFromHex(item.colorHex);
 
     const referenceHeight = 1920.0;
     final scale = previewSize.height / referenceHeight;
     final previewFontSize = (item.fontSize * scale).clamp(8.0, 120.0);
+    final previewStrokeWidth = item.strokeWidth * scale;
     final width = previewSize.width * item.width;
     
     // Debug log for font applied to preview
@@ -902,44 +906,20 @@ class _TextPreview extends StatelessWidget {
 
     return SizedBox(
       width: width,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: item.backgroundBox ? Colors.black.withValues(alpha: 0.48) : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: item.backgroundBox ? 8 : 0,
-            vertical: item.backgroundBox ? 5 : 0,
-          ),
-          child: Text(
-            text,
-            maxLines: 12,
-            overflow: TextOverflow.ellipsis,
-            textAlign: switch (item.textAlignment) {
-              'center' => TextAlign.center,
-              'right' => TextAlign.right,
-              _ => TextAlign.left,
-            },
-            style: TextStyle(
-              color: color,
-              fontSize: previewFontSize,
-              fontFamily: item.fontFamily,
-              fontFamilyFallback: const ['Battambang'],
-              fontWeight: item.bold ? FontWeight.w700 : FontWeight.normal,
-              fontStyle: item.italic ? FontStyle.italic : FontStyle.normal,
-              shadows: item.shadow
-                  ? const [
-                      Shadow(
-                        blurRadius: 3,
-                        offset: Offset(1, 1),
-                        color: Colors.black87,
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-        ),
+      child: OverlayRenderWidget(
+        text: text,
+        fontFamily: item.fontFamily,
+        bold: item.bold,
+        italic: item.italic,
+        fontSize: previewFontSize,
+        colorHex: item.colorHex,
+        textAlignment: item.textAlignment,
+        shadow: item.shadow,
+        backgroundBox: item.backgroundBox,
+        lineHeight: item.lineHeight,
+        letterSpacing: item.letterSpacing,
+        strokeWidth: previewStrokeWidth,
+        strokeColorHex: item.strokeColorHex,
       ),
     );
   }
@@ -1065,12 +1045,7 @@ class _SafeAreaPainter extends CustomPainter {
   }
 }
 
-Color _colorFromHex(String value) {
-  final hex = value.replaceFirst('#', '').trim();
-  if (hex.length != 6) return Colors.white;
-  final parsed = int.tryParse('FF$hex', radix: 16);
-  return parsed == null ? Colors.white : Color(parsed);
-}
+
 
 class _SizeReporter extends StatefulWidget {
   final Widget child;

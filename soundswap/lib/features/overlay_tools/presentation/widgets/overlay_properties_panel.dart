@@ -1,6 +1,4 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
@@ -23,9 +21,14 @@ class _OverlayPropertiesPanelState extends State<OverlayPropertiesPanel> {
   final _widthController = TextEditingController();
   final _customHeightController = TextEditingController();
   final _opacityController = TextEditingController();
+  final _lineHeightController = TextEditingController();
+  final _letterSpacingController = TextEditingController();
   final _rotationController = TextEditingController();
   final _startTimeController = TextEditingController();
   final _endTimeController = TextEditingController();
+  final _strokeWidthController = TextEditingController();
+  final _strokeColorController = TextEditingController();
+  final _scaleController = TextEditingController();
 
   final _nameFocus = FocusNode();
   final _textFocus = FocusNode();
@@ -34,9 +37,14 @@ class _OverlayPropertiesPanelState extends State<OverlayPropertiesPanel> {
   final _widthFocus = FocusNode();
   final _customHeightFocus = FocusNode();
   final _opacityFocus = FocusNode();
+  final _lineHeightFocus = FocusNode();
+  final _letterSpacingFocus = FocusNode();
   final _rotationFocus = FocusNode();
   final _startTimeFocus = FocusNode();
   final _endTimeFocus = FocusNode();
+  final _strokeWidthFocus = FocusNode();
+  final _strokeColorFocus = FocusNode();
+  final _scaleFocus = FocusNode();
 
   bool _showAdvancedTiming = false;
 
@@ -57,9 +65,15 @@ class _OverlayPropertiesPanelState extends State<OverlayPropertiesPanel> {
     _widthController.dispose();
     _customHeightController.dispose();
     _opacityController.dispose();
+    _lineHeightController.dispose();
+    _letterSpacingController.dispose();
     _rotationController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
+    _strokeWidthController.dispose();
+    _strokeColorController.dispose();
+    _scaleController.dispose();
+    
     _nameFocus.dispose();
     _textFocus.dispose();
     _fontSizeFocus.dispose();
@@ -67,9 +81,14 @@ class _OverlayPropertiesPanelState extends State<OverlayPropertiesPanel> {
     _widthFocus.dispose();
     _customHeightFocus.dispose();
     _opacityFocus.dispose();
+    _lineHeightFocus.dispose();
+    _letterSpacingFocus.dispose();
     _rotationFocus.dispose();
     _startTimeFocus.dispose();
     _endTimeFocus.dispose();
+    _strokeWidthFocus.dispose();
+    _strokeColorFocus.dispose();
+    _scaleFocus.dispose();
     super.dispose();
   }
 
@@ -93,9 +112,14 @@ void _syncFromState() {
         _widthFocus.hasFocus ||
         _customHeightFocus.hasFocus ||
         _opacityFocus.hasFocus ||
+        _lineHeightFocus.hasFocus ||
+        _letterSpacingFocus.hasFocus ||
         _rotationFocus.hasFocus ||
         _startTimeFocus.hasFocus ||
-        _endTimeFocus.hasFocus) {
+        _endTimeFocus.hasFocus ||
+        _strokeWidthFocus.hasFocus ||
+        _strokeColorFocus.hasFocus ||
+        _scaleFocus.hasFocus) {
       return;
     }
     final item = widget.controller.selectedItem;
@@ -107,9 +131,14 @@ void _syncFromState() {
       _setText(_widthController, '');
       _setText(_customHeightController, '');
       _setText(_opacityController, '');
+      _setText(_lineHeightController, '');
+      _setText(_letterSpacingController, '');
       _setText(_rotationController, '');
       _setText(_startTimeController, '');
       _setText(_endTimeController, '');
+      _setText(_strokeWidthController, '');
+      _setText(_strokeColorController, '');
+      _setText(_scaleController, '');
       return;
     }
     _setText(_nameController, item.name);
@@ -119,9 +148,14 @@ void _syncFromState() {
     _setText(_widthController, (item.width * 100).toStringAsFixed(0));
     _setText(_customHeightController, item.customHeight != null ? (item.customHeight! * 100).toStringAsFixed(0) : '');
     _setText(_opacityController, (item.opacity * 100).toStringAsFixed(0));
+    _setText(_lineHeightController, item.lineHeight.toStringAsFixed(2));
+    _setText(_letterSpacingController, item.letterSpacing.toStringAsFixed(1));
     _setText(_rotationController, item.rotation.toStringAsFixed(0));
     _setText(_startTimeController, item.startTime.toStringAsFixed(1));
     _setText(_endTimeController, (item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1));
+    _setText(_strokeWidthController, item.strokeWidth.toStringAsFixed(0));
+    _setText(_strokeColorController, item.strokeColorHex);
+    _setText(_scaleController, item.scaleX.toStringAsFixed(1));
     
   }
 
@@ -138,15 +172,36 @@ void _syncFromState() {
       builder: (context, _) => _buildTransformTab(context),
     );
   }
-Widget _buildTransformTab(BuildContext context) {
+
+  Widget _buildTransformTab(BuildContext context) {
     final item = widget.controller.selectedItem;
     final gap = AppResponsive.cardGap(context);
 
     if (item == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text('Select an overlay layer to adjust transform properties.'),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.layers_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'No Layer Selected',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Select an overlay layer on the canvas or layers panel to adjust properties.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -200,6 +255,13 @@ Widget _buildTransformTab(BuildContext context) {
             ),
             SizedBox(height: gap),
           ],
+          
+          // SECTION 1: LAYER PROPERTIES & MANAGEMENT
+          const Text(
+            'Layer Info & Management',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
           TextField(
             controller: _nameController,
             focusNode: _nameFocus,
@@ -209,8 +271,85 @@ Widget _buildTransformTab(BuildContext context) {
             ),
             onChanged: (value) => widget.controller.updateSelected(item.copyWith(name: value)),
           ),
-          SizedBox(height: gap),
+          const SizedBox(height: 8),
+          
+          // Layer Actions Row: Visibility, Lock, Duplicate, Delete, Z-Order
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Visibility Toggle
+              IconButton(
+                icon: Icon(item.hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                tooltip: 'Visibility',
+                color: item.hidden ? Colors.grey : Theme.of(context).colorScheme.primary,
+                onPressed: () => widget.controller.toggleHidden(item.id),
+              ),
+              // Lock Toggle
+              IconButton(
+                icon: Icon(item.locked ? Icons.lock : Icons.lock_open),
+                tooltip: 'Lock Layer',
+                color: item.locked ? Colors.red : Colors.grey,
+                onPressed: () => widget.controller.toggleLock(item.id),
+              ),
+              // Duplicate
+              IconButton(
+                icon: const Icon(Icons.copy_outlined),
+                tooltip: 'Duplicate Layer',
+                onPressed: () => widget.controller.duplicateItem(item.id),
+              ),
+              // Delete
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: 'Delete Layer',
+                onPressed: () async {
+                  await widget.controller.removeSelected();
+                },
+              ),
+              // Reorder Up
+              IconButton(
+                icon: const Icon(Icons.arrow_upward),
+                tooltip: 'Bring Forward',
+                onPressed: () => widget.controller.bringForward(item.id),
+              ),
+              // Reorder Down
+              IconButton(
+                icon: const Icon(Icons.arrow_downward),
+                tooltip: 'Send Backward',
+                onPressed: () => widget.controller.sendBackward(item.id),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Folder Assignment Dropdown
+          DropdownButtonFormField<String?>(
+            value: item.folder,
+            decoration: const InputDecoration(
+              labelText: 'Folder Assignment',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: const [
+              DropdownMenuItem(value: null, child: Text('None (No Folder)')),
+              DropdownMenuItem(value: 'Branding', child: Text('Branding')),
+              DropdownMenuItem(value: 'Subtitles', child: Text('Subtitles')),
+              DropdownMenuItem(value: 'Watermarks', child: Text('Watermarks')),
+              DropdownMenuItem(value: 'CTA', child: Text('CTA')),
+            ],
+            onChanged: (value) {
+              widget.controller.setItemFolder(item.id, value);
+            },
+          ),
+          
+          const Divider(height: 24),
+
+          // SECTION 2: SPECIFIC SETTINGS (Text / Image)
           if (isText) ...[
+            const Text(
+              'Text Layer Properties',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
             TextField(
               controller: _textController,
               focusNode: _textFocus,
@@ -285,6 +424,87 @@ Widget _buildTransformTab(BuildContext context) {
                 ),
               ],
             ),
+            SizedBox(height: gap),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _lineHeightController,
+                    focusNode: _lineHeightFocus,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Line Height',
+                      hintText: '1.2',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      final val = double.tryParse(value);
+                      if (val != null) {
+                        widget.controller.updateSelected(item.copyWith(lineHeight: val));
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _letterSpacingController,
+                    focusNode: _letterSpacingFocus,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Letter Spacing',
+                      hintText: '0.0',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      final val = double.tryParse(value);
+                      if (val != null) {
+                        widget.controller.updateSelected(item.copyWith(letterSpacing: val));
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: gap),
+            
+            // Text Stroke Property (strokeWidth, strokeColorHex)
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Stroke Width: ${item.strokeWidth.toStringAsFixed(0)}px', style: const TextStyle(fontSize: 11)),
+                      Slider(
+                        value: item.strokeWidth.clamp(0.0, 20.0),
+                        min: 0.0,
+                        max: 20.0,
+                        divisions: 20,
+                        onChanged: (val) {
+                          widget.controller.updateSelected(item.copyWith(strokeWidth: val));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _strokeColorController,
+                    focusNode: _strokeColorFocus,
+                    decoration: const InputDecoration(
+                      labelText: 'Stroke Color',
+                      hintText: '#000000',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) => widget.controller.updateSelected(item.copyWith(strokeColorHex: value)),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: gap),
+            
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Text Shadow'),
@@ -319,6 +539,11 @@ Widget _buildTransformTab(BuildContext context) {
             ),
             SizedBox(height: gap),
           ] else ...[
+            const Text(
+              'Image Layer Properties',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
             _buildCleanImagePath(context, item.imagePath),
             SizedBox(height: gap),
             DropdownButtonFormField<String>(
@@ -354,7 +579,17 @@ Widget _buildTransformTab(BuildContext context) {
             ),
             SizedBox(height: gap),
           ],
-          // Precision Positioning
+
+          const Divider(height: 24),
+
+          // SECTION 3: TRANSFORM (Positioning, Width, Scale, Rotation, Opacity)
+          const Text(
+            'Transform & Sizing',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
+          
+          // Precision Positioning (X & Y Pos)
           Row(
             children: [
               Expanded(
@@ -384,6 +619,8 @@ Widget _buildTransformTab(BuildContext context) {
             ],
           ),
           SizedBox(height: gap),
+          
+          // Width (and Custom Height if aspect ratio is unlocked)
           Row(
             children: [
               Expanded(
@@ -434,41 +671,91 @@ Widget _buildTransformTab(BuildContext context) {
             ],
           ),
           SizedBox(height: gap),
-          // Precision Scales (ScaleX, ScaleY)
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+          // Scale (Unified vs ScaleX/Y depending on aspect ratio lock)
+          if (item.lockAspectRatio) ...[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Scale X: ${item.scaleX.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11)),
-                    Slider(
-                      value: item.scaleX,
-                      min: 0.1,
-                      max: 3.0,
-                      onChanged: (val) => widget.controller.updateItem(item.copyWith(scaleX: val)),
+                    Text('Scale: ${item.scaleX.toStringAsFixed(1)}x', style: const TextStyle(fontSize: 11)),
+                    const Icon(Icons.link, size: 16, color: Colors.grey),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Slider(
+                        value: item.scaleX.clamp(0.1, 3.0),
+                        min: 0.1,
+                        max: 3.0,
+                        onChanged: (val) {
+                          widget.controller.updateItem(item.copyWith(scaleX: val, scaleY: val));
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 60,
+                      child: TextField(
+                        controller: _scaleController,
+                        focusNode: _scaleFocus,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        onChanged: (val) {
+                          final parsed = double.tryParse(val);
+                          if (parsed != null) {
+                            final clamped = parsed.clamp(0.1, 3.0);
+                            widget.controller.updateItem(item.copyWith(scaleX: clamped, scaleY: clamped));
+                          }
+                        },
+                      ),
                     ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Scale Y: ${item.scaleY.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11)),
-                    Slider(
-                      value: item.scaleY,
-                      min: 0.1,
-                      max: 3.0,
-                      onChanged: (val) => widget.controller.updateItem(item.copyWith(scaleY: val)),
-                    ),
-                  ],
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Scale X: ${item.scaleX.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11)),
+                      Slider(
+                        value: item.scaleX.clamp(0.1, 3.0),
+                        min: 0.1,
+                        max: 3.0,
+                        onChanged: (val) => widget.controller.updateItem(item.copyWith(scaleX: val)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Scale Y: ${item.scaleY.toStringAsFixed(1)}', style: const TextStyle(fontSize: 11)),
+                      Slider(
+                        value: item.scaleY.clamp(0.1, 3.0),
+                        min: 0.1,
+                        max: 3.0,
+                        onChanged: (val) => widget.controller.updateItem(item.copyWith(scaleY: val)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
           SizedBox(height: gap),
-          // Rotation Slider
+
+          // Rotation Slider & Input
           Row(
             children: [
               const Text('Rotation:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
@@ -506,6 +793,7 @@ Widget _buildTransformTab(BuildContext context) {
             ],
           ),
           SizedBox(height: gap),
+
           // Opacity Slider
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,215 +805,224 @@ Widget _buildTransformTab(BuildContext context) {
               ),
             ],
           ),
-          if (_showAdvancedTiming) ...[
-            const Divider(height: 24),
+
+          const Divider(height: 24),
+
+          // SECTION 4: TIMING & ANIMATIONS
+          Row(
+            children: [
+              Icon(Icons.timer_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'Timing & Animations',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment<bool>(
+                value: false,
+                label: Text('Entire Video'),
+                icon: Icon(Icons.video_label),
+              ),
+              ButtonSegment<bool>(
+                value: true,
+                label: Text('Custom Duration'),
+                icon: Icon(Icons.timer),
+              ),
+            ],
+            selected: {item.startTime > 0 || item.endTime != null},
+            onSelectionChanged: (value) {
+              final isCustom = value.first;
+              if (isCustom) {
+                widget.controller.updateItem(item.copyWith(
+                  startTime: 0.0,
+                  endTime: widget.controller.timelineDuration > 5.0 ? 5.0 : widget.controller.timelineDuration,
+                ));
+              } else {
+                widget.controller.updateItem(item.copyWith(
+                  startTime: 0.0,
+                  clearEndTime: true,
+                ));
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          
+          if (item.startTime > 0 || item.endTime != null) ...[
             Row(
               children: [
-                Icon(Icons.timer_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                const Text(
-                  'Timing Options',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment<bool>(
-                  value: false,
-                  label: Text('Entire Video'),
-                  icon: Icon(Icons.video_label),
-                ),
-                ButtonSegment<bool>(
-                  value: true,
-                  label: Text('Custom Duration'),
-                  icon: Icon(Icons.timer),
-                ),
-              ],
-              selected: {item.startTime > 0 || item.endTime != null},
-              onSelectionChanged: (value) {
-                final isCustom = value.first;
-                if (isCustom) {
-                  widget.controller.updateItem(item.copyWith(
-                    startTime: 0.0,
-                    endTime: widget.controller.timelineDuration > 5.0 ? 5.0 : widget.controller.timelineDuration,
-                  ));
-                } else {
-                  widget.controller.updateItem(item.copyWith(
-                    startTime: 0.0,
-                    clearEndTime: true,
-                  ));
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            if (item.startTime > 0 || item.endTime != null) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _startTimeController,
-                      focusNode: _startTimeFocus,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Start Seconds',
-                        border: OutlineInputBorder(),
-                        suffixText: 's',
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val);
-                        if (parsed != null) {
-                          widget.controller.updateItem(item.copyWith(
-                            startTime: parsed.clamp(0.0, item.endTime ?? widget.controller.timelineDuration),
-                          ));
-                        }
-                      },
+                Expanded(
+                  child: TextField(
+                    controller: _startTimeController,
+                    focusNode: _startTimeFocus,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Start time',
+                      border: OutlineInputBorder(),
+                      suffixText: 's',
+                      isDense: true,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _endTimeController,
-                      focusNode: _endTimeFocus,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'End Seconds',
-                        border: OutlineInputBorder(),
-                        suffixText: 's',
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val);
-                        if (parsed != null) {
-                          widget.controller.updateItem(item.copyWith(
-                            endTime: parsed.clamp(item.startTime, widget.controller.timelineDuration),
-                          ));
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Duration: ${item.startTime.toStringAsFixed(1)}s - ${(item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1)}s',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                  RangeSlider(
-                    values: RangeValues(item.startTime, item.endTime ?? widget.controller.timelineDuration),
-                    min: 0.0,
-                    max: widget.controller.timelineDuration,
-                    divisions: (widget.controller.timelineDuration * 2).toInt(),
-                    labels: RangeLabels(
-                      '${item.startTime.toStringAsFixed(1)}s',
-                      '${(item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1)}s',
-                    ),
-                    onChanged: (values) {
-                      widget.controller.updateItem(item.copyWith(
-                        startTime: values.start,
-                        endTime: values.end,
-                      ));
+                    onChanged: (val) {
+                      final parsed = double.tryParse(val);
+                      if (parsed != null) {
+                        widget.controller.updateItem(item.copyWith(
+                          startTime: parsed.clamp(0.0, item.endTime ?? widget.controller.timelineDuration),
+                        ));
+                      }
                     },
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-            // ANIMATIONS CONFIGURATION
-            const Text(
-              'Timeline Animations',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String?>(
-              initialValue: item.animationEntrance,
-              decoration: const InputDecoration(
-                labelText: 'Entrance Transition (Fade/Slide)',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: null, child: Text('None (Cut)')),
-                DropdownMenuItem(value: 'fade', child: Text('Fade In')),
-                DropdownMenuItem(value: 'slide_left', child: Text('Slide from Left')),
-                DropdownMenuItem(value: 'slide_right', child: Text('Slide from Right')),
-                DropdownMenuItem(value: 'slide_up', child: Text('Slide from Bottom')),
-                DropdownMenuItem(value: 'slide_down', child: Text('Slide from Top')),
-              ],
-              onChanged: (val) => widget.controller.updateItem(item.copyWith(
-                animationEntrance: val,
-                clearAnimationEntrance: val == null,
-              )),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Text('Entrance Duration:', style: TextStyle(fontSize: 11)),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Slider(
-                    value: item.animationEntranceDuration,
-                    min: 0.1,
-                    max: 5.0,
-                    onChanged: (val) => widget.controller.updateItem(item.copyWith(animationEntranceDuration: val)),
+                  child: TextField(
+                    controller: _endTimeController,
+                    focusNode: _endTimeFocus,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'End time',
+                      border: OutlineInputBorder(),
+                      suffixText: 's',
+                      isDense: true,
+                    ),
+                    onChanged: (val) {
+                      final parsed = double.tryParse(val);
+                      if (parsed != null) {
+                        widget.controller.updateItem(item.copyWith(
+                          endTime: parsed.clamp(item.startTime, widget.controller.timelineDuration),
+                        ));
+                      }
+                    },
                   ),
                 ),
-                Text('${item.animationEntranceDuration.toStringAsFixed(1)}s', style: const TextStyle(fontSize: 11)),
               ],
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String?>(
-              initialValue: item.animationExit,
-              decoration: const InputDecoration(
-                labelText: 'Exit Transition (Fade/Slide)',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: null, child: Text('None (Cut)')),
-                DropdownMenuItem(value: 'fade', child: Text('Fade Out')),
-                DropdownMenuItem(value: 'slide_left', child: Text('Slide to Left')),
-                DropdownMenuItem(value: 'slide_right', child: Text('Slide to Right')),
-                DropdownMenuItem(value: 'slide_up', child: Text('Slide to Top')),
-                DropdownMenuItem(value: 'slide_down', child: Text('Slide to Bottom')),
-              ],
-              onChanged: (val) => widget.controller.updateItem(item.copyWith(
-                animationExit: val,
-                clearAnimationExit: val == null,
-              )),
-            ),
-            const SizedBox(height: 8),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Exit Duration:', style: TextStyle(fontSize: 11)),
-                Expanded(
-                  child: Slider(
-                    value: item.animationExitDuration,
-                    min: 0.1,
-                    max: 5.0,
-                    onChanged: (val) => widget.controller.updateItem(item.copyWith(animationExitDuration: val)),
-                  ),
+                Text(
+                  'Duration: ${item.startTime.toStringAsFixed(1)}s - ${(item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1)}s (Total: ${((item.endTime ?? widget.controller.timelineDuration) - item.startTime).toStringAsFixed(1)}s)',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
-                Text('${item.animationExitDuration.toStringAsFixed(1)}s', style: const TextStyle(fontSize: 11)),
+                RangeSlider(
+                  values: RangeValues(item.startTime, item.endTime ?? widget.controller.timelineDuration),
+                  min: 0.0,
+                  max: widget.controller.timelineDuration,
+                  divisions: (widget.controller.timelineDuration * 2).toInt(),
+                  labels: RangeLabels(
+                    '${item.startTime.toStringAsFixed(1)}s',
+                    '${(item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1)}s',
+                  ),
+                  onChanged: (values) {
+                    widget.controller.updateItem(item.copyWith(
+                      startTime: values.start,
+                      endTime: values.end,
+                    ));
+                  },
+                ),
               ],
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () {
-                widget.controller.applyTimingToAll();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Timing & animations applied to all overlays!')),
-                );
-              },
-              icon: const Icon(Icons.copy_all_outlined),
-              label: const Text('Apply timing to all overlays'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(40),
-              ),
-            ),
+            const SizedBox(height: 12),
           ],
+          
+          // ANIMATIONS CONFIGURATION
+          const Text(
+            'Entrance Transition',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String?>(
+            initialValue: item.animationEntrance,
+            decoration: const InputDecoration(
+              labelText: 'Fade In / Slide In Effect',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: null, child: Text('None (Cut)')),
+              DropdownMenuItem(value: 'fade', child: Text('Fade In')),
+              DropdownMenuItem(value: 'slide_left', child: Text('Slide from Left')),
+              DropdownMenuItem(value: 'slide_right', child: Text('Slide from Right')),
+              DropdownMenuItem(value: 'slide_up', child: Text('Slide from Bottom')),
+              DropdownMenuItem(value: 'slide_down', child: Text('Slide from Top')),
+            ],
+            onChanged: (val) => widget.controller.updateItem(item.copyWith(
+              animationEntrance: val,
+              clearAnimationEntrance: val == null,
+            )),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Animation Speed (Entrance Duration):', style: TextStyle(fontSize: 11)),
+              Expanded(
+                child: Slider(
+                  value: item.animationEntranceDuration,
+                  min: 0.1,
+                  max: 5.0,
+                  onChanged: (val) => widget.controller.updateItem(item.copyWith(animationEntranceDuration: val)),
+                ),
+              ),
+              Text('${item.animationEntranceDuration.toStringAsFixed(1)}s', style: const TextStyle(fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          const Text(
+            'Exit Transition',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String?>(
+            initialValue: item.animationExit,
+            decoration: const InputDecoration(
+              labelText: 'Fade Out / Slide Out Effect',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: null, child: Text('None (Cut)')),
+              DropdownMenuItem(value: 'fade', child: Text('Fade Out')),
+              DropdownMenuItem(value: 'slide_left', child: Text('Slide to Left')),
+              DropdownMenuItem(value: 'slide_right', child: Text('Slide to Right')),
+              DropdownMenuItem(value: 'slide_up', child: Text('Slide to Top')),
+              DropdownMenuItem(value: 'slide_down', child: Text('Slide to Bottom')),
+            ],
+            onChanged: (val) => widget.controller.updateItem(item.copyWith(
+              animationExit: val,
+              clearAnimationExit: val == null,
+            )),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Animation Speed (Exit Duration):', style: TextStyle(fontSize: 11)),
+              Expanded(
+                child: Slider(
+                  value: item.animationExitDuration,
+                  min: 0.1,
+                  max: 5.0,
+                  onChanged: (val) => widget.controller.updateItem(item.copyWith(animationExitDuration: val)),
+                ),
+              ),
+              Text('${item.animationExitDuration.toStringAsFixed(1)}s', style: const TextStyle(fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () {
+              widget.controller.applyTimingToAll();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Timing & animations applied to all overlays!')),
+              );
+            },
+            icon: const Icon(Icons.copy_all_outlined),
+            label: const Text('Apply timing to all overlays'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(40),
+            ),
+          ),
         ],
       ),
     );
@@ -788,23 +1085,6 @@ Widget _buildTransformTab(BuildContext context) {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _TwoColumn extends StatelessWidget {
-  const _TwoColumn({required this.left, required this.right});
-  final Widget left;
-  final Widget right;
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: left),
-        const SizedBox(width: 8),
-        Expanded(child: right),
-      ],
     );
   }
 }

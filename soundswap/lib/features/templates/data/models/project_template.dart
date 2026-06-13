@@ -20,6 +20,8 @@ class ProjectTemplate {
     this.useOverlay = false,
     this.outputSize = VideoOutputSize.original,
     this.fitMode = VideoFitMode.keepOriginal,
+    this.thumbnailPath,
+    this.version = 1,
   });
 
   final String id;
@@ -37,6 +39,8 @@ class ProjectTemplate {
   final bool useOverlay;
   final VideoOutputSize outputSize;
   final VideoFitMode fitMode;
+  final String? thumbnailPath;
+  final int version;
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -54,6 +58,8 @@ class ProjectTemplate {
     'useOverlay': useOverlay,
     'outputSize': outputSize.name,
     'fitMode': fitMode.name,
+    'thumbnailPath': thumbnailPath,
+    'version': version,
   };
 
   factory ProjectTemplate.fromJson(Map<String, Object?> json) {
@@ -89,6 +95,8 @@ class ProjectTemplate {
         (value) => value.name == json['fitMode'],
         orElse: () => VideoFitMode.keepOriginal,
       ),
+      thumbnailPath: json['thumbnailPath'] as String?,
+      version: json['version'] as int? ?? 1,
     );
   }
 }

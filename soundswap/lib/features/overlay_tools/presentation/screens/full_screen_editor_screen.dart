@@ -9,6 +9,7 @@ import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
+import 'package:soundswap/features/overlay_tools/utils/template_render_data.dart';
 import 'package:soundswap/shared/widgets/overlay_preview_canvas.dart';
 
 import '../widgets/overlay_layers_panel.dart';
@@ -54,7 +55,13 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
-        final items = widget.controller.settings.items.map((item) {
+        final allItems = TemplateRenderData.buildItems(
+          branding: widget.brandingController.settings,
+          textOverlay: widget.textOverlayController.settings,
+          overlaySettings: widget.controller.settings,
+        );
+
+        final items = allItems.map((item) {
           return PreviewOverlayItem(
             id: item.id,
             label: item.name.isEmpty
@@ -84,6 +91,20 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
             hidden: item.hidden,
             locked: item.locked,
             imageFitMode: item.imageFitMode,
+            rotation: item.rotation,
+            folder: item.folder,
+            scaleX: item.scaleX,
+            scaleY: item.scaleY,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            animationEntrance: item.animationEntrance,
+            animationEntranceDuration: item.animationEntranceDuration,
+            animationExit: item.animationExit,
+            animationExitDuration: item.animationExitDuration,
+            lineHeight: item.lineHeight,
+            letterSpacing: item.letterSpacing,
+            strokeWidth: item.strokeWidth,
+            strokeColorHex: item.strokeColorHex,
           );
         }).toList();
 
@@ -216,18 +237,68 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
     );
   }
 
+  Future<void> _handleSaveAsNewTemplate() async {
+    final tCtrl = widget.templatesController;
+    final textController = TextEditingController(
+      text: '${tCtrl.editingTemplateName ?? "Untitled"} (Copy)'
+    );
+
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Save As New Template'),
+          content: TextField(
+            controller: textController,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Template name'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, textController.text),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    textController.dispose();
+
+    if (name == null || name.trim().isEmpty) return;
+
+    await tCtrl.saveCurrent(
+      name: name.trim(),
+      home: widget.homeController,
+      branding: widget.brandingController,
+      textOverlay: widget.textOverlayController,
+      overlay: widget.controller,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Saved as new template: ${name.trim()}')),
+    );
+  }
+
   Widget _buildToolbar(ColorScheme colorScheme) {
     return Container(
       color: colorScheme.surfaceContainer,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           IconButton(
             tooltip: 'Exit Full Screen (ESC)',
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          const SizedBox(width: 8),
           IconButton(
             tooltip: widget.controller.settings.showFullScreenLayersPanel
                 ? 'Collapse Layers Panel'
@@ -246,40 +317,76 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
               );
             },
           ),
-          const SizedBox(width: 8),
-          const Text(
-            'Full Screen Editor',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(width: 16),
           ListenableBuilder(
             listenable: widget.templatesController,
             builder: (context, _) {
               final isEditing = widget.templatesController.editingTemplateId != null;
-              return FilledButton.icon(
-                onPressed: _handleSaveTemplate,
-                icon: const Icon(Icons.save),
-                label: Text(isEditing ? 'Update Template' : 'Save Template'),
+              final templateName = isEditing 
+                  ? widget.templatesController.editingTemplateName ?? 'Untitled'
+                  : 'New Template';
+              return Text(
+                templateName,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               );
             },
           ),
-          const SizedBox(width: 24),
-          FilledButton.icon(
-            onPressed: widget.controller.addText,
-            icon: const Icon(Icons.text_fields),
-            label: const Text('Add Text'),
+          const SizedBox(width: 8),
+          ListenableBuilder(
+            listenable: widget.templatesController,
+            builder: (context, _) {
+              final isEditing = widget.templatesController.editingTemplateId != null;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _handleSaveTemplate,
+                    icon: const Icon(Icons.save, size: 18),
+                    label: Text(isEditing ? 'Update' : 'Save'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                  ),
+                  if (isEditing)
+                    OutlinedButton.icon(
+                      onPressed: _handleSaveAsNewTemplate,
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: const Text('Save As New'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(width: 8),
           FilledButton.icon(
-            onPressed: widget.controller.addImage,
-            icon: const Icon(Icons.image_outlined),
-            label: const Text('Add Image'),
+            onPressed: widget.controller.addText,
+            icon: const Icon(Icons.text_fields, size: 18),
+            label: const Text('Add Text'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
           ),
-          const SizedBox(width: 24),
+          FilledButton.icon(
+            onPressed: widget.controller.addImage,
+            icon: const Icon(Icons.image_outlined, size: 18),
+            label: const Text('Add Image'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          ),
           const SizedBox(height: 24, child: VerticalDivider(width: 1)),
-          const SizedBox(width: 16),
           DropdownButton<double>(
             value: _zoomScale,
+            isDense: true,
             underline: const SizedBox(),
             items: const [
               DropdownMenuItem(value: 0.0, child: Text('Fit Screen')),
@@ -297,20 +404,25 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
               }
             },
           ),
-          const SizedBox(width: 16),
-          Checkbox(
-            value: widget.controller.settings.showSafeAreaGuides,
-            onChanged: (value) {
-              if (value == null) return;
-              widget.controller.updateSettings(
-                widget.controller.settings.copyWith(showSafeAreaGuides: value),
-              );
-            },
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Checkbox(
+                visualDensity: VisualDensity.compact,
+                value: widget.controller.settings.showSafeAreaGuides,
+                onChanged: (value) {
+                  if (value == null) return;
+                  widget.controller.updateSettings(
+                    widget.controller.settings.copyWith(showSafeAreaGuides: value),
+                  );
+                },
+              ),
+              const Text('Guides'),
+            ],
           ),
-          const Text('Guides'),
-          const SizedBox(width: 8),
           DropdownButton<String>(
             value: widget.controller.settings.safeAreaPreset,
+            isDense: true,
             underline: const SizedBox(),
             items: const [
               DropdownMenuItem(value: 'none', child: Text('None')),
@@ -328,21 +440,30 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
             }
                 : null,
           ),
-          const SizedBox(width: 16),
-          Checkbox(
-            value: _showGrid,
-            onChanged: (value) => setState(() => _showGrid = value ?? false),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Checkbox(
+                visualDensity: VisualDensity.compact,
+                value: _showGrid,
+                onChanged: (value) => setState(() => _showGrid = value ?? false),
+              ),
+              const Text('Grid'),
+            ],
           ),
-          const Text('Grid'),
-          const SizedBox(width: 16),
-          Checkbox(
-            value: _enableSnapping,
-            onChanged: (value) {
-              setState(() => _enableSnapping = value ?? true);
-            },
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Checkbox(
+                visualDensity: VisualDensity.compact,
+                value: _enableSnapping,
+                onChanged: (value) {
+                  setState(() => _enableSnapping = value ?? true);
+                },
+              ),
+              const Text('Snap'),
+            ],
           ),
-          const Text('Snap'),
-          const Spacer(),
           IconButton(
             tooltip: widget.controller.settings.showFullScreenPropertiesPanel
                 ? 'Collapse Properties Panel'

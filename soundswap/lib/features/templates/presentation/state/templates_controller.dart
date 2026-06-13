@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:soundswap/features/branding/presentation/state/branding_controller.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
+import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 import 'package:soundswap/features/templates/data/models/project_template.dart';
 import 'package:soundswap/features/templates/data/services/templates_service.dart';
+import 'package:soundswap/features/templates/data/services/template_thumbnail_generator.dart';
 import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
 
 class TemplatesController extends ChangeNotifier {
@@ -37,6 +40,8 @@ class TemplatesController extends ChangeNotifier {
     required OverlayToolsController overlay,
   }) async {
     final overlaySettings = overlay.settings;
+    final activeBranding = home.activeBrandingSettings ?? branding.settings;
+    final activeTextOverlay = home.activeTextOverlaySettings ?? textOverlay.settings;
     final template = ProjectTemplate(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: name.trim().isEmpty ? 'Untitled template' : name.trim(),
@@ -45,19 +50,113 @@ class TemplatesController extends ChangeNotifier {
       audioFolders: home.audioFolders,
       outputFolder: home.outputFolderPath,
       outputPrefix: home.outputNamePrefix,
-      branding: home.activeBrandingSettings ?? branding.settings,
-      textOverlay: home.activeTextOverlaySettings ?? textOverlay.settings,
+      branding: activeBranding,
+      textOverlay: activeTextOverlay,
       overlaySettings: overlaySettings,
-      useBranding: home.useBranding,
-      useTextOverlay: home.useTextOverlay,
+      useBranding: home.useBranding || activeBranding.hasLogo || activeBranding.hasContactText,
+      useTextOverlay: home.useTextOverlay || activeTextOverlay.hasContent,
       useOverlay: home.useOverlay || overlaySettings.hasContent,
       outputSize: home.outputSize,
       fitMode: home.fitMode,
+      version: 1,
     );
-    templates = [template, ...templates];
+
+    try {
+      final thumbPath = await TemplateThumbnailGenerator.generateThumbnail(template, activeWorkspaceItems: overlay.settings.items);
+      final templateWithThumb = ProjectTemplate(
+        id: template.id,
+        name: template.name,
+        createdAt: template.createdAt,
+        videoFolders: template.videoFolders,
+        audioFolders: template.audioFolders,
+        outputFolder: template.outputFolder,
+        outputPrefix: template.outputPrefix,
+        branding: template.branding,
+        textOverlay: template.textOverlay,
+        overlaySettings: template.overlaySettings,
+        useBranding: template.useBranding,
+        useTextOverlay: template.useTextOverlay,
+        useOverlay: template.useOverlay,
+        outputSize: template.outputSize,
+        fitMode: template.fitMode,
+        version: template.version,
+        thumbnailPath: thumbPath,
+      );
+      templates = [templateWithThumb, ...templates];
+    } catch (e) {
+      debugPrint('Failed to generate thumbnail: $e');
+      templates = [template, ...templates];
+    }
+
     await _service.saveAll(templates);
     message = 'Template saved.';
     notifyListeners();
+  }
+
+  Future<String?> ensureThumbnail(ProjectTemplate template, {List<OverlayItem>? activeWorkspaceItems}) async {
+    print(template.id);
+    print(template.name);
+    print(template.thumbnailPath);
+
+    print('\n[TemplatesController] ensureThumbnail() called for template: ${template.name}');
+    print('[TemplatesController] current thumbnailPath: ${template.thumbnailPath}');
+    print('[TemplatesController] overlay items count: ${template.overlaySettings.items.length}');
+    
+    if (template.thumbnailPath != null && await _isFileExists(template.thumbnailPath!)) {
+      print('[TemplatesController] thumbnail already exists. Skipping generation.');
+      return template.thumbnailPath;
+    }
+
+    if (template.overlaySettings.items.isEmpty) {
+      print('[TemplatesController] template overlay items are empty. Returning null without saving.');
+      return null;
+    }
+
+    try {
+      print('[TemplatesController] calling TemplateThumbnailGenerator.generateThumbnail...');
+      final thumbPath = await TemplateThumbnailGenerator.generateThumbnail(template, activeWorkspaceItems: activeWorkspaceItems);
+      print('[TemplatesController] generated thumbPath: $thumbPath');
+      
+      final templateWithThumb = ProjectTemplate(
+        id: template.id,
+        name: template.name,
+        createdAt: template.createdAt,
+        videoFolders: template.videoFolders,
+        audioFolders: template.audioFolders,
+        outputFolder: template.outputFolder,
+        outputPrefix: template.outputPrefix,
+        branding: template.branding,
+        textOverlay: template.textOverlay,
+        overlaySettings: template.overlaySettings,
+        useBranding: template.useBranding,
+        useTextOverlay: template.useTextOverlay,
+        useOverlay: template.useOverlay,
+        outputSize: template.outputSize,
+        fitMode: template.fitMode,
+        version: template.version,
+        thumbnailPath: thumbPath,
+      );
+      final index = templates.indexWhere((t) => t.id == template.id);
+      if (index >= 0) {
+        templates[index] = templateWithThumb;
+        await _service.saveAll(templates);
+        notifyListeners();
+        print('[TemplatesController] successfully updated template with new thumbnail path and saved.');
+      } else {
+        print('[TemplatesController] WARNING: Template not found in templates list after generating thumbnail.');
+      }
+      return thumbPath;
+    } catch (e, st) {
+      debugPrint('Failed to auto-generate thumbnail: $e\n$st');
+      return null;
+    }
+  }
+
+  Future<bool> _isFileExists(String path) async {
+    try {
+      return await File(path).exists();
+    } catch (_) {}
+    return false;
   }
 
   void markTemplateAsDirty() {
@@ -111,6 +210,8 @@ class TemplatesController extends ChangeNotifier {
     if (editingTemplateId == null) return;
     
     final overlaySettings = overlay.settings.deepCopy();
+    final activeBranding = home.activeBrandingSettings ?? branding.settings;
+    final activeTextOverlay = home.activeTextOverlaySettings ?? textOverlay.settings;
     final template = ProjectTemplate(
       id: editingTemplateId!,
       name: name.trim().isEmpty ? 'Untitled template' : name.trim(),
@@ -119,20 +220,21 @@ class TemplatesController extends ChangeNotifier {
       audioFolders: home.audioFolders,
       outputFolder: home.outputFolderPath,
       outputPrefix: home.outputNamePrefix,
-      branding: home.activeBrandingSettings ?? branding.settings,
-      textOverlay: home.activeTextOverlaySettings ?? textOverlay.settings,
+      branding: activeBranding,
+      textOverlay: activeTextOverlay,
       overlaySettings: overlaySettings,
-      useBranding: home.useBranding,
-      useTextOverlay: home.useTextOverlay,
+      useBranding: home.useBranding || activeBranding.hasLogo || activeBranding.hasContactText,
+      useTextOverlay: home.useTextOverlay || activeTextOverlay.hasContent,
       useOverlay: home.useOverlay || overlaySettings.hasContent,
-      outputSize: home.outputSize,
       fitMode: home.fitMode,
+      version: 1,
     );
 
+    ProjectTemplate finalTemplate = template;
     final existingIndex = templates.indexWhere((t) => t.id == editingTemplateId);
     if (existingIndex >= 0) {
       final existing = templates[existingIndex];
-      final updated = ProjectTemplate(
+      finalTemplate = ProjectTemplate(
         id: template.id,
         name: template.name,
         createdAt: existing.createdAt,
@@ -148,14 +250,43 @@ class TemplatesController extends ChangeNotifier {
         useOverlay: template.useOverlay,
         outputSize: template.outputSize,
         fitMode: template.fitMode,
+        version: existing.version + 1,
       );
+    }
+
+    try {
+      final thumbPath = await TemplateThumbnailGenerator.generateThumbnail(finalTemplate, activeWorkspaceItems: overlay.settings.items);
+      finalTemplate = ProjectTemplate(
+        id: finalTemplate.id,
+        name: finalTemplate.name,
+        createdAt: finalTemplate.createdAt,
+        videoFolders: finalTemplate.videoFolders,
+        audioFolders: finalTemplate.audioFolders,
+        outputFolder: finalTemplate.outputFolder,
+        outputPrefix: finalTemplate.outputPrefix,
+        branding: finalTemplate.branding,
+        textOverlay: finalTemplate.textOverlay,
+        overlaySettings: finalTemplate.overlaySettings,
+        useBranding: finalTemplate.useBranding,
+        useTextOverlay: finalTemplate.useTextOverlay,
+        useOverlay: finalTemplate.useOverlay,
+        outputSize: finalTemplate.outputSize,
+        fitMode: finalTemplate.fitMode,
+        version: finalTemplate.version,
+        thumbnailPath: thumbPath,
+      );
+    } catch (e) {
+      debugPrint('Failed to generate thumbnail: $e');
+    }
+
+    if (existingIndex >= 0) {
       templates = [
         ...templates.sublist(0, existingIndex),
-        updated,
+        finalTemplate,
         ...templates.sublist(existingIndex + 1),
       ];
     } else {
-      templates = [template, ...templates];
+      templates = [finalTemplate, ...templates];
     }
 
     await _service.saveAll(templates);
@@ -227,6 +358,8 @@ class TemplatesController extends ChangeNotifier {
             useOverlay: item.useOverlay,
             outputSize: item.outputSize,
             fitMode: item.fitMode,
+            thumbnailPath: item.thumbnailPath,
+            version: item.version,
           )
         else
           item,

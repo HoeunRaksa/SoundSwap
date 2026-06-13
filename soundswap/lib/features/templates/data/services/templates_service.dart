@@ -9,14 +9,23 @@ class TemplatesService {
   static const _fileName = 'project_templates.json';
 
   Future<List<ProjectTemplate>> load() async {
+    print('\n[TemplatesService] Loading templates from $_fileName...');
     final values = await _store.readList(_fileName);
-    return values
+    final templates = values
         .whereType<Map>()
         .map((value) => ProjectTemplate.fromJson(value.cast<String, Object?>()))
         .toList();
+    for (final t in templates) {
+      print('[TemplatesService] Loaded: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
+    }
+    return templates;
   }
 
   Future<void> saveAll(List<ProjectTemplate> templates) {
+    print('\n[TemplatesService] Saving ${templates.length} templates...');
+    for (final t in templates) {
+      print('[TemplatesService] Saving: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
+    }
     return _store.writeList(
       _fileName,
       templates.map((template) => template.toJson()).toList(),

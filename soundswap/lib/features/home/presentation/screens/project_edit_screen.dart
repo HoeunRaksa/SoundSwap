@@ -197,6 +197,7 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
 
   Widget _buildPreview() {
     final gap = AppResponsive.cardGap(context);
+
     final items = [
       for (final item in _overlayController.settings.items)
         PreviewOverlayItem(
@@ -230,6 +231,8 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
           animationEntranceDuration: item.animationEntranceDuration,
           animationExit: item.animationExit,
           animationExitDuration: item.animationExitDuration,
+          strokeWidth: item.strokeWidth,
+          strokeColorHex: item.strokeColorHex,
         ),
     ];
 

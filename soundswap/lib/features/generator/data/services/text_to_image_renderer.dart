@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:soundswap/shared/widgets/overlay_render_widget.dart';
 
 class TextToImageRenderer {
-  /// Renders text with complex styling (shadow, multiline wrapping, background box)
-  /// into a transparent PNG and saves it to a temporary file.
+  /// Renders the shared OverlayRenderWidget into a transparent PNG and saves it to a temporary file.
   /// Returns the absolute path to the generated PNG.
   static Future<String> renderTextToPng({
     required String text,
@@ -18,71 +19,98 @@ class TextToImageRenderer {
     required String textAlignment,
     required bool shadow,
     required bool backgroundBox,
+    double lineHeight = 1.2,
+    double letterSpacing = 0.0,
+    double strokeWidth = 0.0,
+    required String strokeColorHex,
   }) async {
-    debugPrint('PNG Renderer Applied Font - Family: $fontFamily, Bold: $bold, Italic: $italic');
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
+    debugPrint('PNG Renderer Applied Font - Family: $fontFamily, Bold: $bold, Italic: $italic, StrokeWidth: $strokeWidth');
 
+    final widget = OverlayRenderWidget(
+      text: text,
+      fontFamily: fontFamily,
+      bold: bold,
+      italic: italic,
+      fontSize: fontSize,
+      colorHex: colorHex,
+      textAlignment: textAlignment,
+      shadow: shadow,
+      backgroundBox: backgroundBox,
+      lineHeight: lineHeight,
+      letterSpacing: letterSpacing,
+      strokeWidth: strokeWidth,
+      strokeColorHex: strokeColorHex,
+    );
+
+    // Render widget to image off-screen
+    final repaintBoundary = RenderRepaintBoundary();
+    final buildOwner = BuildOwner(focusManager: FocusManager());
+    final pipelineOwner = PipelineOwner();
+
+    // Estimate height using TextPainter to provide constraints
     final color = _colorFromHex(colorHex);
-    final textAlign = switch (textAlignment) {
-      'center' => TextAlign.center,
-      'right' => TextAlign.right,
-      _ => TextAlign.left,
-    };
-
     final textSpan = TextSpan(
       text: text,
       style: TextStyle(
         color: color,
         fontSize: fontSize,
         fontFamily: fontFamily,
-        fontFamilyFallback: const ['Battambang'],
+        fontFamilyFallback: const ['Battambang', 'Hanuman', 'KhmerOS', 'Kantumruy', 'Noto Sans Khmer'],
         fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal,
-        shadows: shadow
-            ? const [
-                Shadow(
-                  blurRadius: 3,
-                  offset: Offset(1, 1),
-                  color: Colors.black87,
-                ),
-              ]
-            : null,
+        height: lineHeight,
+        letterSpacing: letterSpacing,
       ),
     );
-
     final textPainter = TextPainter(
       text: textSpan,
       textDirection: TextDirection.ltr,
-      textAlign: textAlign,
       maxLines: 12,
     );
-
-    // Bounding width for text wrapping
     final horizontalPadding = backgroundBox ? 8.0 : 0.0;
     final verticalPadding = backgroundBox ? 5.0 : 0.0;
     final layoutWidth = width - (horizontalPadding * 2);
-
     textPainter.layout(minWidth: layoutWidth, maxWidth: layoutWidth);
+    final heightEstimate = textPainter.height + (verticalPadding * 2);
 
-    final rectWidth = width;
-    final rectHeight = textPainter.height + (verticalPadding * 2);
+    final logicalSize = Size(width, heightEstimate + 10); // Add slight buffer
 
-    if (backgroundBox) {
-      final bgPaint = Paint()..color = Colors.black.withValues(alpha: 0.48);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(0, 0, rectWidth, rectHeight),
-          const Radius.circular(4),
+    final view = ui.PlatformDispatcher.instance.implicitView ?? ui.PlatformDispatcher.instance.views.first;
+
+    final renderView = RenderView(
+      view: view,
+      child: RenderPositionedBox(alignment: Alignment.topLeft, child: repaintBoundary),
+      configuration: ViewConfiguration(
+        logicalConstraints: BoxConstraints.tight(logicalSize),
+        devicePixelRatio: 1.0,
+      ),
+    );
+
+    pipelineOwner.rootNode = renderView;
+    renderView.prepareInitialFrame();
+
+    final rootElement = RenderObjectToWidgetAdapter<RenderBox>(
+      container: repaintBoundary,
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: UnconstrainedBox(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: width,
+            child: widget,
+          ),
         ),
-        bgPaint,
-      );
-    }
+      ),
+    ).attachToRenderTree(buildOwner);
 
-    textPainter.paint(canvas, Offset(horizontalPadding, verticalPadding));
+    buildOwner.buildScope(rootElement);
+    buildOwner.finalizeTree();
 
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(rectWidth.ceil(), rectHeight.ceil());
+    pipelineOwner.flushLayout();
+    pipelineOwner.flushCompositingBits();
+    pipelineOwner.flushPaint();
+
+    final image = await repaintBoundary.toImage(pixelRatio: 1.0);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
     final tempDir = await getTemporaryDirectory();
@@ -97,6 +125,7 @@ class TextToImageRenderer {
     final buffer = StringBuffer();
     if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
     buffer.write(hexString.replaceFirst('#', ''));
-    return Color(int.parse(buffer.toString(), radix: 16));
+    final parsed = int.tryParse(buffer.toString(), radix: 16);
+    return parsed == null ? Colors.white : Color(parsed);
   }
 }
