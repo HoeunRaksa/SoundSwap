@@ -14,6 +14,16 @@ class TemplatesController extends ChangeNotifier {
   List<ProjectTemplate> templates = [];
   String? message;
 
+  String? editingTemplateId;
+  bool hasUnsavedTemplateChanges = false;
+  bool _isLoadingTemplate = false;
+
+  String? get editingTemplateName {
+    if (editingTemplateId == null) return null;
+    final index = templates.indexWhere((t) => t.id == editingTemplateId);
+    return index >= 0 ? templates[index].name : null;
+  }
+
   Future<void> load() async {
     templates = await _service.load();
     notifyListeners();
@@ -50,12 +60,118 @@ class TemplatesController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void markTemplateAsDirty() {
+    if (editingTemplateId != null && !_isLoadingTemplate) {
+      hasUnsavedTemplateChanges = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> beginEditingTemplate({
+    required ProjectTemplate template,
+    required HomeController home,
+    required BrandingController branding,
+    required TextOverlayController textOverlay,
+    required OverlayToolsController overlay,
+  }) async {
+    _isLoadingTemplate = true;
+    editingTemplateId = template.id;
+    hasUnsavedTemplateChanges = false;
+
+    await overlay.clearCanvas();
+
+    await loadTemplate(
+      template: template,
+      home: home,
+      branding: branding,
+      textOverlay: textOverlay,
+      overlay: overlay,
+      useDeepCopyForOverlay: true,
+    );
+
+    message = 'Editing template: ${template.name}';
+    _isLoadingTemplate = false;
+    notifyListeners();
+  }
+
+  void cancelEditingTemplate() {
+    editingTemplateId = null;
+    hasUnsavedTemplateChanges = false;
+    message = 'Edit cancelled.';
+    notifyListeners();
+  }
+
+  Future<void> updateEditingTemplate({
+    required String name,
+    required HomeController home,
+    required BrandingController branding,
+    required TextOverlayController textOverlay,
+    required OverlayToolsController overlay,
+  }) async {
+    if (editingTemplateId == null) return;
+    
+    final overlaySettings = overlay.settings.deepCopy();
+    final template = ProjectTemplate(
+      id: editingTemplateId!,
+      name: name.trim().isEmpty ? 'Untitled template' : name.trim(),
+      createdAt: DateTime.now(), // Will be overwritten if we look up existing, but let's look up existing
+      videoFolders: home.videoFolders,
+      audioFolders: home.audioFolders,
+      outputFolder: home.outputFolderPath,
+      outputPrefix: home.outputNamePrefix,
+      branding: home.activeBrandingSettings ?? branding.settings,
+      textOverlay: home.activeTextOverlaySettings ?? textOverlay.settings,
+      overlaySettings: overlaySettings,
+      useBranding: home.useBranding,
+      useTextOverlay: home.useTextOverlay,
+      useOverlay: home.useOverlay || overlaySettings.hasContent,
+      outputSize: home.outputSize,
+      fitMode: home.fitMode,
+    );
+
+    final existingIndex = templates.indexWhere((t) => t.id == editingTemplateId);
+    if (existingIndex >= 0) {
+      final existing = templates[existingIndex];
+      final updated = ProjectTemplate(
+        id: template.id,
+        name: template.name,
+        createdAt: existing.createdAt,
+        videoFolders: template.videoFolders,
+        audioFolders: template.audioFolders,
+        outputFolder: template.outputFolder,
+        outputPrefix: template.outputPrefix,
+        branding: template.branding,
+        textOverlay: template.textOverlay,
+        overlaySettings: template.overlaySettings,
+        useBranding: template.useBranding,
+        useTextOverlay: template.useTextOverlay,
+        useOverlay: template.useOverlay,
+        outputSize: template.outputSize,
+        fitMode: template.fitMode,
+      );
+      templates = [
+        ...templates.sublist(0, existingIndex),
+        updated,
+        ...templates.sublist(existingIndex + 1),
+      ];
+    } else {
+      templates = [template, ...templates];
+    }
+
+    await _service.saveAll(templates);
+    editingTemplateId = null;
+    hasUnsavedTemplateChanges = false;
+    message = 'Template updated.';
+    notifyListeners();
+  }
+
   Future<void> loadTemplate({
     required ProjectTemplate template,
     required HomeController home,
     required BrandingController branding,
     required TextOverlayController textOverlay,
     required OverlayToolsController overlay,
+    bool useDeepCopyForOverlay = false,
   }) async {
     await home.applyTemplateFolders(
       videoFolders: template.videoFolders,
@@ -65,7 +181,13 @@ class TemplatesController extends ChangeNotifier {
     );
     await branding.update(template.branding);
     await textOverlay.update(template.textOverlay);
-    await overlay.applySettings(template.overlaySettings);
+    
+    if (useDeepCopyForOverlay) {
+      await overlay.loadOverlaySettings(template.overlaySettings.deepCopy());
+    } else {
+      await overlay.applySettings(template.overlaySettings);
+    }
+    
     home.applyGeneratorSettings(
       useBranding: template.useBranding,
       useTextOverlay: template.useTextOverlay,

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+// ignore_for_file: avoid_print
 import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_preset.dart';
@@ -242,20 +244,35 @@ class OverlayToolsController extends ChangeNotifier {
     final path = result?.files.single.path;
     if (path == null) return;
 
+    final width = 0.25.clamp(0.05, 0.8);
+    final xPercent = (0.5 - width / 2).clamp(0.0, 1.0 - width);
+    final yPercent = (0.5 - width / 2).clamp(0.0, 1.0 - width);
+
     final item = OverlayItem(
       id: _newId(),
       type: OverlayItemType.image,
-      name: 'Image overlay',
+      name: p.basename(path),
       imagePath: path,
-      position: const NormalizedPosition(xPercent: 0.08, yPercent: 0.08),
-      width: 0.22,
+      position: NormalizedPosition(xPercent: xPercent, yPercent: yPercent),
+      width: width,
       startTime: 0.0,
       endTime: null,
     );
+    
+    debugPrint('--- ADD IMAGE DEBUG ---');
+    debugPrint('selected picker path: $path');
+    debugPrint('created overlay item id: ${item.id}');
+    debugPrint('created overlay item image path: ${item.imagePath}');
+    debugPrint('xPercent: $xPercent, yPercent: $yPercent');
+    debugPrint('widthPercent: $width');
+    
     await _replaceSettings(
       settings.copyWith(items: [item, ...settings.items]),
       selectedId: item.id,
     );
+    
+    debugPrint('selected layer id: $selectedItemId');
+    debugPrint('-----------------------');
   }
 
   Future<void> pickDefaultFont() async {
@@ -302,7 +319,7 @@ class OverlayToolsController extends ChangeNotifier {
     await updateItem(item);
   }
 
-  Future<void> updateItem(OverlayItem item) async {
+  Future<void> updateItem(OverlayItem item, {bool saveToDisk = true}) async {
     await _replaceSettings(
       settings.copyWith(
         items: [
@@ -311,6 +328,7 @@ class OverlayToolsController extends ChangeNotifier {
         ],
       ),
       selectedId: item.id,
+      saveToDisk: saveToDisk,
     );
   }
 
@@ -336,16 +354,16 @@ class OverlayToolsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> moveItem(String id, NormalizedPosition position) async {
+  Future<void> moveItem(String id, NormalizedPosition position, {bool saveToDisk = true}) async {
     final item = _itemById(id);
     if (item == null || item.locked) return;
-    await updateItem(item.copyWith(position: position));
+    await updateItem(item.copyWith(position: position), saveToDisk: saveToDisk);
   }
 
-  Future<void> resizeItem(String id, double width) async {
+  Future<void> resizeItem(String id, double width, {bool saveToDisk = true}) async {
     final item = _itemById(id);
     if (item == null || item.locked) return;
-    await updateItem(item.copyWith(width: width));
+    await updateItem(item.copyWith(width: width), saveToDisk: saveToDisk);
   }
 
   Future<void> duplicateItem(String id) async {
@@ -464,6 +482,19 @@ class OverlayToolsController extends ChangeNotifier {
     message = 'Overlay settings applied.';
   }
 
+  Future<void> clearCanvas() async {
+    await _replaceSettings(const OverlaySettings(), selectedId: null);
+    message = 'Canvas cleared.';
+  }
+
+  Future<void> loadOverlaySettings(OverlaySettings value) async {
+    await _replaceSettings(
+      value,
+      selectedId: value.items.isEmpty ? null : value.items.first.id,
+    );
+    message = 'Overlay settings loaded.';
+  }
+
   Future<void> renamePreset({
     required OverlayPreset preset,
     required String name,
@@ -487,19 +518,30 @@ class OverlayToolsController extends ChangeNotifier {
   }
 
   // --- Alignment Panel Calculations ---
+  final Map<String, double> _exactHeights = {};
+
+  void reportExactHeight(String id, double heightPercent) {
+    _exactHeights[id] = heightPercent;
+  }
+
   double _getEstimatedHeight(OverlayItem item) {
+    if (_exactHeights.containsKey(item.id)) {
+      return _exactHeights[item.id]!;
+    }
     return item.customHeight ?? (item.type == OverlayItemType.image ? item.width : 0.05);
   }
 
   Future<void> alignLeft() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.isEmpty) return;
-    double targetX = 0.0;
-    if (selected.length > 1) {
-      targetX = selected.map((e) => e.position.xPercent).reduce((a, b) => a < b ? a : b);
-    }
+    
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
+        final targetX = 0.0;
+        debugPrint('--- ALIGN DEBUG ---');
+        debugPrint('Action: Align Left, Item ID: ${e.id}');
+        debugPrint('Old X: ${e.position.xPercent}, New X: $targetX');
+        debugPrint('-------------------');
         return e.copyWith(position: e.position.copyWith(xPercent: targetX));
       }
       return e;
@@ -510,17 +552,15 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> alignRight() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.isEmpty) return;
-    if (selected.length == 1) {
-      final item = selected.first;
-      if (!item.locked) {
-        await updateItem(item.copyWith(position: item.position.copyWith(xPercent: 1.0 - item.width)));
-      }
-      return;
-    }
-    final maxX = selected.map((e) => e.position.xPercent + e.width).reduce((a, b) => a > b ? a : b);
+    
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
-        return e.copyWith(position: e.position.copyWith(xPercent: maxX - e.width));
+        final targetX = 1.0 - e.width;
+        debugPrint('--- ALIGN DEBUG ---');
+        debugPrint('Action: Align Right, Item ID: ${e.id}');
+        debugPrint('Old X: ${e.position.xPercent}, New X: $targetX');
+        debugPrint('-------------------');
+        return e.copyWith(position: e.position.copyWith(xPercent: targetX));
       }
       return e;
     }).toList();
@@ -530,17 +570,15 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> alignCenterX() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.isEmpty) return;
-    if (selected.length == 1) {
-      final item = selected.first;
-      if (!item.locked) {
-        await updateItem(item.copyWith(position: item.position.copyWith(xPercent: 0.5 - item.width / 2)));
-      }
-      return;
-    }
-    final avgCenterX = selected.map((e) => e.position.xPercent + e.width / 2).reduce((a, b) => a + b) / selected.length;
+    
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
-        return e.copyWith(position: e.position.copyWith(xPercent: avgCenterX - e.width / 2));
+        final targetX = 0.5 - e.width / 2;
+        debugPrint('--- ALIGN DEBUG ---');
+        debugPrint('Action: Center X, Item ID: ${e.id}');
+        debugPrint('Old X: ${e.position.xPercent}, New X: $targetX');
+        debugPrint('-------------------');
+        return e.copyWith(position: e.position.copyWith(xPercent: targetX));
       }
       return e;
     }).toList();
@@ -550,12 +588,14 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> alignTop() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.isEmpty) return;
-    double targetY = 0.0;
-    if (selected.length > 1) {
-      targetY = selected.map((e) => e.position.yPercent).reduce((a, b) => a < b ? a : b);
-    }
+    
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
+        final targetY = 0.0;
+        debugPrint('--- ALIGN DEBUG ---');
+        debugPrint('Action: Align Top, Item ID: ${e.id}');
+        debugPrint('Old Y: ${e.position.yPercent}, New Y: $targetY');
+        debugPrint('-------------------');
         return e.copyWith(position: e.position.copyWith(yPercent: targetY));
       }
       return e;
@@ -566,19 +606,16 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> alignBottom() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.isEmpty) return;
-    if (selected.length == 1) {
-      final item = selected.first;
-      if (!item.locked) {
-        final h = _getEstimatedHeight(item);
-        await updateItem(item.copyWith(position: item.position.copyWith(yPercent: 1.0 - h)));
-      }
-      return;
-    }
-    final maxY = selected.map((e) => e.position.yPercent + _getEstimatedHeight(e)).reduce((a, b) => a > b ? a : b);
+    
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
         final h = _getEstimatedHeight(e);
-        return e.copyWith(position: e.position.copyWith(yPercent: maxY - h));
+        final targetY = 1.0 - h;
+        debugPrint('--- ALIGN DEBUG ---');
+        debugPrint('Action: Align Bottom, Item ID: ${e.id}');
+        debugPrint('Old Y: ${e.position.yPercent}, New Y: $targetY');
+        debugPrint('-------------------');
+        return e.copyWith(position: e.position.copyWith(yPercent: targetY));
       }
       return e;
     }).toList();
@@ -588,19 +625,16 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> alignCenterY() async {
     final selected = settings.items.where((e) => selectedItemIds.contains(e.id)).toList();
     if (selected.isEmpty) return;
-    if (selected.length == 1) {
-      final item = selected.first;
-      if (!item.locked) {
-        final h = _getEstimatedHeight(item);
-        await updateItem(item.copyWith(position: item.position.copyWith(yPercent: 0.5 - h / 2)));
-      }
-      return;
-    }
-    final avgCenterY = selected.map((e) => e.position.yPercent + _getEstimatedHeight(e) / 2).reduce((a, b) => a + b) / selected.length;
+    
     final nextItems = settings.items.map((e) {
       if (selectedItemIds.contains(e.id) && !e.locked) {
         final h = _getEstimatedHeight(e);
-        return e.copyWith(position: e.position.copyWith(yPercent: avgCenterY - h / 2));
+        final targetY = 0.5 - h / 2;
+        debugPrint('--- ALIGN DEBUG ---');
+        debugPrint('Action: Center Y, Item ID: ${e.id}');
+        debugPrint('Old Y: ${e.position.yPercent}, New Y: $targetY');
+        debugPrint('-------------------');
+        return e.copyWith(position: e.position.copyWith(yPercent: targetY));
       }
       return e;
     }).toList();
@@ -649,6 +683,7 @@ class OverlayToolsController extends ChangeNotifier {
   Future<void> _replaceSettings(
     OverlaySettings value, {
     String? selectedId,
+    bool saveToDisk = true,
   }) async {
     settings = value;
     selectedItemId = selectedId ?? selectedItemId;
@@ -663,6 +698,12 @@ class OverlayToolsController extends ChangeNotifier {
       selectedItemIds.clear();
     }
     notifyListeners();
+    if (saveToDisk) {
+      await _settingsService.save(settings);
+    }
+  }
+
+  Future<void> saveSettingsToDisk() async {
     await _settingsService.save(settings);
   }
 

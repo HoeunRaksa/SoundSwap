@@ -153,6 +153,7 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
     _setText(_rotationController, item.rotation.toStringAsFixed(0));
     _setText(_startTimeController, item.startTime.toStringAsFixed(1));
     _setText(_endTimeController, (item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1));
+    widget.templatesController.markTemplateAsDirty();
   }
 
   void _setText(TextEditingController controller, String value) {
@@ -347,8 +348,10 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 outputSize: _previewSize,
                 items: items,
                 onSelected: controller.selectItem,
-                onPositionChanged: controller.moveItem,
-                onWidthChanged: controller.resizeItem,
+                onPositionChanged: (id, pos) => controller.moveItem(id, pos, saveToDisk: false),
+                onWidthChanged: (id, w) => controller.resizeItem(id, w, saveToDisk: false),
+                onHeightReported: controller.reportExactHeight,
+                onDragEnd: controller.saveSettingsToDisk,
                 showGrid: _showGrid,
                 safeAreaMode: _safeAreaMode,
                 enableSnapping: _enableSnapping,
@@ -357,12 +360,12 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 selectedItemIds: controller.selectedItemIds,
                 onMultiPositionChanged: (positions) {
                   positions.forEach((id, pos) {
-                    controller.moveItem(id, pos);
+                    controller.moveItem(id, pos, saveToDisk: false);
                   });
                 },
                 onSizeChanged: (id, w, h) {
                   final match = controller.settings.items.firstWhere((e) => e.id == id);
-                  controller.updateItem(match.copyWith(width: w, customHeight: h));
+                  controller.updateItem(match.copyWith(width: w, customHeight: h), saveToDisk: false);
                 },
               ),
             ),
@@ -1091,7 +1094,10 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 DropdownMenuItem(value: 'slide_up', child: Text('Slide from Bottom')),
                 DropdownMenuItem(value: 'slide_down', child: Text('Slide from Top')),
               ],
-              onChanged: (val) => widget.controller.updateItem(item.copyWith(animationEntrance: val)),
+              onChanged: (val) => widget.controller.updateItem(item.copyWith(
+                animationEntrance: val,
+                clearAnimationEntrance: val == null,
+              )),
             ),
             const SizedBox(height: 8),
             Row(
@@ -1123,7 +1129,10 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 DropdownMenuItem(value: 'slide_up', child: Text('Slide to Top')),
                 DropdownMenuItem(value: 'slide_down', child: Text('Slide to Bottom')),
               ],
-              onChanged: (val) => widget.controller.updateItem(item.copyWith(animationExit: val)),
+              onChanged: (val) => widget.controller.updateItem(item.copyWith(
+                animationExit: val,
+                clearAnimationExit: val == null,
+              )),
             ),
             const SizedBox(height: 8),
             Row(
@@ -1523,32 +1532,94 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
       title: 'Reusable Project Templates',
       icon: Icons.dashboard_customize_outlined,
       children: [
+        if (controller.editingTemplateId != null)
+          Container(
+            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.edit_note, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Editing template: ${controller.editingTemplateName ?? ""}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: _templateNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Save settings under template name',
+                decoration: InputDecoration(
+                  labelText: controller.editingTemplateId != null ? 'Update template name' : 'Save settings under template name',
                   hintText: 'My Preset',
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            FilledButton.icon(
-              onPressed: () async {
-                await controller.saveCurrent(
-                  name: _templateNameController.text,
-                  home: widget.homeController,
-                  branding: widget.brandingController,
-                  textOverlay: widget.textOverlayController,
-                  overlay: widget.controller,
-                );
-                _templateNameController.clear();
-              },
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('Save Current'),
-            ),
+            if (controller.editingTemplateId != null) ...[
+              FilledButton.icon(
+                onPressed: () async {
+                  await controller.updateEditingTemplate(
+                    name: _templateNameController.text,
+                    home: widget.homeController,
+                    branding: widget.brandingController,
+                    textOverlay: widget.textOverlayController,
+                    overlay: widget.controller,
+                  );
+                  _templateNameController.clear();
+                },
+                icon: const Icon(Icons.update),
+                label: const Text('Update Template'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await controller.saveCurrent(
+                    name: '${_templateNameController.text} (Copy)',
+                    home: widget.homeController,
+                    branding: widget.brandingController,
+                    textOverlay: widget.textOverlayController,
+                    overlay: widget.controller,
+                  );
+                },
+                icon: const Icon(Icons.copy),
+                label: const Text('Save As New'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _handleCancelEdit,
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Cancel Edit'),
+              ),
+            ] else ...[
+              FilledButton.icon(
+                onPressed: () async {
+                  await controller.saveCurrent(
+                    name: _templateNameController.text,
+                    home: widget.homeController,
+                    branding: widget.brandingController,
+                    textOverlay: widget.textOverlayController,
+                    overlay: widget.controller,
+                  );
+                  _templateNameController.clear();
+                },
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save Current'),
+              ),
+            ],
           ],
         ),
         if (controller.message != null) Text(controller.message!),
@@ -1572,6 +1643,7 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                 textOverlay: widget.textOverlayController,
                 overlay: widget.controller,
               ),
+              onEditContent: () => _handleEditTemplate(template),
               onRename: () => _renameTemplate(template),
               onDelete: () => _confirmDeleteTemplate(template),
             ),
@@ -1632,6 +1704,74 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
     if (confirmed == true) {
       await widget.templatesController.deleteTemplate(template);
     }
+  }
+
+  Future<void> _handleEditTemplate(ProjectTemplate template) async {
+    final controller = widget.templatesController;
+    if (controller.hasUnsavedTemplateChanges) {
+      final action = await _showUnsavedChangesDialog();
+      if (action == null || action == 'Cancel') return;
+      if (action == 'Save') {
+        await controller.updateEditingTemplate(
+          name: _templateNameController.text,
+          home: widget.homeController,
+          branding: widget.brandingController,
+          textOverlay: widget.textOverlayController,
+          overlay: widget.controller,
+        );
+      }
+    }
+    _templateNameController.text = template.name;
+    await controller.beginEditingTemplate(
+      template: template,
+      home: widget.homeController,
+      branding: widget.brandingController,
+      textOverlay: widget.textOverlayController,
+      overlay: widget.controller,
+    );
+  }
+
+  Future<void> _handleCancelEdit() async {
+    final controller = widget.templatesController;
+    if (controller.hasUnsavedTemplateChanges) {
+      final action = await _showUnsavedChangesDialog();
+      if (action == null || action == 'Cancel') return;
+      if (action == 'Save') {
+        await controller.updateEditingTemplate(
+          name: _templateNameController.text,
+          home: widget.homeController,
+          branding: widget.brandingController,
+          textOverlay: widget.textOverlayController,
+          overlay: widget.controller,
+        );
+      }
+    }
+    controller.cancelEditingTemplate();
+    _templateNameController.clear();
+  }
+
+  Future<String?> _showUnsavedChangesDialog() async {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved Changes'),
+        content: const Text('You have unsaved changes. Save, Discard, or Cancel?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'Cancel'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'Discard'),
+            child: const Text('Discard', style: TextStyle(color: Colors.red)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'Save'),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _itemTypeLabel(OverlayItem item) {
@@ -1904,12 +2044,14 @@ class _TemplateTile extends StatelessWidget {
   const _TemplateTile({
     required this.template,
     required this.onApply,
+    required this.onEditContent,
     required this.onRename,
     required this.onDelete,
   });
 
   final ProjectTemplate template;
   final VoidCallback onApply;
+  final VoidCallback onEditContent;
   final VoidCallback onRename;
   final VoidCallback onDelete;
 
@@ -1963,9 +2105,14 @@ class _TemplateTile extends StatelessWidget {
                   child: const Text('Apply'),
                 ),
                 IconButton(
+                  tooltip: 'Edit Content',
+                  onPressed: onEditContent,
+                  icon: const Icon(Icons.edit, size: 20),
+                ),
+                IconButton(
                   tooltip: 'Rename',
                   onPressed: onRename,
-                  icon: const Icon(Icons.edit, size: 20),
+                  icon: const Icon(Icons.drive_file_rename_outline, size: 20),
                 ),
                 IconButton(
                   tooltip: 'Delete',

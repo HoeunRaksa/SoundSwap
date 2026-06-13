@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/branding/data/models/branding_settings.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
@@ -365,9 +367,20 @@ class FfmpegOverlayService {
         final yVal = _getPosYExpression(item, outH);
         
         var overlayOpts = 'x=$xVal:y=$yVal:shortest=1';
-        if (item.startTime > 0 || item.endTime != null) {
-          overlayOpts = '$overlayOpts:enable=\'between(t,${item.startTime.toStringAsFixed(3)},${(item.endTime ?? 99999).toStringAsFixed(3)})\'';
+        if (item.startTime > 0.001 || item.endTime != null) {
+          final startStr = item.startTime.toStringAsFixed(3);
+          final endStr = (item.endTime ?? 99999).toStringAsFixed(3);
+          overlayOpts = '$overlayOpts:enable=\'between(t,$startStr,$endStr)\'';
         }
+
+        debugPrint('--- OVERLAY TIMING DEBUG ---');
+        debugPrint('Item ID: ${item.id}');
+        debugPrint('Overlay Start: ${item.startTime}');
+        debugPrint('Overlay End: ${item.endTime}');
+        debugPrint('Entrance Transition: ${item.animationEntrance}');
+        debugPrint('Exit Transition: ${item.animationExit}');
+        debugPrint('Generated Enable Expression: $overlayOpts');
+        debugPrint('----------------------------');
         
         filters.add('[$current][$imageLabel]overlay=$overlayOpts[$next]');
         current = next;

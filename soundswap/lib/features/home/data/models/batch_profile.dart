@@ -115,6 +115,7 @@ class BatchProfile {
   }
 
   BatchProfile copyWith({
+    String? id,
     String? name,
     DateTime? updatedAt,
     List<String>? videoFolders,
@@ -136,7 +137,7 @@ class BatchProfile {
     bool clearSelectedTemplate = false,
   }) {
     return BatchProfile(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

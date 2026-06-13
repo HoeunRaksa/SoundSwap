@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
@@ -87,6 +88,8 @@ class OverlayPreviewCanvas extends StatefulWidget {
     this.selectedItemIds = const {},
     this.onMultiPositionChanged,
     this.onSizeChanged,
+    this.onHeightReported,
+    this.onDragEnd,
     super.key,
   });
 
@@ -103,6 +106,8 @@ class OverlayPreviewCanvas extends StatefulWidget {
   final Set<String> selectedItemIds;
   final void Function(Map<String, NormalizedPosition> positions)? onMultiPositionChanged;
   final void Function(String itemId, double width, double? customHeight)? onSizeChanged;
+  final void Function(String itemId, double heightPercent)? onHeightReported;
+  final VoidCallback? onDragEnd;
 
   @override
   State<OverlayPreviewCanvas> createState() => _OverlayPreviewCanvasState();
@@ -111,6 +116,7 @@ class OverlayPreviewCanvas extends StatefulWidget {
 class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
   double? _snapLineX;
   double? _snapLineY;
+  final GlobalKey _canvasKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +151,7 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                 builder: (context, preview) {
                   final previewSize = preview.biggest;
                   return Stack(
+                    key: _canvasKey,
                     clipBehavior: Clip.none,
                     children: [
                       // Checkerboard pattern behind the entire canvas
@@ -195,20 +202,25 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                           item: item,
                           allItems: widget.items,
                           size: previewSize,
+                          canvasKey: _canvasKey,
                           enableSnapping: widget.enableSnapping,
                           onChanged: widget.onPositionChanged,
                           onSelected: widget.onSelected,
                           onWidthChanged: widget.onWidthChanged,
                           onSizeChanged: widget.onSizeChanged,
+                          onHeightReported: widget.onHeightReported,
                           selectedItemIds: widget.selectedItemIds,
                           onMultiPositionChanged: widget.onMultiPositionChanged,
                           currentTime: widget.currentTime,
-                          onSnapChanged: (snapX, snapY) {
-                            setState(() {
-                              _snapLineX = snapX;
-                              _snapLineY = snapY;
-                            });
+                          onSnapChanged: (x, y) {
+                            if (mounted) {
+                              setState(() {
+                                _snapLineX = x;
+                                _snapLineY = y;
+                              });
+                            }
                           },
+                          onDragEnd: widget.onDragEnd,
                         ),
                     ],
                   );
@@ -259,20 +271,23 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
   }
 }
 
-class _DraggablePreviewItem extends StatelessWidget {
+class _DraggablePreviewItem extends StatefulWidget {
   const _DraggablePreviewItem({
     required this.item,
     required this.allItems,
     required this.size,
+    required this.canvasKey,
     required this.enableSnapping,
     required this.onChanged,
     this.onSelected,
     this.onWidthChanged,
     this.onSizeChanged,
+    this.onHeightReported,
     required this.selectedItemIds,
     this.onMultiPositionChanged,
     required this.currentTime,
     required this.onSnapChanged,
+    this.onDragEnd,
   });
 
   final PreviewOverlayItem item;
@@ -283,13 +298,41 @@ class _DraggablePreviewItem extends StatelessWidget {
   final ValueChanged<String>? onSelected;
   final void Function(String itemId, double width)? onWidthChanged;
   final void Function(String itemId, double width, double? customHeight)? onSizeChanged;
+  final void Function(String itemId, double heightPercent)? onHeightReported;
   final Set<String> selectedItemIds;
   final void Function(Map<String, NormalizedPosition> positions)? onMultiPositionChanged;
   final double currentTime;
+  final GlobalKey canvasKey;
   final void Function(double? snapX, double? snapY) onSnapChanged;
+  final VoidCallback? onDragEnd;
+
+  @override
+  State<_DraggablePreviewItem> createState() => _DraggablePreviewItemState();
+}
+
+class _DraggablePreviewItemState extends State<_DraggablePreviewItem> {
+  Offset? _grabOffset;
+  NormalizedPosition? _startPosition;
+  Map<String, NormalizedPosition>? _multiStartPositions;
 
   @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+    final selectedItemIds = widget.selectedItemIds;
+    final size = widget.size;
+    final allItems = widget.allItems;
+    final enableSnapping = widget.enableSnapping;
+    final canvasKey = widget.canvasKey;
+    final onSelected = widget.onSelected;
+    final onChanged = widget.onChanged;
+    final onMultiPositionChanged = widget.onMultiPositionChanged;
+    final onSnapChanged = widget.onSnapChanged;
+    final onHeightReported = widget.onHeightReported;
+    final onDragEnd = widget.onDragEnd;
+    final onSizeChanged = widget.onSizeChanged;
+    final onWidthChanged = widget.onWidthChanged;
+    final currentTime = widget.currentTime;
+
     final isSelected = item.selected || selectedItemIds.contains(item.id);
 
     // Calculate animation values
@@ -366,43 +409,103 @@ class _DraggablePreviewItem extends StatelessWidget {
     return Positioned(
       left: targetPos.dx + animationOffsetX,
       top: targetPos.dy + animationOffsetY,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
+      child: _SizeReporter(
+        onSize: (reportedSize) {
+          if (onHeightReported != null) {
+            onHeightReported(item.id, reportedSize.height / size.height);
+          }
+        },
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
           // Drag-to-move trigger area (center content)
-          GestureDetector(
-            onTap: () {
+          Builder(builder: (dragContext) {
+            return GestureDetector(
+              onTap: () {
               if (onSelected != null) {
-                onSelected!(item.id);
+                onSelected(item.id);
               }
             },
-            onPanUpdate: (details) {
+            onPanStart: (details) {
               if (item.locked) return;
+              final box = canvasKey.currentContext?.findRenderObject() as RenderBox?;
+              if (box == null) return;
+              
+              final pointerCanvasLocal = box.globalToLocal(details.globalPosition);
+              final itemLeftPx = size.width * item.position.xPercent;
+              final itemTopPx = size.height * item.position.yPercent;
+              
+              _grabOffset = Offset(
+                pointerCanvasLocal.dx - itemLeftPx,
+                pointerCanvasLocal.dy - itemTopPx,
+              );
+              _startPosition = item.position;
 
-              final deltaX = details.delta.dx / size.width;
-              final deltaY = details.delta.dy / size.height;
+              if (selectedItemIds.contains(item.id) && selectedItemIds.length > 1) {
+                _multiStartPositions = {};
+                for (final id in selectedItemIds) {
+                  final sibling = allItems.firstWhere((e) => e.id == id, orElse: () => item);
+                  _multiStartPositions![id] = sibling.position;
+                }
+              }
+
+              print('--- DRAG START ---');
+              print('pointerCanvasX/Y: ${pointerCanvasLocal.dx}, ${pointerCanvasLocal.dy}');
+              print('itemLeftPx/topPx: $itemLeftPx, $itemTopPx');
+              print('grabOffsetX/Y: ${_grabOffset?.dx}, ${_grabOffset?.dy}');
+            },
+            onPanUpdate: (details) {
+              if (item.locked || _grabOffset == null || _startPosition == null) return;
+
+              final box = canvasKey.currentContext?.findRenderObject() as RenderBox?;
+              if (box == null) return;
+              
+              final pointerCanvasLocal = box.globalToLocal(details.globalPosition);
+              
+              final newLeftPx = pointerCanvasLocal.dx - _grabOffset!.dx;
+              final newTopPx = pointerCanvasLocal.dy - _grabOffset!.dy;
+              
+              final newXPercent = newLeftPx / size.width;
+              final newYPercent = newTopPx / size.height;
+
+              print('--- DRAG UPDATE ---');
+              print('pointerCanvasX/Y: ${pointerCanvasLocal.dx}, ${pointerCanvasLocal.dy}');
+              print('newLeftPx/newTopPx: $newLeftPx, $newTopPx');
+              print('raw xPercent/yPercent: $newXPercent, $newYPercent');
 
               // If multi-selected, drag all together
-              if (selectedItemIds.contains(item.id) && selectedItemIds.length > 1 && onMultiPositionChanged != null) {
+              if (selectedItemIds.contains(item.id) && selectedItemIds.length > 1 && onMultiPositionChanged != null && _multiStartPositions != null) {
                 final Map<String, NormalizedPosition> nextPositions = {};
+                final deltaX = newXPercent - _startPosition!.xPercent;
+                final deltaY = newYPercent - _startPosition!.yPercent;
+
                 for (final selectedId in selectedItemIds) {
                   final sibling = allItems.firstWhere((e) => e.id == selectedId, orElse: () => item);
                   if (sibling.locked) continue;
+                  final computedSiblingHeight = sibling.lockAspectRatio ? sibling.width : (sibling.customHeight ?? sibling.width);
+                  final startPos = _multiStartPositions![selectedId] ?? sibling.position;
+                  
                   nextPositions[selectedId] = NormalizedPosition(
-                    xPercent: (sibling.position.xPercent + deltaX).clamp(0.0, 1.0),
-                    yPercent: (sibling.position.yPercent + deltaY).clamp(0.0, 1.0),
+                    xPercent: (startPos.xPercent + deltaX).clamp(0.0, 1.0 - sibling.width),
+                    yPercent: (startPos.yPercent + deltaY).clamp(0.0, 1.0 - computedSiblingHeight),
                   );
                 }
-                onMultiPositionChanged!(nextPositions);
+                onMultiPositionChanged(nextPositions);
                 return;
               }
 
               // Standard single item drag with snapping
-              double nextX = item.position.xPercent + deltaX;
-              double nextY = item.position.yPercent + deltaY;
+              double nextX = newXPercent;
+              double nextY = newYPercent;
 
               double? guideX;
               double? guideY;
+
+              final itemBox = dragContext.findRenderObject() as RenderBox?;
+              final itemPixelHeight = itemBox?.size.height ?? 0.0;
+              final heightPercent = itemPixelHeight > 0 
+                  ? (itemPixelHeight / size.height) 
+                  : (item.lockAspectRatio ? item.width : (item.customHeight ?? item.width));
 
               if (enableSnapping) {
                 // Snap to centers/edges of other items or canvas borders
@@ -431,19 +534,16 @@ class _DraggablePreviewItem extends StatelessWidget {
                   }
                 }
 
-                final computedHeight = item.lockAspectRatio
-                    ? item.width
-                    : (item.customHeight ?? item.width);
-                final centerY = nextY + computedHeight / 2;
+                final centerY = nextY + heightPercent / 2;
 
                 if ((centerY - 0.5).abs() < 0.02) {
-                  nextY = 0.5 - computedHeight / 2;
+                  nextY = 0.5 - heightPercent / 2;
                   guideY = 0.5;
                 } else if ((nextY - 0.08).abs() < 0.015) {
                   nextY = 0.08;
                   guideY = 0.08;
-                } else if ((nextY + computedHeight - 0.78).abs() < 0.015) {
-                  nextY = 0.78 - computedHeight;
+                } else if ((nextY + heightPercent - 0.78).abs() < 0.015) {
+                  nextY = 0.78 - heightPercent;
                   guideY = 0.78;
                 }
 
@@ -454,37 +554,64 @@ class _DraggablePreviewItem extends StatelessWidget {
                   if ((nextY - other.position.yPercent).abs() < 0.015) {
                     nextY = other.position.yPercent;
                     guideY = nextY;
-                  } else if ((nextY + computedHeight - (other.position.yPercent + otherH)).abs() < 0.015) {
-                    nextY = other.position.yPercent + otherH - computedHeight;
-                    guideY = nextY + computedHeight;
+                  } else if ((nextY + heightPercent - (other.position.yPercent + otherH)).abs() < 0.015) {
+                    nextY = other.position.yPercent + otherH - heightPercent;
+                    guideY = nextY + heightPercent;
                   }
                 }
               }
 
+              nextX = nextX.clamp(0.0, 1.0 - item.width);
+              
+              final maxYPercent = 1.0 - heightPercent;
+              nextY = nextY.clamp(0.0, maxYPercent);
+
+              print('--- DRAG CLAMP DEBUG ---');
+              print('canvasHeight: ${size.height}');
+              print('itemPixelHeight: $itemPixelHeight');
+              print('heightPercent: $heightPercent');
+              print('localCanvasY: ${pointerCanvasLocal.dy}');
+              print('maxYPercent: $maxYPercent');
+              print('yPercent after clamp: $nextY');
+
               onChanged(item.id, NormalizedPosition(xPercent: nextX, yPercent: nextY));
               onSnapChanged(guideX, guideY);
             },
-            onPanEnd: (_) => onSnapChanged(null, null),
+            onPanEnd: (_) {
+              _grabOffset = null;
+              _startPosition = null;
+              _multiStartPositions = null;
+              onSnapChanged(null, null);
+              if (onDragEnd != null) onDragEnd();
+            },
             child: MouseRegion(
               cursor: item.locked ? SystemMouseCursors.basic : SystemMouseCursors.move,
               child: content,
             ),
-          ),
-          // Selection handles (rendered on top of surface)
+          );
+        }),
+        // Selection handles (rendered on top of surface)
           if (isSelected)
             Positioned.fill(
               child: _SelectionHandlesFrame(
                 locked: item.locked,
-                onResize: (dx, dy, left, right, top, bottom) {
+                onResize: (details, left, right, top, bottom) {
                   if (item.locked) return;
+
+                  final box = canvasKey.currentContext?.findRenderObject() as RenderBox?;
+                  if (box == null) return;
+                  
+                  final localCurrent = box.globalToLocal(details.globalPosition);
+                  final localPrev = box.globalToLocal(details.globalPosition - details.delta);
+                  final localDelta = localCurrent - localPrev;
+
+                  final changeX = localDelta.dx / size.width;
+                  final changeY = localDelta.dy / size.height;
 
                   double nextX = item.position.xPercent;
                   double nextY = item.position.yPercent;
                   double nextW = item.width;
                   double nextH = item.customHeight ?? item.width;
-
-                  final changeX = dx / size.width;
-                  final changeY = dy / size.height;
 
                   if (left) {
                     final oldMaxX = nextX + nextW;
@@ -503,18 +630,25 @@ class _DraggablePreviewItem extends StatelessWidget {
                     nextH = (nextH + changeY).clamp(0.05, 1.0);
                   }
 
+                  nextX = nextX.clamp(0.0, 1.0 - nextW);
+                  nextY = nextY.clamp(0.0, 1.0 - (item.lockAspectRatio ? nextW : nextH));
+
                   if (onSizeChanged != null) {
-                    onSizeChanged!(item.id, nextW, item.lockAspectRatio ? null : nextH);
+                    onSizeChanged(item.id, nextW, item.lockAspectRatio ? null : nextH);
                   } else if (onWidthChanged != null) {
-                    onWidthChanged!(item.id, nextW);
+                    onWidthChanged(item.id, nextW);
                   }
+                  
                   onChanged(item.id, NormalizedPosition(xPercent: nextX, yPercent: nextY));
+                },
+                onResizeEnd: () {
+                  if (onDragEnd != null) onDragEnd();
                 },
               ),
             ),
         ],
       ),
-    );
+    ));
   }
 }
 
@@ -522,10 +656,12 @@ class _SelectionHandlesFrame extends StatelessWidget {
   const _SelectionHandlesFrame({
     required this.locked,
     required this.onResize,
+    this.onResizeEnd,
   });
 
   final bool locked;
-  final void Function(double dx, double dy, bool left, bool right, bool top, bool bottom) onResize;
+  final void Function(DragUpdateDetails details, bool left, bool right, bool top, bool bottom) onResize;
+  final VoidCallback? onResizeEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -574,7 +710,10 @@ class _SelectionHandlesFrame extends StatelessWidget {
       alignment: alignment,
       child: GestureDetector(
         onPanUpdate: (details) {
-          onResize(details.delta.dx, details.delta.dy, left, right, top, bottom);
+          onResize(details, left, right, top, bottom);
+        },
+        onPanEnd: (_) {
+          if (onResizeEnd != null) onResizeEnd!();
         },
         child: MouseRegion(
           cursor: cursor,
@@ -643,6 +782,7 @@ class _LogoPreview extends StatelessWidget {
                 ),
                 Image.file(
                   imageFile,
+                  key: ValueKey('${item.id}-${item.imagePath}'),
                   fit: switch (item.imageFitMode) {
                     'cover' => BoxFit.cover,
                     'stretch' => BoxFit.fill,
@@ -834,4 +974,42 @@ Color _colorFromHex(String value) {
   if (hex.length != 6) return Colors.white;
   final parsed = int.tryParse('FF$hex', radix: 16);
   return parsed == null ? Colors.white : Color(parsed);
+}
+
+class _SizeReporter extends StatefulWidget {
+  final Widget child;
+  final void Function(Size size) onSize;
+
+  const _SizeReporter({required this.child, required this.onSize});
+
+  @override
+  State<_SizeReporter> createState() => _SizeReporterState();
+}
+
+class _SizeReporterState extends State<_SizeReporter> {
+  Size? _oldSize;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(_checkSize);
+  }
+
+  @override
+  void didUpdateWidget(_SizeReporter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback(_checkSize);
+  }
+
+  void _checkSize(_) {
+    if (!mounted) return;
+    final size = context.size;
+    if (size != null && size != _oldSize) {
+      _oldSize = size;
+      widget.onSize(size);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

@@ -1568,40 +1568,25 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateBatchProfileDetails({
-    required BatchProfile profile,
-    required String name,
-    required List<String> videoFolders,
-    required List<String> audioFolders,
-    required String? outputFolderPath,
-    required String outputPrefix,
-  }) async {
-    final updated = BatchProfile(
-      id: profile.id,
-      name: _cleanProfileName(name, fallback: profile.name),
-      createdAt: profile.createdAt,
+  Future<void> updateBatchProfile(BatchProfile updatedProfile) async {
+    final existing = _batchProfileById(updatedProfile.id);
+    if (existing == null) return;
+    
+    final updated = updatedProfile.copyWith(
+      name: _cleanProfileName(updatedProfile.name, fallback: existing.name),
       updatedAt: DateTime.now(),
-      videoFolders: List.from(videoFolders),
-      audioFolders: List.from(audioFolders),
-      outputFolderPath: _emptyToNull(outputFolderPath),
-      outputPrefix: outputPrefix,
-      useOverlay: profile.useOverlay,
-      selectedOverlayPresetId: profile.selectedOverlayPresetId,
-      overlaySettings: profile.overlaySettings,
-      useTemplate: profile.useTemplate,
-      selectedTemplateId: profile.selectedTemplateId,
-      outputSize: profile.outputSize,
-      fitMode: profile.fitMode,
+      outputFolderPath: _emptyToNull(updatedProfile.outputFolderPath),
     );
+    
     batchProfiles = [
       updated,
-      ...batchProfiles.where((item) => item.id != profile.id),
+      ...batchProfiles.where((item) => item.id != updated.id),
     ];
-    if (selectedBatchProfileId == profile.id) {
+    if (selectedBatchProfileId == updated.id) {
       _applyBatchProfileState(updated);
       await _persistLastState();
     }
-    final queueId = selectedBatchQueueIdForProfile(profile.id);
+    final queueId = selectedBatchQueueIdForProfile(updated.id);
     if (queueId != null) {
       batchQueues = [
         for (final queue in batchQueues)
@@ -1609,7 +1594,24 @@ class HomeController extends ChangeNotifier {
       ];
     }
     await _saveBatchProfiles();
-    batchProfileMessage = 'Updated "${updated.name}".';
+    batchProfileMessage = 'Saved edits to "${updated.name}".';
+    notifyListeners();
+  }
+
+  Future<void> createBatchProfileFromExisting(BatchProfile baseProfile) async {
+    final now = DateTime.now();
+    final newId = now.microsecondsSinceEpoch.toString();
+    
+    final newProfile = baseProfile.copyWith(
+      id: newId,
+      name: _cleanProfileName('${baseProfile.name} (Copy)', fallback: 'New Profile'),
+      updatedAt: now,
+      outputFolderPath: _emptyToNull(baseProfile.outputFolderPath),
+    );
+    
+    batchProfiles = [newProfile, ...batchProfiles].take(20).toList();
+    await _saveBatchProfiles();
+    batchProfileMessage = 'Created new profile "${newProfile.name}".';
     notifyListeners();
   }
 

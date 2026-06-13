@@ -50,4 +50,8 @@ class OverlaySettings {
       defaultFontFamily: defaultFontFamily ?? this.defaultFontFamily,
     );
   }
+
+  OverlaySettings deepCopy() {
+    return OverlaySettings.fromJson(toJson());
+  }
 }

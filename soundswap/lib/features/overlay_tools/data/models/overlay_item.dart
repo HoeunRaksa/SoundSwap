@@ -188,8 +188,10 @@ class OverlayItem {
     double? endTime,
     bool clearEndTime = false,
     String? animationEntrance,
+    bool clearAnimationEntrance = false,
     double? animationEntranceDuration,
     String? animationExit,
+    bool clearAnimationExit = false,
     double? animationExitDuration,
   }) {
     return OverlayItem(
@@ -222,9 +224,9 @@ class OverlayItem {
       scaleY: scaleY ?? this.scaleY,
       startTime: startTime ?? this.startTime,
       endTime: clearEndTime ? null : (endTime ?? this.endTime),
-      animationEntrance: animationEntrance ?? this.animationEntrance,
+      animationEntrance: clearAnimationEntrance ? null : (animationEntrance ?? this.animationEntrance),
       animationEntranceDuration: animationEntranceDuration ?? this.animationEntranceDuration,
-      animationExit: animationExit ?? this.animationExit,
+      animationExit: clearAnimationExit ? null : (animationExit ?? this.animationExit),
       animationExitDuration: animationExitDuration ?? this.animationExitDuration,
     );
   }

@@ -9,6 +9,7 @@ import 'package:soundswap/core/video/video_output_settings.dart';
 import 'package:soundswap/features/home/data/models/audio_settings.dart';
 import 'package:soundswap/features/home/data/models/batch_profile.dart';
 import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
+import 'package:soundswap/features/home/presentation/screens/project_edit_screen.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/home/presentation/widgets/folder_selector_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/metric_card.dart';
@@ -393,10 +394,18 @@ class _ControlsPanelState extends State<_ControlsPanel> {
         SizedBox(height: gap),
         _BatchProfilesPanel(
           controller: widget.controller,
-          onCreate: () => _editBatchProfileDetails(),
+          onCreate: () => _createBatchProfileDialog(),
           onStart: widget.controller.startBatchProfile,
           onStop: widget.controller.stopProcessing,
-          onEdit: (profile) => _editBatchProfileDetails(profile: profile),
+          onEdit: (profile) => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProjectEditScreen(
+                profile: profile,
+                homeController: widget.controller,
+              ),
+            ),
+          ),
           onDelete: _confirmDeleteBatchProfile,
         ),
         SizedBox(height: gap),
@@ -668,21 +677,16 @@ class _ControlsPanelState extends State<_ControlsPanel> {
     await widget.controller.startProcessing(removeOldResults: removeOldResults);
   }
 
-  Future<void> _editBatchProfileDetails({BatchProfile? profile}) async {
+  Future<void> _createBatchProfileDialog() async {
     final nameController = TextEditingController(
-      text: profile?.name ?? widget.controller.outputNamePrefix,
+      text: widget.controller.outputNamePrefix,
     );
     final prefixController = TextEditingController(
-      text: profile?.outputPrefix ?? widget.controller.outputNamePrefix,
+      text: widget.controller.outputNamePrefix,
     );
-    var videoFolders = profile?.videoFolders.isNotEmpty == true 
-        ? List<String>.from(profile!.videoFolders)
-        : List<String>.from(widget.controller.videoFolders);
-    var audioFolders = profile?.audioFolders.isNotEmpty == true
-        ? List<String>.from(profile!.audioFolders)
-        : List<String>.from(widget.controller.audioFolders);
-    var outputFolder =
-        profile?.outputFolderPath ?? widget.controller.outputFolderPath ?? '';
+    var videoFolders = List<String>.from(widget.controller.videoFolders);
+    var audioFolders = List<String>.from(widget.controller.audioFolders);
+    var outputFolder = widget.controller.outputFolderPath ?? '';
     final result =
         await showDialog<
           ({
@@ -698,9 +702,7 @@ class _ControlsPanelState extends State<_ControlsPanel> {
             builder: (context, setDialogState) {
               final gap = AppResponsive.cardGap(context);
               return AlertDialog(
-                title: Text(
-                  profile == null ? 'Add batch profile' : 'Edit batch profile',
-                ),
+                title: const Text('Add batch profile'),
                 content: SizedBox(
                   width: AppResponsive.isSmall(context) ? 520 : 680,
                   child: SingleChildScrollView(
@@ -802,24 +804,13 @@ class _ControlsPanelState extends State<_ControlsPanel> {
     nameController.dispose();
     prefixController.dispose();
     if (result == null) return;
-    if (profile == null) {
-      await widget.controller.createBatchProfile(
-        name: result.name,
-        videoFolders: result.videoFolders,
-        audioFolders: result.audioFolders,
-        outputFolderPath: result.outputFolder,
-        outputPrefix: result.prefix,
-      );
-    } else {
-      await widget.controller.updateBatchProfileDetails(
-        profile: profile,
-        name: result.name,
-        videoFolders: result.videoFolders,
-        audioFolders: result.audioFolders,
-        outputFolderPath: result.outputFolder,
-        outputPrefix: result.prefix,
-      );
-    }
+    await widget.controller.createBatchProfile(
+      name: result.name,
+      videoFolders: result.videoFolders,
+      audioFolders: result.audioFolders,
+      outputFolderPath: result.outputFolder,
+      outputPrefix: result.prefix,
+    );
   }
 
   Future<void> _confirmDeleteBatchProfile(BatchProfile profile) async {
