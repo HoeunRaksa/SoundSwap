@@ -19,6 +19,9 @@ import 'package:soundswap/features/home/data/models/image_to_video_settings.dart
 import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/models/soundswap_job.dart';
 import 'package:soundswap/features/home/data/services/batch_profiles_service.dart';
+import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
+import 'package:soundswap/features/templates/data/services/templates_service.dart';
+import 'package:soundswap/features/templates/data/services/template_validator.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
 import 'package:soundswap/features/home/data/services/home_state_service.dart';
 import 'package:soundswap/features/home/data/services/media_scanner_service.dart';
@@ -47,6 +50,7 @@ class HomeController extends ChangeNotifier {
     BatchProfilesService? batchProfilesService,
     HomeStateService? homeStateService,
     EffectsController? effectsController,
+    TemplatesController? templatesController,
   }) : _folderPickerService = folderPickerService ?? FolderPickerService(),
        _mediaScannerService = mediaScannerService ?? MediaScannerService(),
        _ffmpegService = ffmpegService ?? FfmpegService(),
@@ -56,6 +60,7 @@ class HomeController extends ChangeNotifier {
        _debugLogService = debugLogService ?? DebugLogService(),
        _batchProfilesService = batchProfilesService ?? BatchProfilesService(),
        _homeStateService = homeStateService ?? HomeStateService(),
+       _templatesController = templatesController,
        _effectsController = effectsController {
     _overlayService =
         overlayService ?? FfmpegOverlayService(ffmpegService: _ffmpegService);
@@ -70,6 +75,7 @@ class HomeController extends ChangeNotifier {
   final DebugLogService _debugLogService;
   final BatchProfilesService _batchProfilesService;
   final HomeStateService _homeStateService;
+  final TemplatesController? _templatesController;
   final EffectsController? _effectsController;
   final Random _random = Random();
   int maxRetries = 3;
@@ -99,6 +105,9 @@ class HomeController extends ChangeNotifier {
   String? selectedTextPresetId;
   String? selectedOverlayPresetId;
   String? selectedTemplateId;
+  List<String> selectedTemplateIds = [];
+  List<ProjectTemplate> availableTemplates = [];
+  List<ProjectTemplate> get templates => _templatesController?.templates ?? availableTemplates;
   String? selectedBatchProfileId;
   String? selectedBatchQueueId;
   String? batchProfileMessage;
@@ -226,7 +235,10 @@ class HomeController extends ChangeNotifier {
 
   Future<void> setTemplate(ProjectTemplate? template) async {
     selectedTemplateId = template?.id;
-    useTemplate = template != null || useTemplate;
+    if (template == null) {
+      selectedTemplateIds.clear();
+    }
+    useTemplate = template != null || selectedTemplateIds.isNotEmpty || useTemplate;
     if (template != null) {
       await applyTemplateFolders(
         videoFolders: template.videoFolders,
@@ -245,6 +257,24 @@ class HomeController extends ChangeNotifier {
         overlaySettings: template.overlaySettings,
       );
     }
+    unawaited(_persistLastState());
+    notifyListeners();
+  }
+
+  void setAvailableTemplates(List<ProjectTemplate> templates) {
+    availableTemplates = templates;
+  }
+
+  void toggleTemplateSelection(String id) {
+    if (selectedTemplateIds.contains(id)) {
+      selectedTemplateIds.remove(id);
+    } else {
+      selectedTemplateIds.add(id);
+    }
+    if (selectedTemplateIds.isNotEmpty) {
+      selectedTemplateId = null; // Clear single select if multi is used
+    }
+    useTemplate = selectedTemplateIds.isNotEmpty || selectedTemplateId != null;
     unawaited(_persistLastState());
     notifyListeners();
   }
@@ -654,7 +684,10 @@ class HomeController extends ChangeNotifier {
     }
   }
 
-  Future<void> startProcessing({bool removeOldResults = false}) async {
+  Future<void> startProcessing({
+    bool removeOldResults = false,
+    Future<TemplateValidationResult?> Function(List<MissingAsset> missingAssets)? onMissingAssetsDetected,
+  }) async {
     try {
       FfmpegService.clearProbeCache();
       _ffmpegService.resetCancelFlag();
@@ -689,6 +722,41 @@ class HomeController extends ChangeNotifier {
         await _removeOldResultsForPrefix();
       }
       jobs = _rebuildJobsFromCurrentQueue();
+
+      final missingAssets = TemplateValidator.validateBatchTemplates(jobs);
+      if (missingAssets.isNotEmpty) {
+        if (onMissingAssetsDetected == null) {
+          throw const BatchValidationException('Templates have missing assets but no UI callback was provided.');
+        }
+        final resolution = await onMissingAssetsDetected(missingAssets);
+        if (resolution == null) {
+          statusMessage = 'Batch cancelled (Missing template assets).';
+          notifyListeners();
+          return;
+        }
+
+        // Apply resolution
+        for (int i = 0; i < jobs.length; i++) {
+          final job = jobs[i];
+          final t = job.template;
+          if (t != null && resolution.resolvedTemplates.containsKey(t.id)) {
+            final newT = resolution.resolvedTemplates[t.id];
+            jobs[i] = job.copyWith(
+              template: newT, 
+              explicitNullTemplate: newT == null,
+            );
+          }
+        }
+
+        if (resolution.saveToDisk) {
+          for (final resolvedT in resolution.resolvedTemplates.values) {
+            if (resolvedT != null) {
+              await _templatesController?.saveTemplate(resolvedT);
+            }
+          }
+        }
+      }
+
       _replaceSelectedQueue(jobs: jobs);
       selectedQueueVideoPaths = {};
 
@@ -795,11 +863,29 @@ class HomeController extends ChangeNotifier {
     );
     final jobsList = <SoundSwapJob>[];
     for (var i = 0; i < sourceVideos.length; i++) {
+      ProjectTemplate? jobTemplate;
+      if (selectedTemplateIds.isNotEmpty) {
+        final idList = selectedTemplateIds.toList()..shuffle();
+        final pickedId = idList.first;
+        try {
+          jobTemplate = templates.firstWhere((t) => t.id == pickedId);
+        } catch (_) {
+          if (templates.isNotEmpty) jobTemplate = templates.first;
+        }
+      } else if (selectedTemplateId != null) {
+        try {
+          jobTemplate = templates.firstWhere((t) => t.id == selectedTemplateId);
+        } catch (_) {
+          if (templates.isNotEmpty) jobTemplate = templates.first;
+        }
+      }
+
       jobsList.add(
         SoundSwapJob(
           video: sourceVideos[i],
           audio: _randomAudio(),
           outputPath: paths[i],
+          template: jobTemplate,
         ),
       );
     }
@@ -823,8 +909,13 @@ class HomeController extends ChangeNotifier {
         'Generate and review the queue before starting.',
       );
     }
-    if (audios.isEmpty) {
-      throw const BatchValidationException('No supported audios found.');
+    if (audios.isEmpty && audioSettings.mode == AudioMode.mixOriginalAndNew) {
+      throw const BatchValidationException(
+        'Mix Audio Mode requires at least one audio file.',
+      );
+    }
+    if (audios.isEmpty && audioSettings.mode == AudioMode.replaceOriginal) {
+      throw const BatchValidationException('No supported audios found for Replace Mode.');
     }
     for (final job in jobs) {
       if (!File(job.video.path).existsSync()) {
@@ -1335,15 +1426,25 @@ class HomeController extends ChangeNotifier {
   ) async {
     if (!generatorFeaturesEnabled) return null;
 
-    final branding = useBranding ? activeBrandingSettings : null;
-    final textOverlay = useTextOverlay ? activeTextOverlaySettings : null;
-    final overlaySettings = useOverlay ? activeOverlaySettings : null;
+    final t = job.template;
+    final branding = t != null 
+        ? (t.useBranding ? t.branding : null) 
+        : (useBranding ? activeBrandingSettings : null);
+    final textOverlay = t != null 
+        ? (t.useTextOverlay ? t.textOverlay : null) 
+        : (useTextOverlay ? activeTextOverlaySettings : null);
+    final overlaySettings = t != null 
+        ? (t.useOverlay ? t.overlaySettings : null) 
+        : (useOverlay ? activeOverlaySettings : null);
+    final jobOutputSize = t != null ? t.outputSize : outputSize;
+    final jobFitMode = t != null ? t.fitMode : fitMode;
+    
     final tempPath = _temporaryGeneratorOutputPath(job.outputPath);
     final overlayPlan = await _overlayService.prepareOverlay(
       inputPath: job.outputPath,
       outputPath: tempPath,
-      outputSize: outputSize,
-      fitMode: fitMode,
+      outputSize: jobOutputSize,
+      fitMode: jobFitMode,
       branding: branding,
       textOverlay: textOverlay,
       overlaySettings: overlaySettings,
@@ -1556,6 +1657,7 @@ class HomeController extends ChangeNotifier {
       overlaySettings: current.overlaySettings,
       useTemplate: current.useTemplate,
       selectedTemplateId: current.selectedTemplateId,
+      selectedTemplateIds: current.selectedTemplateIds,
       outputSize: current.outputSize,
       fitMode: current.fitMode,
     );
@@ -1679,6 +1781,7 @@ class HomeController extends ChangeNotifier {
       overlaySettings: activeOverlaySettings ?? const OverlaySettings(),
       useTemplate: useTemplate,
       selectedTemplateId: selectedTemplateId,
+      selectedTemplateIds: selectedTemplateIds,
       outputSize: outputSize,
       fitMode: fitMode,
       audioSettings: audioSettings,
@@ -1698,6 +1801,7 @@ class HomeController extends ChangeNotifier {
     activeOverlaySettings = profile.overlaySettings;
     useTemplate = profile.useTemplate;
     selectedTemplateId = profile.selectedTemplateId;
+    selectedTemplateIds = List.from(profile.selectedTemplateIds);
     outputSize = profile.outputSize;
     fitMode = profile.fitMode;
     audioSettings = profile.audioSettings;

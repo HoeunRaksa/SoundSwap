@@ -436,25 +436,90 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                   const Text('Guides'),
                 ],
               ),
-              DropdownButton<String>(
-                value: widget.controller.settings.safeAreaPreset,
-                isDense: true,
-                underline: const SizedBox(),
-                items: const [
-                  DropdownMenuItem(value: 'none', child: Text('None')),
-                  DropdownMenuItem(value: 'facebook_reels', child: Text('FB Reels')),
-                  DropdownMenuItem(value: 'tiktok', child: Text('TikTok')),
-                  DropdownMenuItem(value: 'youtube_shorts', child: Text('YT Shorts')),
-                  DropdownMenuItem(value: 'custom', child: Text('Custom')),
-                ],
-                onChanged: widget.controller.settings.showSafeAreaGuides
-                    ? (value) {
-                  if (value == null) return;
+              PopupMenuButton<String>(
+                initialValue: widget.controller.settings.safeAreaPreset,
+                enabled: widget.controller.settings.showSafeAreaGuides,
+                tooltip: 'Select Guide',
+                onSelected: (value) {
+                  debugPrint('[Guide] selected=$value');
                   widget.controller.updateSettings(
                     widget.controller.settings.copyWith(safeAreaPreset: value),
                   );
-                }
-                    : null,
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _getGuideLabel(widget.controller.settings.safeAreaPreset),
+                        style: TextStyle(
+                          color: widget.controller.settings.showSafeAreaGuides
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        size: 20,
+                        color: widget.controller.settings.showSafeAreaGuides
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                      ),
+                    ],
+                  ),
+                ),
+                itemBuilder: (context) => [
+                  // Social Media
+                  const PopupMenuItem(value: '', enabled: false, child: Text('Social Media', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(value: 'none', child: Text('None')),
+                  const PopupMenuItem(value: 'facebook_reels', child: Text('Facebook Reels')),
+                  const PopupMenuItem(value: 'tiktok', child: Text('TikTok')),
+                  const PopupMenuItem(value: 'youtube_shorts', child: Text('YouTube Shorts')),
+                  const PopupMenuItem(value: 'instagram_reels', child: Text('Instagram Reels')),
+                  const PopupMenuItem(value: 'instagram_story', child: Text('Instagram Story')),
+                  const PopupMenuItem(value: 'facebook_story', child: Text('Facebook Story')),
+                  const PopupMenuDivider(),
+
+                  // Video Formats
+                  const PopupMenuItem(value: '', enabled: false, child: Text('Video Formats', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(value: '9_16_safe_area', child: Text('9:16 Safe Area')),
+                  const PopupMenuItem(value: '4_5_feed_post', child: Text('4:5 Feed Post')),
+                  const PopupMenuItem(value: '1_1_square', child: Text('1:1 Square')),
+                  const PopupMenuItem(value: '16_9_landscape', child: Text('16:9 Landscape')),
+                  const PopupMenuDivider(),
+
+                  // Content Guides
+                  const PopupMenuItem(value: '', enabled: false, child: Text('Content Guides', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(value: 'title_safe_area', child: Text('Title Safe Area')),
+                  const PopupMenuItem(value: 'subtitle_safe_area', child: Text('Subtitle Safe Area')),
+                  const PopupMenuItem(value: 'cta_safe_area', child: Text('CTA Safe Area')),
+                  const PopupMenuItem(value: 'logo_safe_area', child: Text('Logo Safe Area')),
+                  const PopupMenuItem(value: 'phone_number_safe_area', child: Text('Phone Number Safe Area')),
+                  const PopupMenuDivider(),
+
+                  // Composition Guides
+                  const PopupMenuItem(value: '', enabled: false, child: Text('Composition Guides', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(value: 'rule_of_thirds', child: Text('Rule of Thirds')),
+                  const PopupMenuItem(value: 'center_cross', child: Text('Center Cross')),
+                  const PopupMenuItem(value: 'golden_ratio', child: Text('Golden Ratio')),
+                  const PopupMenuItem(value: 'diagonal_composition', child: Text('Diagonal Composition')),
+                  const PopupMenuDivider(),
+
+                  // Business Templates
+                  const PopupMenuItem(value: '', enabled: false, child: Text('Business Templates', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(value: 'construction_product_layout', child: Text('Construction Product Layout')),
+                  const PopupMenuItem(value: 'product_showcase', child: Text('Product Showcase')),
+                  const PopupMenuItem(value: 'before_after_layout', child: Text('Before / After Layout')),
+                  const PopupMenuItem(value: 'promotion_layout', child: Text('Promotion Layout')),
+                  const PopupMenuItem(value: 'contact_info_layout', child: Text('Contact Information Layout')),
+                  const PopupMenuDivider(),
+
+                  // Advanced
+                  const PopupMenuItem(value: '', enabled: false, child: Text('Advanced', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(value: 'custom', child: Text('Custom')),
+                ],
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -543,6 +608,38 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
     );
   }
 
+  String _getGuideLabel(String value) {
+    switch (value) {
+      case 'none': return 'None';
+      case 'facebook_reels': return 'Facebook Reels';
+      case 'tiktok': return 'TikTok';
+      case 'youtube_shorts': return 'YouTube Shorts';
+      case 'instagram_reels': return 'Instagram Reels';
+      case 'instagram_story': return 'Instagram Story';
+      case 'facebook_story': return 'Facebook Story';
+      case '9_16_safe_area': return '9:16 Safe Area';
+      case '4_5_feed_post': return '4:5 Feed Post';
+      case '1_1_square': return '1:1 Square';
+      case '16_9_landscape': return '16:9 Landscape';
+      case 'title_safe_area': return 'Title Safe Area';
+      case 'subtitle_safe_area': return 'Subtitle Safe Area';
+      case 'cta_safe_area': return 'CTA Safe Area';
+      case 'logo_safe_area': return 'Logo Safe Area';
+      case 'phone_number_safe_area': return 'Phone Number Safe Area';
+      case 'rule_of_thirds': return 'Rule of Thirds';
+      case 'center_cross': return 'Center Cross';
+      case 'golden_ratio': return 'Golden Ratio';
+      case 'diagonal_composition': return 'Diagonal Composition';
+      case 'construction_product_layout': return 'Construction Product Layout';
+      case 'product_showcase': return 'Product Showcase';
+      case 'before_after_layout': return 'Before / After Layout';
+      case 'promotion_layout': return 'Promotion Layout';
+      case 'contact_info_layout': return 'Contact Information Layout';
+      case 'custom': return 'Custom';
+      default: return value;
+    }
+  }
+
   Widget _buildCanvasArea(
       ColorScheme colorScheme,
       List<PreviewOverlayItem> items,
@@ -624,6 +721,10 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                             safeAreaPadding: widget
                                 .controller.settings.showSafeAreaGuides
                                 ? widget.controller.settings.activeSafeArea
+                                : null,
+                            guidePreset: widget
+                                .controller.settings.showSafeAreaGuides
+                                ? widget.controller.settings.safeAreaPreset
                                 : null,
                             selectedItemIds: widget.controller.selectedItemIds,
                             onSelected: widget.controller.selectItem,

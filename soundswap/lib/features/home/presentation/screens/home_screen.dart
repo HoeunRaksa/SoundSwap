@@ -16,11 +16,16 @@ import 'package:soundswap/features/home/presentation/widgets/metric_card.dart';
 import 'package:soundswap/features/home/presentation/widgets/progress_panel.dart';
 import 'package:soundswap/features/home/presentation/widgets/queue_table.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_preset.dart';
+
 import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
+
 import 'package:soundswap/features/templates/data/models/project_template.dart';
+import 'package:soundswap/features/templates/data/services/template_validator.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
+import 'package:soundswap/features/templates/presentation/widgets/missing_assets_dialog.dart';
 import 'package:soundswap/shared/services/folder_picker_service.dart';
 import 'package:soundswap/shared/widgets/empty_state.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -674,7 +679,26 @@ class _ControlsPanelState extends State<_ControlsPanel> {
       ),
     );
     if (removeOldResults == null) return;
-    await widget.controller.startProcessing(removeOldResults: removeOldResults);
+    await widget.controller.startProcessing(
+      removeOldResults: removeOldResults,
+      onMissingAssetsDetected: (missingAssets) async {
+        final Map<String, ProjectTemplate> initialTemplates = {};
+        for (final job in widget.controller.jobs) {
+          if (job.template != null) {
+            initialTemplates[job.template!.id] = job.template!;
+          }
+        }
+        
+        return await showDialog<TemplateValidationResult>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => MissingAssetsDialog(
+            initialMissingAssets: missingAssets,
+            initialTemplates: initialTemplates,
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _createBatchProfileDialog() async {
@@ -1457,9 +1481,27 @@ class _GeneratorOptionsPanel extends StatelessWidget {
                   ],
                   onChanged: (value) {
                     if (value != null) {
-                      controller.setAudioSettings(
-                        controller.audioSettings.copyWith(mode: value),
-                      );
+                      if (value == AudioMode.mixOriginalAndNew && controller.audioSettings.mode != AudioMode.mixOriginalAndNew) {
+                        controller.setAudioSettings(
+                          controller.audioSettings.copyWith(
+                            mode: value,
+                            originalAudioVolume: 100,
+                            newAudioVolume: 25,
+                          ),
+                        );
+                      } else if (value == AudioMode.replaceOriginal && controller.audioSettings.mode != AudioMode.replaceOriginal) {
+                        controller.setAudioSettings(
+                          controller.audioSettings.copyWith(
+                            mode: value,
+                            originalAudioVolume: 0,
+                            newAudioVolume: 100,
+                          ),
+                        );
+                      } else {
+                        controller.setAudioSettings(
+                          controller.audioSettings.copyWith(mode: value),
+                        );
+                      }
                     }
                   },
                 ),
@@ -1794,45 +1836,90 @@ class _TemplateDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedId = _selectedTemplateId();
-    return DropdownButtonFormField<String>(
-      key: ValueKey(
-        'template-$selectedId-${templatesController.templates.length}',
+    // Inject available templates so the controller can pick from them when generating
+    controller.setAvailableTemplates(templatesController.templates);
+    
+    final count = controller.selectedTemplateIds.length;
+    final singleId = controller.selectedTemplateId;
+    
+    String label = 'Select templates';
+    if (count > 1) {
+      label = '$count templates selected';
+    } else if (count == 1) {
+      final tid = controller.selectedTemplateIds.first;
+      label = _templateById(tid)?.name ?? 'Select templates';
+    } else if (singleId != null) {
+      label = _templateById(singleId)?.name ?? 'Select templates';
+    } else if (templatesController.templates.isEmpty) {
+      label = 'No templates saved';
+    }
+
+    return InputDecorator(
+      decoration: const InputDecoration(labelText: 'Templates', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+      child: InkWell(
+        onTap: enabled && templatesController.templates.isNotEmpty ? () => _showTemplateDialog(context) : null,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
       ),
-      initialValue: selectedId,
-      isExpanded: true,
-      decoration: const InputDecoration(labelText: 'Template'),
-      items: [
-        for (final template in templatesController.templates)
-          DropdownMenuItem(value: template.id, child: Text(template.name)),
-      ],
-      hint: Text(
-        templatesController.templates.isEmpty ? 'No templates saved' : 'Select',
-      ),
-      onChanged: enabled
-          ? (id) async {
-              final template = _templateById(id);
-              await controller.setTemplate(template);
-              if (template != null) {
-                await overlayController.applySettings(template.overlaySettings);
-              }
-            }
-          : null,
     );
   }
 
-  String? _selectedTemplateId() {
-    for (final template in templatesController.templates) {
-      if (template.id == controller.selectedTemplateId) return template.id;
+  ProjectTemplate? _templateById(String id) {
+    try {
+      return templatesController.templates.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
     }
-    return null;
   }
 
-  ProjectTemplate? _templateById(String? id) {
-    for (final template in templatesController.templates) {
-      if (template.id == id) return template;
-    }
-    return null;
+  void _showTemplateDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Templates'),
+          content: SizedBox(
+            width: 400,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final t in templatesController.templates)
+                      CheckboxListTile(
+                        title: Text(t.name),
+                        value: controller.selectedTemplateIds.contains(t.id) || controller.selectedTemplateId == t.id,
+                        onChanged: (val) {
+                          controller.toggleTemplateSelection(t.id);
+                          if (controller.selectedTemplateIds.length == 1) {
+                            final loaded = _templateById(controller.selectedTemplateIds.first);
+                            if (loaded != null) {
+                              controller.setTemplate(loaded);
+                              overlayController.applySettings(loaded.overlaySettings);
+                            }
+                          }
+                          setState(() {});
+                        },
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

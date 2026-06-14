@@ -169,14 +169,17 @@ class _AppShellState extends State<AppShell> {
     super.initState();
     _resultHistoryController = ResultHistoryController();
     _effectsController = EffectsController();
-    _homeController = HomeController(
-      resultHistoryController: _resultHistoryController,
-      effectsController: _effectsController,
-    );
     _brandingController = BrandingController();
     _textOverlayController = TextOverlayController();
     _overlayController = OverlayToolsController();
     _templatesController = TemplatesController();
+    
+    _homeController = HomeController(
+      resultHistoryController: _resultHistoryController,
+      effectsController: _effectsController,
+      templatesController: _templatesController,
+    );
+    
     _folderWatcherController = FolderWatcherController();
     _productImportController = ProductImportController();
     _longVideoController = LongVideoController(

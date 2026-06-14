@@ -74,6 +74,12 @@ class OverlaySettings {
         return const SafeAreaPadding(top: 192, bottom: 384, left: 80, right: 220);
       case 'youtube_shorts':
         return const SafeAreaPadding(top: 180, bottom: 280, left: 80, right: 80);
+      case 'instagram_reels':
+        return const SafeAreaPadding(top: 150, bottom: 250, left: 50, right: 100);
+      case 'instagram_story':
+        return const SafeAreaPadding(top: 120, bottom: 120, left: 50, right: 50);
+      case 'facebook_story':
+        return const SafeAreaPadding(top: 150, bottom: 120, left: 50, right: 50);
       case 'custom':
         return customSafeAreaPadding;
       default:

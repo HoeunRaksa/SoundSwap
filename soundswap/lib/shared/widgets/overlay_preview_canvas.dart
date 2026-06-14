@@ -103,6 +103,7 @@ class OverlayPreviewCanvas extends StatefulWidget {
     this.onWidthChanged,
     this.showGrid = false,
     this.safeAreaPadding,
+    this.guidePreset,
     this.enableSnapping = true,
     this.zoomScale = 1.0,
     this.currentTime = 0.0,
@@ -122,6 +123,7 @@ class OverlayPreviewCanvas extends StatefulWidget {
   final void Function(String itemId, double width)? onWidthChanged;
   final bool showGrid;
   final SafeAreaPadding? safeAreaPadding;
+  final String? guidePreset;
   final bool enableSnapping;
   final double zoomScale;
   final double currentTime;
@@ -143,6 +145,7 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[Guide] canvasPreset=${widget.guidePreset}');
     final gap = AppResponsive.cardGap(context);
     final colorScheme = Theme.of(context).colorScheme;
     final aspectRatio = widget.outputSize.previewWidth / widget.outputSize.previewHeight;
@@ -237,12 +240,16 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                           ),
                         ),
                       // Safe Area Guidelines
-                      if (widget.safeAreaPadding != null)
+                      if (widget.guidePreset != null)
                         Positioned.fill(
                           child: CustomPaint(
-                            painter: _SafeAreaPainter(padding: widget.safeAreaPadding!),
+                            painter: _GuidePainter(
+                              preset: widget.guidePreset!,
+                              customPadding: widget.safeAreaPadding,
+                            ),
                           ),
                         ),
+
                       // Active Snapping Guides (X axis alignment)
                       if (_snapLineX != null)
                         Positioned(
@@ -983,69 +990,202 @@ class _GridPainter extends CustomPainter {
   bool shouldRepaint(covariant _GridPainter oldDelegate) => enabled != oldDelegate.enabled;
 }
 
-class _SafeAreaPainter extends CustomPainter {
-  const _SafeAreaPainter({required this.padding});
+class _GuidePainter extends CustomPainter {
+  const _GuidePainter({required this.preset, this.customPadding});
 
-  final SafeAreaPadding padding;
+  final String preset;
+  final SafeAreaPadding? customPadding;
 
   @override
   void paint(Canvas canvas, Size size) {
+    debugPrint('[GuidePainter] preset=$preset');
+    debugPrint('[GuidePainter] painting=$preset');
+    if (preset == 'none' || preset.isEmpty) return;
+
     final paintLine = Paint()
-      ..color = Colors.red.withValues(alpha: 0.6)
-      ..strokeWidth = 1.5
+      ..color = const Color(0xFFFF3B30)
+      ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 
+    // Temporary test border to prove it's rendering
+    final paintBorderTest = Paint()
+      ..color = const Color(0xFFFF3B30)
+      ..strokeWidth = 10.0
+      ..style = PaintingStyle.stroke;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paintBorderTest);
+
     final paintUnsafe = Paint()
-      ..color = Colors.black.withValues(alpha: 0.15)
+      ..color = const Color(0xFFFF3B30).withValues(alpha: 0.1) // Light red tint
       ..style = PaintingStyle.fill;
 
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'Safe area',
-        style: TextStyle(
-          color: Colors.red,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+    void drawLabel(String text, double x, double y) {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: text, 
+          style: const TextStyle(
+            color: Color(0xFFFF3B30), 
+            fontSize: 10, 
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(color: Colors.white, blurRadius: 4),
+            ],
+          ),
         ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(canvas, Offset(x, y));
+    }
 
-    final safeLeft = size.width * (padding.left / 1080.0);
-    final safeRight = size.width * (1.0 - padding.right / 1080.0);
-    final safeTop = size.height * (padding.top / 1920.0);
-    final safeBottom = size.height * (1.0 - padding.bottom / 1920.0);
+    void drawSafeArea(SafeAreaPadding padding, String label) {
+      final safeLeft = size.width * (padding.left / 1080.0);
+      final safeRight = size.width * (1.0 - padding.right / 1080.0);
+      final safeTop = size.height * (padding.top / 1920.0);
+      final safeBottom = size.height * (1.0 - padding.bottom / 1920.0);
 
-    // Draw Unsafe Area Shading
-    // Top
-    canvas.drawRect(Rect.fromLTRB(0, 0, size.width, safeTop), paintUnsafe);
-    // Bottom
-    canvas.drawRect(Rect.fromLTRB(0, safeBottom, size.width, size.height), paintUnsafe);
-    // Left (between top and bottom)
-    canvas.drawRect(Rect.fromLTRB(0, safeTop, safeLeft, safeBottom), paintUnsafe);
-    // Right (between top and bottom)
-    canvas.drawRect(Rect.fromLTRB(safeRight, safeTop, size.width, safeBottom), paintUnsafe);
+      if (padding.top > 0) {
+        canvas.drawRect(Rect.fromLTRB(0, 0, size.width, safeTop), paintUnsafe);
+        canvas.drawLine(Offset(0, safeTop), Offset(size.width, safeTop), paintLine);
+      }
+      if (padding.bottom > 0) {
+        canvas.drawRect(Rect.fromLTRB(0, safeBottom, size.width, size.height), paintUnsafe);
+        canvas.drawLine(Offset(0, safeBottom), Offset(size.width, safeBottom), paintLine);
+      }
+      if (padding.left > 0) {
+        canvas.drawRect(Rect.fromLTRB(0, safeTop, safeLeft, safeBottom), paintUnsafe);
+        canvas.drawLine(Offset(safeLeft, safeTop), Offset(safeLeft, safeBottom), paintLine);
+      }
+      if (padding.right > 0) {
+        canvas.drawRect(Rect.fromLTRB(safeRight, safeTop, size.width, safeBottom), paintUnsafe);
+        canvas.drawLine(Offset(safeRight, safeTop), Offset(safeRight, safeBottom), paintLine);
+      }
 
-    // Draw Safe Area Outline (dashed would require custom math, using solid for now or a dashed path)
-    final path = Path()..addRect(Rect.fromLTRB(safeLeft, safeTop, safeRight, safeBottom));
-    
-    // Draw solid line
-    canvas.drawPath(path, paintLine);
+      drawLabel(label, safeLeft + 4, safeTop + 4);
+    }
 
-    // Draw label near top right of the safe area
-    textPainter.paint(
-      canvas,
-      Offset(safeRight - textPainter.width - 4, safeTop + 4),
-    );
+    void drawBox(double leftPct, double topPct, double rightPct, double bottomPct, String label) {
+      final r = Rect.fromLTRB(size.width * leftPct, size.height * topPct, size.width * rightPct, size.height * bottomPct);
+      canvas.drawRect(r, paintLine);
+      drawLabel(label, r.left + 4, r.top + 4);
+    }
+
+    void drawHLine(double yPct) {
+      canvas.drawLine(Offset(0, size.height * yPct), Offset(size.width, size.height * yPct), paintLine);
+    }
+
+    void drawVLine(double xPct) {
+      canvas.drawLine(Offset(size.width * xPct, 0), Offset(size.width * xPct, size.height), paintLine);
+    }
+
+    switch (preset) {
+      // Social Media (Safe Areas)
+      case 'facebook_reels':
+        drawSafeArea(const SafeAreaPadding(top: 120, bottom: 220, left: 0, right: 0), 'Facebook Reels Safe Area');
+        break;
+      case 'tiktok':
+        drawSafeArea(const SafeAreaPadding(top: 192, bottom: 384, left: 0, right: 220), 'TikTok Safe Area');
+        break;
+      case 'youtube_shorts':
+        drawSafeArea(const SafeAreaPadding(top: 180, bottom: 280, left: 0, right: 0), 'YouTube Shorts Safe Area');
+        break;
+      case 'instagram_reels':
+        drawSafeArea(const SafeAreaPadding(top: 150, bottom: 250, left: 0, right: 100), 'IG Reels Safe Area');
+        break;
+      case 'instagram_story':
+        drawSafeArea(const SafeAreaPadding(top: 120, bottom: 120, left: 50, right: 50), 'IG Story');
+        break;
+      case 'facebook_story':
+        drawSafeArea(const SafeAreaPadding(top: 150, bottom: 120, left: 50, right: 50), 'FB Story');
+        break;
+      
+      // Video Formats
+      case '9_16_safe_area':
+        drawBox(0.1, 0.1, 0.9, 0.9, '9:16 Safe Area');
+        break;
+      case '4_5_feed_post':
+        drawBox(0.0, 0.2, 1.0, 0.8, '4:5 Feed Post');
+        break;
+      case '1_1_square':
+        drawBox(0.0, 0.25, 1.0, 0.75, '1:1 Square');
+        break;
+      case '16_9_landscape':
+        drawBox(0.0, 0.35, 1.0, 0.65, '16:9 Landscape');
+        break;
+
+      // Content Guides
+      case 'title_safe_area':
+        drawBox(0.1, 0.1, 0.9, 0.25, 'Title Area');
+        break;
+      case 'subtitle_safe_area':
+        drawBox(0.1, 0.75, 0.9, 0.85, 'Subtitle Area');
+        break;
+      case 'cta_safe_area':
+        drawBox(0.2, 0.85, 0.8, 0.95, 'CTA Area');
+        break;
+      case 'logo_safe_area':
+        drawBox(0.05, 0.05, 0.25, 0.15, 'Logo Area');
+        break;
+      case 'phone_number_safe_area':
+        drawBox(0.1, 0.8, 0.9, 0.9, 'Phone Number');
+        break;
+
+      // Composition Guides
+      case 'rule_of_thirds':
+        drawHLine(0.333); drawHLine(0.666);
+        drawVLine(0.333); drawVLine(0.666);
+        break;
+      case 'center_cross':
+        drawHLine(0.5);
+        drawVLine(0.5);
+        break;
+      case 'golden_ratio':
+        drawHLine(0.382); drawHLine(0.618);
+        drawVLine(0.382); drawVLine(0.618);
+        break;
+      case 'diagonal_composition':
+        canvas.drawLine(const Offset(0, 0), Offset(size.width, size.height), paintLine);
+        canvas.drawLine(Offset(size.width, 0), Offset(0, size.height), paintLine);
+        break;
+
+      // Business Templates
+      case 'construction_product_layout':
+        drawBox(0.1, 0.1, 0.9, 0.4, 'Image/Video');
+        drawBox(0.1, 0.45, 0.9, 0.55, 'Headline');
+        drawBox(0.1, 0.6, 0.9, 0.8, 'Description');
+        drawBox(0.1, 0.85, 0.9, 0.95, 'Contact/CTA');
+        break;
+      case 'product_showcase':
+        drawBox(0.05, 0.2, 0.95, 0.6, 'Product Hero');
+        drawBox(0.05, 0.65, 0.45, 0.8, 'Feature 1');
+        drawBox(0.55, 0.65, 0.95, 0.8, 'Feature 2');
+        break;
+      case 'before_after_layout':
+        drawBox(0.05, 0.1, 0.95, 0.45, 'Before');
+        drawBox(0.05, 0.55, 0.95, 0.9, 'After');
+        break;
+      case 'promotion_layout':
+        drawBox(0.1, 0.1, 0.9, 0.3, 'Big Offer (e.g. 50% OFF)');
+        drawBox(0.1, 0.35, 0.9, 0.7, 'Product Image');
+        drawBox(0.1, 0.75, 0.9, 0.85, 'Promo Code');
+        break;
+      case 'contact_info_layout':
+        drawBox(0.1, 0.6, 0.9, 0.7, 'Phone');
+        drawBox(0.1, 0.72, 0.9, 0.82, 'Website');
+        drawBox(0.1, 0.84, 0.9, 0.94, 'Address');
+        break;
+
+      case 'custom':
+        if (customPadding != null) {
+          drawSafeArea(customPadding!, 'Custom');
+        }
+        break;
+    }
+
+    debugPrint('[GuidePainter] rendered=true');
   }
 
   @override
-  bool shouldRepaint(covariant _SafeAreaPainter oldDelegate) {
-    return padding.top != oldDelegate.padding.top ||
-           padding.bottom != oldDelegate.padding.bottom ||
-           padding.left != oldDelegate.padding.left ||
-           padding.right != oldDelegate.padding.right;
+  bool shouldRepaint(covariant _GuidePainter oldDelegate) {
+    return preset != oldDelegate.preset || customPadding != oldDelegate.customPadding;
   }
 }
 

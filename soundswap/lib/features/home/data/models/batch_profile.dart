@@ -19,6 +19,7 @@ class BatchProfile {
     this.overlaySettings = const OverlaySettings(),
     this.useTemplate = false,
     this.selectedTemplateId,
+    this.selectedTemplateIds = const [],
     this.outputSize = VideoOutputSize.original,
     this.fitMode = VideoFitMode.keepOriginal,
     this.audioSettings = const AudioSettings(),
@@ -40,6 +41,7 @@ class BatchProfile {
   final OverlaySettings overlaySettings;
   final bool useTemplate;
   final String? selectedTemplateId;
+  final List<String> selectedTemplateIds;
   final VideoOutputSize outputSize;
   final VideoFitMode fitMode;
   final AudioSettings audioSettings;
@@ -61,6 +63,7 @@ class BatchProfile {
     'overlaySettings': overlaySettings.toJson(),
     'useTemplate': useTemplate,
     'selectedTemplateId': selectedTemplateId,
+    'selectedTemplateIds': selectedTemplateIds,
     'outputSize': outputSize.name,
     'fitMode': fitMode.name,
     'audioSettings': audioSettings.toJson(),
@@ -92,6 +95,8 @@ class BatchProfile {
       ),
       useTemplate: json['useTemplate'] as bool? ?? false,
       selectedTemplateId: json['selectedTemplateId'] as String?,
+      selectedTemplateIds: (json['selectedTemplateIds'] as List?)?.cast<String>() ?? 
+          (json['selectedTemplateId'] != null ? [json['selectedTemplateId'] as String] : []),
       outputSize: VideoOutputSize.values.firstWhere(
         (value) => value.name == json['outputSize'],
         orElse: () => VideoOutputSize.original,
@@ -127,6 +132,7 @@ class BatchProfile {
     OverlaySettings? overlaySettings,
     bool? useTemplate,
     String? selectedTemplateId,
+    List<String>? selectedTemplateIds,
     VideoOutputSize? outputSize,
     VideoFitMode? fitMode,
     AudioSettings? audioSettings,
@@ -154,6 +160,9 @@ class BatchProfile {
       selectedTemplateId: clearSelectedTemplate
           ? null
           : selectedTemplateId ?? this.selectedTemplateId,
+      selectedTemplateIds: clearSelectedTemplate
+          ? const []
+          : selectedTemplateIds ?? this.selectedTemplateIds,
       outputSize: outputSize ?? this.outputSize,
       fitMode: fitMode ?? this.fitMode,
       audioSettings: audioSettings ?? this.audioSettings,

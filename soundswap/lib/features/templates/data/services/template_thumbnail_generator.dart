@@ -1,14 +1,16 @@
+
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart' hide Image;
 import 'package:path_provider/path_provider.dart';
-import 'package:soundswap/features/templates/data/models/project_template.dart';
-import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
-import 'package:soundswap/shared/widgets/overlay_render_widget.dart';
-import 'package:soundswap/features/overlay_tools/utils/overlay_position_calculator.dart';
-import 'package:soundswap/features/overlay_tools/utils/template_render_data.dart';
+
+import '../../../../shared/widgets/overlay_render_widget.dart';
+import '../../../overlay_tools/data/models/overlay_item.dart';
+import '../../../overlay_tools/utils/overlay_position_calculator.dart';
+import '../../../overlay_tools/utils/template_render_data.dart';
+import '../models/project_template.dart';
 
 class TemplateThumbnailGenerator {
   static Future<String> generateThumbnail(
@@ -25,7 +27,7 @@ class TemplateThumbnailGenerator {
       overlaySettings: template.overlaySettings.copyWith(items: overlayItems),
     );
 
-    print('overlay item count: ${allItems.length}');
+    debugPrint('overlay item count: ${allItems.length}');
 
     // Use full 1080x1920 canvas to ensure perfect text shaping and layout
     final logicalSize = const Size(1080, 1920); 
@@ -41,12 +43,12 @@ class TemplateThumbnailGenerator {
             final codec = await ui.instantiateImageCodec(bytes);
             final frame = await codec.getNextFrame();
             loadedImages[item.id] = frame.image;
-            print('[TemplateThumbnailGenerator] Loaded image asset for item: ${item.id}');
+            debugPrint('[TemplateThumbnailGenerator] Loaded image asset for item: ${item.id}');
           } else {
-            print('[TemplateThumbnailGenerator] ERROR: Missing image path for thumbnail: ${item.imagePath}');
+            debugPrint('[TemplateThumbnailGenerator] ERROR: Missing image path for thumbnail: ${item.imagePath}');
           }
         } catch (e) {
-          print('[TemplateThumbnailGenerator] ERROR: Failed to load image ${item.imagePath}: $e');
+          debugPrint('[TemplateThumbnailGenerator] ERROR: Failed to load image ${item.imagePath}: $e');
         }
       }
     }
@@ -124,9 +126,9 @@ class TemplateThumbnailGenerator {
     final file = File('${cacheDir.path}/$fileName');
     await file.writeAsBytes(byteData!.buffer.asUint8List());
 
-    print('output file path: ${file.path}');
-    print(file.existsSync());
-    print(file.lengthSync());
+    debugPrint('output file path: ${file.path}');
+    debugPrint(file.existsSync() as String?);
+    debugPrint(file.lengthSync() as String?);
 
     // Cleanup ui.Images
     for (final img in loadedImages.values) {

@@ -8,6 +8,7 @@ import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/services/ffmpeg_service.dart';
 import 'package:soundswap/features/long_video/data/models/long_video_plan.dart';
 import 'package:soundswap/features/generator/data/services/ffmpeg_overlay_service.dart';
+import 'package:soundswap/features/home/data/models/audio_settings.dart';
 import 'package:soundswap/features/branding/data/models/branding_settings.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
@@ -189,6 +190,7 @@ class LongVideoService {
     BrandingSettings? branding,
     TextOverlaySettings? textOverlay,
     OverlaySettings? overlaySettings,
+    AudioSettings audioSettings = const AudioSettings(),
     LongVideoProgress? onProgress,
   }) async {
     final outputDirectory = Directory(p.dirname(plan.outputPath));
@@ -209,6 +211,9 @@ class LongVideoService {
       );
 
       final clipPaths = <String>[];
+      final originalAudioPaths = <String>[];
+      final keepOriginalAudio = audioSettings.mode != AudioMode.replaceOriginal;
+
       for (var i = 0; i < plan.clips.length; i++) {
         final clip = plan.clips[i];
         final tempClip = p.join(
@@ -216,6 +221,36 @@ class LongVideoService {
           'clip_${i.toString().padLeft(3, '0')}.mp4',
         );
         await onProgress?.call('Preparing clip ${i + 1}/${plan.clips.length}');
+
+        if (keepOriginalAudio) {
+          final tempAudio = p.join(
+            tempDirectory.path,
+            'orig_audio_${i.toString().padLeft(3, '0')}.m4a',
+          );
+          final hasAudio = await _ffmpegService.probeHasAudio(clip.videoPath);
+          if (hasAudio) {
+            await _runFfmpeg([
+              '-y',
+              '-i', clip.videoPath,
+              '-t', _seconds(clip.clipDuration),
+              '-vn',
+              '-c:a', 'aac',
+              '-b:a', '192k',
+              tempAudio,
+            ]);
+          } else {
+            await _runFfmpeg([
+              '-y',
+              '-f', 'lavfi',
+              '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+              '-t', _seconds(clip.clipDuration),
+              '-c:a', 'aac',
+              '-b:a', '192k',
+              tempAudio,
+            ]);
+          }
+          originalAudioPaths.add(tempAudio);
+        }
 
         final mediaFile = MediaFile(path: clip.videoPath);
         if (mediaFile.isImage) {
@@ -289,6 +324,22 @@ class LongVideoService {
         combinedVideo,
       ]);
 
+      String? combinedOriginalAudio;
+      if (keepOriginalAudio && originalAudioPaths.isNotEmpty) {
+        final originalAudioList = File(p.join(tempDirectory.path, 'orig_audios.txt'));
+        await originalAudioList.writeAsString(_concatList(originalAudioPaths));
+        combinedOriginalAudio = p.join(tempDirectory.path, 'combined_original_audio.m4a');
+        await onProgress?.call('Combining original audio clips');
+        await _runFfmpeg([
+          '-y',
+          '-f', 'concat',
+          '-safe', '0',
+          '-i', originalAudioList.path,
+          '-c', 'copy',
+          combinedOriginalAudio,
+        ]);
+      }
+
       final audioPaths = <String>[];
       for (var i = 0; i < plan.audioSegments.length; i++) {
         final segment = plan.audioSegments[i];
@@ -333,24 +384,46 @@ class LongVideoService {
       ]);
 
       await onProgress?.call('Writing final MP4');
-      await _runFfmpeg([
-        '-y',
-        '-i',
-        combinedVideo,
-        '-i',
-        combinedAudio,
-        '-map',
-        '0:v',
-        '-map',
-        '1:a',
-        '-c:v',
-        'copy',
-        '-c:a',
-        'aac',
-        '-t',
-        _seconds(plan.estimatedDuration),
-        plan.outputPath,
-      ]);
+      if (audioSettings.mode == AudioMode.mixOriginalAndNew && combinedOriginalAudio != null && plan.audioSegments.isNotEmpty) {
+        await _runFfmpeg([
+          '-y',
+          '-i', combinedVideo,
+          '-i', combinedOriginalAudio,
+          '-i', combinedAudio,
+          '-filter_complex',
+          '[1:a]volume=${audioSettings.originalAudioVolume / 100.0}[a1];[2:a]volume=${audioSettings.newAudioVolume / 100.0}[a2];[a1][a2]amix=inputs=2:duration=first[a_out]',
+          '-map', '0:v',
+          '-map', '[a_out]',
+          '-c:v', 'copy',
+          '-c:a', 'aac',
+          '-t', _seconds(plan.estimatedDuration),
+          plan.outputPath,
+        ]);
+      } else if (audioSettings.mode == AudioMode.keepOriginalOnly && combinedOriginalAudio != null) {
+        await _runFfmpeg([
+          '-y',
+          '-i', combinedVideo,
+          '-i', combinedOriginalAudio,
+          '-map', '0:v',
+          '-map', '1:a',
+          '-c:v', 'copy',
+          '-c:a', 'aac',
+          '-t', _seconds(plan.estimatedDuration),
+          plan.outputPath,
+        ]);
+      } else {
+        await _runFfmpeg([
+          '-y',
+          '-i', combinedVideo,
+          if (plan.audioSegments.isNotEmpty) ...['-i', combinedAudio],
+          '-map', '0:v',
+          if (plan.audioSegments.isNotEmpty) ...['-map', '1:a'],
+          '-c:v', 'copy',
+          '-c:a', 'aac',
+          '-t', _seconds(plan.estimatedDuration),
+          plan.outputPath,
+        ]);
+      }
 
       final hasOverlaysToApply = branding != null || textOverlay != null || overlaySettings != null;
       if (hasOverlaysToApply) {

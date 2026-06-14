@@ -32,6 +32,17 @@ class TemplatesController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> saveTemplate(ProjectTemplate t) async {
+    final idx = templates.indexWhere((temp) => temp.id == t.id);
+    if (idx >= 0) {
+      templates[idx] = t;
+    } else {
+      templates.add(t);
+    }
+    await _service.saveAll(templates);
+    notifyListeners();
+  }
+
   Future<void> saveCurrent({
     required String name,
     required HomeController home,
@@ -94,28 +105,28 @@ class TemplatesController extends ChangeNotifier {
   }
 
   Future<String?> ensureThumbnail(ProjectTemplate template, {List<OverlayItem>? activeWorkspaceItems}) async {
-    print(template.id);
-    print(template.name);
-    print(template.thumbnailPath);
+    debugPrint(template.id);
+    debugPrint(template.name);
+    debugPrint(template.thumbnailPath);
 
-    print('\n[TemplatesController] ensureThumbnail() called for template: ${template.name}');
-    print('[TemplatesController] current thumbnailPath: ${template.thumbnailPath}');
-    print('[TemplatesController] overlay items count: ${template.overlaySettings.items.length}');
+    debugPrint('\n[TemplatesController] ensureThumbnail() called for template: ${template.name}');
+    debugPrint('[TemplatesController] current thumbnailPath: ${template.thumbnailPath}');
+    debugPrint('[TemplatesController] overlay items count: ${template.overlaySettings.items.length}');
     
     if (template.thumbnailPath != null && await _isFileExists(template.thumbnailPath!)) {
-      print('[TemplatesController] thumbnail already exists. Skipping generation.');
+      debugPrint('[TemplatesController] thumbnail already exists. Skipping generation.');
       return template.thumbnailPath;
     }
 
     if (template.overlaySettings.items.isEmpty) {
-      print('[TemplatesController] template overlay items are empty. Returning null without saving.');
+      debugPrint('[TemplatesController] template overlay items are empty. Returning null without saving.');
       return null;
     }
 
     try {
-      print('[TemplatesController] calling TemplateThumbnailGenerator.generateThumbnail...');
+      debugPrint('[TemplatesController] calling TemplateThumbnailGenerator.generateThumbnail...');
       final thumbPath = await TemplateThumbnailGenerator.generateThumbnail(template, activeWorkspaceItems: activeWorkspaceItems);
-      print('[TemplatesController] generated thumbPath: $thumbPath');
+      debugPrint('[TemplatesController] generated thumbPath: $thumbPath');
       
       final templateWithThumb = ProjectTemplate(
         id: template.id,
@@ -141,9 +152,9 @@ class TemplatesController extends ChangeNotifier {
         templates[index] = templateWithThumb;
         await _service.saveAll(templates);
         notifyListeners();
-        print('[TemplatesController] successfully updated template with new thumbnail path and saved.');
+        debugPrint('[TemplatesController] successfully updated template with new thumbnail path and saved.');
       } else {
-        print('[TemplatesController] WARNING: Template not found in templates list after generating thumbnail.');
+        debugPrint('[TemplatesController] WARNING: Template not found in templates list after generating thumbnail.');
       }
       return thumbPath;
     } catch (e, st) {

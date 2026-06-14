@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/core/constants/app_constants.dart';
+import 'package:soundswap/features/home/data/models/audio_settings.dart';
 import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
 import 'package:soundswap/features/home/data/services/media_scanner_service.dart';
@@ -13,6 +14,8 @@ import 'package:soundswap/shared/services/folder_picker_service.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
 import 'package:soundswap/features/templates/data/models/project_template.dart';
+import 'package:soundswap/features/templates/data/services/template_validator.dart';
+import 'package:soundswap/features/templates/data/services/templates_service.dart';
 import 'package:soundswap/features/branding/data/models/branding_settings.dart';
 import 'package:soundswap/features/text_overlay/data/models/text_overlay_settings.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.dart';
@@ -46,6 +49,7 @@ class LongVideoController extends ChangeNotifier {
   String selectedOverlayPreset = 'current_overlays';
   bool useTemplate = false;
   String? selectedTemplateId;
+  List<String> selectedTemplateIds = [];
 
   List<String> videoFolders = [];
   List<String> audioFolders = [];
@@ -54,6 +58,7 @@ class LongVideoController extends ChangeNotifier {
   double targetMinutes = 10;
   double clipSeconds = 5;
   LongVideoAudioMode audioMode = LongVideoAudioMode.randomFromFolder;
+  AudioSettings audioSettings = const AudioSettings();
   String? selectedAudioPath;
   VideoOutputSize outputSize = VideoOutputSize.values.first;
   VideoFitMode fitMode = VideoFitMode.values.first;
@@ -274,7 +279,29 @@ class LongVideoController extends ChangeNotifier {
   void setSelectedTemplateId(String? value) {
     if (selectedTemplateId == value) return;
     selectedTemplateId = value;
+    if (selectedTemplateId != null) {
+      selectedTemplateIds.clear();
+    }
     plan = null;
+    notifyListeners();
+  }
+
+  void toggleTemplateSelection(String id) {
+    if (selectedTemplateIds.contains(id)) {
+      selectedTemplateIds.remove(id);
+    } else {
+      selectedTemplateIds.add(id);
+    }
+    if (selectedTemplateIds.isNotEmpty) {
+      selectedTemplateId = null;
+    }
+    useTemplate = selectedTemplateIds.isNotEmpty || selectedTemplateId != null;
+    plan = null;
+    notifyListeners();
+  }
+
+  void setAudioSettings(AudioSettings settings) {
+    audioSettings = settings;
     notifyListeners();
   }
 
@@ -502,7 +529,9 @@ class LongVideoController extends ChangeNotifier {
     }
   }
 
-  Future<void> startExport() async {
+  Future<void> startExport({
+    Future<TemplateValidationResult?> Function(List<MissingAsset> missingAssets)? onMissingAssetsDetected,
+  }) async {
     final currentPlan = plan;
     if (currentPlan == null) {
       errorMessage = 'Generate a plan before exporting.';
@@ -516,6 +545,90 @@ class LongVideoController extends ChangeNotifier {
       isExporting = false;
       notifyListeners();
       return;
+    }
+
+    if (audios.isEmpty && audioSettings.mode == AudioMode.mixOriginalAndNew) {
+      errorMessage = 'Mix Audio Mode requires at least one audio file.';
+      isExporting = false;
+      notifyListeners();
+      return;
+    }
+    
+    if (audios.isEmpty && audioSettings.mode == AudioMode.replaceOriginal) {
+      errorMessage = 'Replace Mode requires at least one audio file.';
+      isExporting = false;
+      notifyListeners();
+      return;
+    }
+
+    if (useTemplate) {
+      final missingAssets = <MissingAsset>[];
+      final checkedTemplates = <String>{};
+      
+      final idsToCheck = <String>{};
+      if (selectedTemplateIds.isNotEmpty) {
+        idsToCheck.addAll(selectedTemplateIds);
+      } else if (selectedTemplateId != null) {
+        idsToCheck.add(selectedTemplateId!);
+      }
+      
+      for (final id in idsToCheck) {
+        try {
+          final t = templates.firstWhere((t) => t.id == id);
+          if (!checkedTemplates.contains(t.id)) {
+            checkedTemplates.add(t.id);
+            missingAssets.addAll(TemplateValidator.validateTemplate(t));
+          }
+        } catch (_) {}
+      }
+
+      if (missingAssets.isNotEmpty) {
+        if (onMissingAssetsDetected == null) {
+          errorMessage = 'Templates have missing assets but no UI callback was provided.';
+          isExporting = false;
+          notifyListeners();
+          return;
+        }
+        final resolution = await onMissingAssetsDetected(missingAssets);
+        if (resolution == null) {
+          errorMessage = 'Export cancelled (Missing template assets).';
+          isExporting = false;
+          notifyListeners();
+          return;
+        }
+
+        // Apply resolution
+        for (final resolvedT in resolution.resolvedTemplates.values) {
+          if (resolvedT != null) {
+            final idx = templates.indexWhere((t) => t.id == resolvedT.id);
+            if (idx != -1) {
+              templates[idx] = resolvedT;
+            }
+          }
+        }
+        
+        // Handle skipped templates
+        for (final entry in resolution.resolvedTemplates.entries) {
+          if (entry.value == null) {
+            selectedTemplateIds.remove(entry.key);
+            if (selectedTemplateId == entry.key) {
+              selectedTemplateId = null;
+            }
+          }
+        }
+        
+        if (selectedTemplateId == null && selectedTemplateIds.isEmpty) {
+          useTemplate = false;
+        }
+
+        if (resolution.saveToDisk) {
+          for (final resolvedT in resolution.resolvedTemplates.values) {
+            if (resolvedT != null) {
+              await _templatesController?.saveTemplate(resolvedT);
+            }
+          }
+        }
+      }
     }
 
     isExporting = true;
@@ -563,14 +676,37 @@ class LongVideoController extends ChangeNotifier {
             audioBehavior: audioBehavior,
           );
 
+          ProjectTemplate? loopTemplate;
+          if (useTemplate) {
+            if (selectedTemplateIds.isNotEmpty) {
+              final idList = selectedTemplateIds.toList()..shuffle();
+              try {
+                loopTemplate = templates.firstWhere((t) => t.id == idList.first);
+              } catch (_) {
+                if (templates.isNotEmpty) loopTemplate = templates.first;
+              }
+            } else if (selectedTemplateId != null) {
+              try {
+                loopTemplate = templates.firstWhere((t) => t.id == selectedTemplateId);
+              } catch (_) {
+                if (templates.isNotEmpty) loopTemplate = templates.first;
+              }
+            }
+          }
+
+          final loopBranding = loopTemplate != null ? (loopTemplate.useBranding ? loopTemplate.branding : null) : getActiveBranding();
+          final loopTextOverlay = loopTemplate != null ? (loopTemplate.useTextOverlay ? loopTemplate.textOverlay : null) : getActiveTextOverlay();
+          final loopOverlaySettings = loopTemplate != null ? (loopTemplate.useOverlay ? loopTemplate.overlaySettings : null) : getActiveOverlaySettings();
+
           await _longVideoService.exportPlan(
             loopPlan,
             imageSettings: imageSettings,
             outputSize: outputSize,
             fitMode: fitMode,
-            branding: getActiveBranding(),
-            textOverlay: getActiveTextOverlay(),
-            overlaySettings: getActiveOverlaySettings(),
+            branding: loopBranding,
+            textOverlay: loopTextOverlay,
+            overlaySettings: loopOverlaySettings,
+            audioSettings: audioSettings,
             onProgress: (value) async {
               final progressMsg = '[Video $k/$total] Stage: $value | Mode: $modeText';
               logs = [...logs, progressMsg];

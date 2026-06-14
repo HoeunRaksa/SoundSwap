@@ -1,17 +1,21 @@
+
+
 import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:soundswap/features/branding/presentation/state/branding_controller.dart';
-import 'package:soundswap/features/home/presentation/state/home_controller.dart';
-import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
-import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
-import 'package:soundswap/features/templates/data/models/project_template.dart';
-import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
-import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_controller.dart';
-import 'package:soundswap/features/overlay_tools/presentation/screens/full_screen_editor_screen.dart';
-import 'package:soundswap/shared/widgets/empty_state.dart';
-import 'package:soundswap/features/overlay_tools/utils/template_render_data.dart';
-import 'package:soundswap/features/templates/data/services/template_thumbnail_generator.dart';
+
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../branding/presentation/state/branding_controller.dart';
+import '../../../home/presentation/state/home_controller.dart';
+import '../../../templates/data/models/project_template.dart';
+import '../../../templates/data/services/template_thumbnail_generator.dart';
+import '../../../templates/presentation/state/templates_controller.dart';
+import '../../../text_overlay/presentation/state/text_overlay_controller.dart';
+import '../../data/models/overlay_item.dart';
+import '../../utils/template_render_data.dart';
+import '../screens/full_screen_editor_screen.dart';
+import '../state/overlay_tools_controller.dart';
 
 class OverlayTemplatesPanel extends StatelessWidget {
   const OverlayTemplatesPanel({
@@ -181,13 +185,13 @@ class _TemplateTileState extends State<_TemplateTile> {
     final path = widget.template.thumbnailPath;
     final exists = path != null && File(path).existsSync();
 
-    print('[TemplateThumbnail] template=${widget.template.name}');
-    print('[TemplateThumbnail] path=$path');
-    print('[TemplateThumbnail] exists=$exists');
+    debugPrint('[TemplateThumbnail] template=${widget.template.name}');
+    debugPrint('[TemplateThumbnail] path=$path');
+    debugPrint('[TemplateThumbnail] exists=$exists');
     if (exists) {
-      print('[TemplateThumbnail] size=${File(path).lengthSync()}');
+      debugPrint('[TemplateThumbnail] size=${File(path).lengthSync()}');
     }
-    print('[TemplateThumbnail] itemCount=${widget.template.overlaySettings.items.length}');
+    debugPrint('[TemplateThumbnail] itemCount=${widget.template.overlaySettings.items.length}');
 
     if (exists) {
       if (mounted) {
@@ -206,7 +210,7 @@ class _TemplateTileState extends State<_TemplateTile> {
           activeWorkspaceItems: widget.overlayController.settings.items,
         );
       } catch (e, st) {
-        print('ERROR: Failed to generate thumbnail for ${widget.template.name}: $e\n$st');
+        debugPrint('ERROR: Failed to generate thumbnail for ${widget.template.name}: $e\n$st');
       } finally {
         if (mounted) {
           setState(() => _isLoadingThumbnail = false);
@@ -225,7 +229,7 @@ class _TemplateTileState extends State<_TemplateTile> {
           });
         }
       } catch (e, st) {
-        print('ERROR: Failed to generate temporary thumbnail for ${widget.template.name}: $e\n$st');
+        debugPrint('ERROR: Failed to generate temporary thumbnail for ${widget.template.name}: $e\n$st');
       } finally {
         if (mounted) {
           setState(() => _isLoadingThumbnail = false);
@@ -281,7 +285,7 @@ class _TemplateTileState extends State<_TemplateTile> {
             aspectRatio: 9 / 16,
             child: hasThumbnail
                 ? Image.file(
-                    File(resolvedPath!),
+                    File(resolvedPath),
                     key: ValueKey('${widget.template.id}-${widget.template.version}-$resolvedPath'),
                     fit: BoxFit.cover,
                   )

@@ -42,6 +42,46 @@ class ProjectTemplate {
   final String? thumbnailPath;
   final int version;
 
+  ProjectTemplate copyWith({
+    String? id,
+    String? name,
+    DateTime? createdAt,
+    List<String>? videoFolders,
+    List<String>? audioFolders,
+    String? outputFolder,
+    String? outputPrefix,
+    BrandingSettings? branding,
+    TextOverlaySettings? textOverlay,
+    OverlaySettings? overlaySettings,
+    bool? useBranding,
+    bool? useTextOverlay,
+    bool? useOverlay,
+    VideoOutputSize? outputSize,
+    VideoFitMode? fitMode,
+    String? thumbnailPath,
+    int? version,
+  }) {
+    return ProjectTemplate(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      videoFolders: videoFolders ?? this.videoFolders,
+      audioFolders: audioFolders ?? this.audioFolders,
+      outputFolder: outputFolder ?? this.outputFolder,
+      outputPrefix: outputPrefix ?? this.outputPrefix,
+      branding: branding ?? this.branding,
+      textOverlay: textOverlay ?? this.textOverlay,
+      overlaySettings: overlaySettings ?? this.overlaySettings,
+      useBranding: useBranding ?? this.useBranding,
+      useTextOverlay: useTextOverlay ?? this.useTextOverlay,
+      useOverlay: useOverlay ?? this.useOverlay,
+      outputSize: outputSize ?? this.outputSize,
+      fitMode: fitMode ?? this.fitMode,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      version: version ?? this.version,
+    );
+  }
+
   Map<String, Object?> toJson() => {
     'id': id,
     'name': name,

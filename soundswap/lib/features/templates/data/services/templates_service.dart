@@ -1,5 +1,8 @@
-import 'package:soundswap/features/templates/data/models/project_template.dart';
-import 'package:soundswap/shared/services/local_json_store.dart';
+
+
+import 'package:flutter/cupertino.dart';
+import '../../../../shared/services/local_json_store.dart';
+import '../models/project_template.dart';
 
 class TemplatesService {
   TemplatesService({LocalJsonStore? store})
@@ -9,22 +12,22 @@ class TemplatesService {
   static const _fileName = 'project_templates.json';
 
   Future<List<ProjectTemplate>> load() async {
-    print('\n[TemplatesService] Loading templates from $_fileName...');
+    debugPrint('\n[TemplatesService] Loading templates from $_fileName...');
     final values = await _store.readList(_fileName);
     final templates = values
         .whereType<Map>()
         .map((value) => ProjectTemplate.fromJson(value.cast<String, Object?>()))
         .toList();
     for (final t in templates) {
-      print('[TemplatesService] Loaded: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
+      debugPrint('[TemplatesService] Loaded: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
     }
     return templates;
   }
 
   Future<void> saveAll(List<ProjectTemplate> templates) {
-    print('\n[TemplatesService] Saving ${templates.length} templates...');
+    debugPrint('\n[TemplatesService] Saving ${templates.length} templates...');
     for (final t in templates) {
-      print('[TemplatesService] Saving: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
+      debugPrint('[TemplatesService] Saving: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
     }
     return _store.writeList(
       _fileName,

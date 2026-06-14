@@ -3,8 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/core/responsive/app_responsive.dart';
+import 'package:soundswap/features/home/data/models/audio_settings.dart';
 import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
+import 'package:soundswap/features/templates/data/models/project_template.dart';
+import 'package:soundswap/features/templates/data/services/template_validator.dart';
+import 'package:soundswap/features/templates/presentation/widgets/missing_assets_dialog.dart';
 import 'package:soundswap/features/home/presentation/widgets/folder_selector_card.dart';
 import 'package:soundswap/features/long_video/data/models/long_video_plan.dart';
 import 'package:soundswap/features/long_video/presentation/state/long_video_controller.dart';
@@ -480,22 +484,78 @@ class _LongVideoScreenState extends State<LongVideoScreen> {
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
                       if (controller.useTemplate) ...[
-                        DropdownButtonFormField<String>(
-                          key: ValueKey(controller.selectedTemplateId),
-                          initialValue: controller.selectedTemplateId,
-                          isExpanded: true,
-                          decoration: const InputDecoration(labelText: 'Template'),
-                          hint: Text(
-                            controller.templates.isEmpty ? 'No templates saved' : 'Select template',
-                          ),
-                          items: [
-                            for (final t in controller.templates)
-                              DropdownMenuItem(value: t.id, child: Text(t.name)),
-                          ],
-                          onChanged: (value) {
-                            controller.setSelectedTemplateId(value);
-                          },
-                        ),
+                        Builder(builder: (context) {
+                          final count = controller.selectedTemplateIds.length;
+                          final singleId = controller.selectedTemplateId;
+                          String label = 'Select templates';
+                          if (count > 1) {
+                            label = '$count templates selected';
+                          } else if (count == 1) {
+                            try {
+                              label = controller.templates.firstWhere((t) => t.id == controller.selectedTemplateIds.first).name;
+                            } catch (_) {
+                              label = 'Select templates';
+                            }
+                          } else if (singleId != null) {
+                            try {
+                              label = controller.templates.firstWhere((t) => t.id == singleId).name;
+                            } catch (_) {
+                              label = 'Select templates';
+                            }
+                          } else if (controller.templates.isEmpty) {
+                            label = 'No templates saved';
+                          }
+
+                          return InputDecorator(
+                            decoration: const InputDecoration(labelText: 'Templates', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                            child: InkWell(
+                              onTap: controller.templates.isNotEmpty ? () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: const Text('Select Templates'),
+                                      content: SizedBox(
+                                        width: 400,
+                                        child: StatefulBuilder(
+                                          builder: (context, setState) {
+                                            return ListView(
+                                              shrinkWrap: true,
+                                              children: [
+                                                for (final t in controller.templates)
+                                                  CheckboxListTile(
+                                                    title: Text(t.name),
+                                                    value: controller.selectedTemplateIds.contains(t.id) || controller.selectedTemplateId == t.id,
+                                                    onChanged: (val) {
+                                                      controller.toggleTemplateSelection(t.id);
+                                                      setState(() {});
+                                                    },
+                                                  ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Done'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              } : null,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
+                                  const Icon(Icons.arrow_drop_down),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
                       ],
                     ],
                   ),
@@ -554,6 +614,84 @@ class _LongVideoScreenState extends State<LongVideoScreen> {
                           if (value != null) controller.setFitMode(value);
                         },
                       ),
+                      DropdownButtonFormField<AudioMode>(
+                        key: ValueKey(controller.audioSettings.mode),
+                        initialValue: controller.audioSettings.mode,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Audio mixing mode',
+                        ),
+                        items: [
+                          for (final mode in AudioMode.values)
+                            DropdownMenuItem(
+                              value: mode,
+                              child: Text(mode.label),
+                            ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            if (value == AudioMode.mixOriginalAndNew && controller.audioSettings.mode != AudioMode.mixOriginalAndNew) {
+                              controller.setAudioSettings(
+                                controller.audioSettings.copyWith(
+                                  mode: value,
+                                  originalAudioVolume: 100,
+                                  newAudioVolume: 25,
+                                ),
+                              );
+                            } else if (value == AudioMode.replaceOriginal && controller.audioSettings.mode != AudioMode.replaceOriginal) {
+                              controller.setAudioSettings(
+                                controller.audioSettings.copyWith(
+                                  mode: value,
+                                  originalAudioVolume: 0,
+                                  newAudioVolume: 100,
+                                ),
+                              );
+                            } else {
+                              controller.setAudioSettings(
+                                controller.audioSettings.copyWith(mode: value),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      if (controller.audioSettings.mode == AudioMode.mixOriginalAndNew) ...[
+                        SizedBox(height: gap * 0.5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Original Audio Volume', style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2)),
+                            Text('${controller.audioSettings.originalAudioVolume}%', style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Slider(
+                          value: controller.audioSettings.originalAudioVolume.toDouble(),
+                          min: 0,
+                          max: 100,
+                          divisions: 100,
+                          onChanged: (value) {
+                            controller.setAudioSettings(controller.audioSettings.copyWith(originalAudioVolume: value.round()));
+                          },
+                        ),
+                      ],
+                      if (controller.audioSettings.mode != AudioMode.keepOriginalOnly) ...[
+                        SizedBox(height: gap * 0.5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('New Audio Volume', style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2)),
+                            Text('${controller.audioSettings.newAudioVolume}%', style: TextStyle(fontSize: AppResponsive.bodySize(context) - 2, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Slider(
+                          value: controller.audioSettings.newAudioVolume.toDouble(),
+                          min: 0,
+                          max: 300,
+                          divisions: 300,
+                          onChanged: (value) {
+                            controller.setAudioSettings(controller.audioSettings.copyWith(newAudioVolume: value.round()));
+                          },
+                        ),
+                      ],
                       SizedBox(height: gap),
                       DropdownButtonFormField<LongVideoAudioMode>(
                         initialValue: controller.audioMode,
@@ -709,7 +847,25 @@ class _LongVideoScreenState extends State<LongVideoScreen> {
                         ),
                       )
                     : FilledButton.icon(
-                        onPressed: controller.canExport ? controller.startExport : null,
+                        onPressed: controller.canExport ? () async {
+                          await controller.startExport(
+                            onMissingAssetsDetected: (missingAssets) async {
+                              final Map<String, ProjectTemplate> initialTemplates = {};
+                              for (final t in controller.templates) {
+                                initialTemplates[t.id] = t;
+                              }
+                              
+                              return await showDialog<TemplateValidationResult>(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => MissingAssetsDialog(
+                                  initialMissingAssets: missingAssets,
+                                  initialTemplates: initialTemplates,
+                                ),
+                              );
+                            },
+                          );
+                        } : null,
                         style: FilledButton.styleFrom(
                           backgroundColor: Colors.green.shade700,
                           foregroundColor: Colors.white,
