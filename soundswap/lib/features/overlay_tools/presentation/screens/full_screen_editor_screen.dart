@@ -299,7 +299,7 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
       color: colorScheme.surfaceContainer,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Wrap(
-        spacing: 8,
+        spacing: 12,
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
@@ -333,21 +333,24 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
               final templateName = isEditing 
                   ? widget.templatesController.editingTemplateName ?? 'Untitled'
                   : 'New Template';
-              return Text(
-                templateName,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+              return SizedBox(
+                width: 220,
+                child: Text(
+                  templateName,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           ListenableBuilder(
             listenable: widget.templatesController,
             builder: (context, _) {
               final isEditing = widget.templatesController.editingTemplateId != null;
               return Wrap(
-                spacing: 8,
+                spacing: 12,
                 runSpacing: 8,
                 children: [
                   FilledButton.icon(
@@ -356,7 +359,7 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                     label: Text(isEditing ? 'Update' : 'Save'),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(0, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                   ),
                   if (isEditing)
@@ -366,21 +369,21 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                       label: const Text('Save As New'),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                     ),
                 ],
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           FilledButton.icon(
             onPressed: widget.controller.addText,
             icon: const Icon(Icons.text_fields, size: 18),
             label: const Text('Add Text'),
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
           ),
           FilledButton.icon(
@@ -389,10 +392,10 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
             label: const Text('Add Image'),
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
           ),
-          const SizedBox(height: 24, child: VerticalDivider(width: 1)),
+          const SizedBox(width: 12),
           DropdownButton<double>(
             value: _zoomScale,
             isDense: true,
@@ -413,64 +416,70 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
               }
             },
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Checkbox(
-                visualDensity: VisualDensity.compact,
-                value: widget.controller.settings.showSafeAreaGuides,
-                onChanged: (value) {
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
+                    visualDensity: VisualDensity.compact,
+                    value: widget.controller.settings.showSafeAreaGuides,
+                    onChanged: (value) {
+                      if (value == null) return;
+                      widget.controller.updateSettings(
+                        widget.controller.settings.copyWith(showSafeAreaGuides: value),
+                      );
+                    },
+                  ),
+                  const Text('Guides'),
+                ],
+              ),
+              DropdownButton<String>(
+                value: widget.controller.settings.safeAreaPreset,
+                isDense: true,
+                underline: const SizedBox(),
+                items: const [
+                  DropdownMenuItem(value: 'none', child: Text('None')),
+                  DropdownMenuItem(value: 'facebook_reels', child: Text('FB Reels')),
+                  DropdownMenuItem(value: 'tiktok', child: Text('TikTok')),
+                  DropdownMenuItem(value: 'youtube_shorts', child: Text('YT Shorts')),
+                  DropdownMenuItem(value: 'custom', child: Text('Custom')),
+                ],
+                onChanged: widget.controller.settings.showSafeAreaGuides
+                    ? (value) {
                   if (value == null) return;
                   widget.controller.updateSettings(
-                    widget.controller.settings.copyWith(showSafeAreaGuides: value),
+                    widget.controller.settings.copyWith(safeAreaPreset: value),
                   );
-                },
+                }
+                    : null,
               ),
-              const Text('Guides'),
-            ],
-          ),
-          DropdownButton<String>(
-            value: widget.controller.settings.safeAreaPreset,
-            isDense: true,
-            underline: const SizedBox(),
-            items: const [
-              DropdownMenuItem(value: 'none', child: Text('None')),
-              DropdownMenuItem(value: 'facebook_reels', child: Text('FB Reels')),
-              DropdownMenuItem(value: 'tiktok', child: Text('TikTok')),
-              DropdownMenuItem(value: 'youtube_shorts', child: Text('YT Shorts')),
-              DropdownMenuItem(value: 'custom', child: Text('Custom')),
-            ],
-            onChanged: widget.controller.settings.showSafeAreaGuides
-                ? (value) {
-              if (value == null) return;
-              widget.controller.updateSettings(
-                widget.controller.settings.copyWith(safeAreaPreset: value),
-              );
-            }
-                : null,
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Checkbox(
-                visualDensity: VisualDensity.compact,
-                value: _showGrid,
-                onChanged: (value) => setState(() => _showGrid = value ?? false),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
+                    visualDensity: VisualDensity.compact,
+                    value: _showGrid,
+                    onChanged: (value) => setState(() => _showGrid = value ?? false),
+                  ),
+                  const Text('Grid'),
+                ],
               ),
-              const Text('Grid'),
-            ],
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Checkbox(
-                visualDensity: VisualDensity.compact,
-                value: _enableSnapping,
-                onChanged: (value) {
-                  setState(() => _enableSnapping = value ?? true);
-                },
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
+                    visualDensity: VisualDensity.compact,
+                    value: _enableSnapping,
+                    onChanged: (value) {
+                      setState(() => _enableSnapping = value ?? true);
+                    },
+                  ),
+                  const Text('Snap'),
+                ],
               ),
-              const Text('Snap'),
             ],
           ),
           IconButton(

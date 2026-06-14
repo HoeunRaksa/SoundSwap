@@ -121,7 +121,6 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                             icon: const Icon(Icons.fullscreen),
                             label: const Text('Open Full Screen Editor'),
                           ),
-                          const Spacer(),
                         ],
                       ),
                     ),
