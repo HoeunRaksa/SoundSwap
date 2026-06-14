@@ -208,6 +208,7 @@ class LongVideoController extends ChangeNotifier {
     final parsed = double.tryParse(value) ?? targetMinutes;
     if (targetMinutes == parsed) return;
     targetMinutes = parsed;
+    debugPrint('[LongVideoDuration] uiTargetMinutes=$targetMinutes');
     plan = null;
     _persistSettings();
     notifyListeners();
@@ -597,6 +598,8 @@ class LongVideoController extends ChangeNotifier {
       }
       selectedAudioPath ??= audios.isEmpty ? null : audios.first.path;
 
+      debugPrint('[LongVideoDuration] generatePlanTargetMinutes=$targetMinutes');
+
       plan = await _longVideoService.createPlan(
         videos: videos,
         images: useImages ? images : [],
@@ -771,6 +774,8 @@ class LongVideoController extends ChangeNotifier {
             ? '${p.basenameWithoutExtension(outputName.trim().isEmpty ? 'long-video' : outputName.trim())}-$k'
             : outputName;
 
+        final targetMinutesForExport = plan != null ? (plan!.estimatedDuration / 60.0) : targetMinutes;
+
         LongVideoPlan? loopPlan;
         try {
           loopPlan = await _longVideoService.createPlan(
@@ -779,7 +784,7 @@ class LongVideoController extends ChangeNotifier {
             audios: audios,
             outputFolderPath: outputFolderPath!,
             outputName: currentOutputName,
-            targetMinutes: targetMinutes,
+            targetMinutes: targetMinutesForExport,
             clipSeconds: clipSeconds,
             audioMode: audioMode,
             imageSettings: imageSettings,
@@ -787,6 +792,8 @@ class LongVideoController extends ChangeNotifier {
             durationMode: durationMode,
             audioBehavior: audioBehavior,
           );
+
+          debugPrint('[LongVideoDuration] exportTargetSeconds=${loopPlan.estimatedDuration}');
 
           ProjectTemplate? loopTemplate;
           if (useTemplate) {
@@ -806,7 +813,22 @@ class LongVideoController extends ChangeNotifier {
           if (useTemplate && loopTemplate != null) {
             loopBranding = loopTemplate.useBranding ? loopTemplate.branding : null;
             loopTextOverlay = loopTemplate.useTextOverlay ? loopTemplate.textOverlay : null;
-            loopOverlaySettings = loopTemplate.useOverlay ? loopTemplate.overlaySettings : null;
+            
+            if (loopTemplate.useOverlay) {
+              final modifiedItems = loopTemplate.overlaySettings.items.map((item) {
+                final isEntire = item.endTime == null || item.endTime! >= 59.0;
+                
+                debugPrint('\n[LongVideoTemplateTiming]');
+                debugPrint('item=${item.name.isEmpty ? item.id : item.name}');
+                debugPrint('startTime=${item.startTime}');
+                debugPrint('endTime=${item.endTime}');
+                debugPrint('mode=${isEntire ? "entire" : "custom"}');
+                debugPrint('finalVideoDuration=${loopPlan!.estimatedDuration}');
+                
+                return isEntire ? item.copyWith(clearEndTime: true) : item;
+              }).toList();
+              loopOverlaySettings = loopTemplate.overlaySettings.copyWith(items: modifiedItems);
+            }
           } else if (!useTemplate && useOverlays) {
             loopBranding = _homeController?.useBranding == true ? _homeController?.activeBrandingSettings : null;
             loopTextOverlay = _homeController?.useTextOverlay == true ? _homeController?.activeTextOverlaySettings : null;
