@@ -105,6 +105,8 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
             letterSpacing: item.letterSpacing,
             strokeWidth: item.strokeWidth,
             strokeColorHex: item.strokeColorHex,
+            backgroundBoxColorHex: item.backgroundBoxColorHex,
+            shadowColorHex: item.shadowColorHex,
           );
         }).toList();
 
@@ -148,7 +150,14 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                             ),
                           ),
                         Expanded(
-                          child: _buildCanvasArea(colorScheme, items),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: _buildCanvasArea(colorScheme, items),
+                              ),
+                              if (!_focusMode) _buildTimelineControls(colorScheme),
+                            ],
+                          ),
                         ),
                         if (!_focusMode &&
                             widget.controller.settings
@@ -487,6 +496,44 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
     );
   }
 
+  Widget _buildTimelineControls(ColorScheme colorScheme) {
+    final duration = widget.controller.computedTimelineDuration;
+    final currentTime = widget.controller.currentTime;
+
+    return Container(
+      color: colorScheme.surfaceContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(widget.controller.isPlaying ? Icons.pause : Icons.play_arrow),
+            onPressed: widget.controller.togglePlayback,
+            tooltip: widget.controller.isPlaying ? 'Pause' : 'Play',
+          ),
+          IconButton(
+            icon: const Icon(Icons.stop),
+            onPressed: widget.controller.stopPlayback,
+            tooltip: 'Stop',
+          ),
+          const SizedBox(width: 16),
+          Text(currentTime.toStringAsFixed(1) + 's', style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+          Expanded(
+            child: Slider(
+              value: currentTime.clamp(0.0, duration),
+              min: 0.0,
+              max: duration,
+              onChanged: (val) {
+                widget.controller.pausePlayback();
+                widget.controller.seek(val);
+              },
+            ),
+          ),
+          Text(duration.toStringAsFixed(1) + 's', style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCanvasArea(
       ColorScheme colorScheme,
       List<PreviewOverlayItem> items,
@@ -562,6 +609,7 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                             zoomScale: computedScale,
                             outputSize: widget.outputSize,
                             items: items,
+                            currentTime: widget.controller.currentTime,
                             showGrid: _showGrid,
                             enableSnapping: _enableSnapping,
                             safeAreaPadding: widget

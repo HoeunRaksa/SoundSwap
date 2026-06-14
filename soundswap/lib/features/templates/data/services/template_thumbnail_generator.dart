@@ -167,6 +167,8 @@ class TemplateThumbnailGenerator {
           letterSpacing: item.letterSpacing,
           strokeWidth: strokeWidth,
           strokeColorHex: item.strokeColorHex,
+          backgroundBoxColorHex: item.backgroundBoxColorHex,
+          shadowColorHex: item.shadowColorHex,
         ),
       );
     } else {

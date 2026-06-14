@@ -15,6 +15,8 @@ class OverlayRenderWidget extends StatelessWidget {
     required this.letterSpacing,
     this.strokeWidth = 0.0,
     this.strokeColorHex = '#000000',
+    this.backgroundBoxColorHex = '#000000',
+    this.shadowColorHex = '#000000',
     super.key,
   });
 
@@ -31,11 +33,15 @@ class OverlayRenderWidget extends StatelessWidget {
   final double letterSpacing;
   final double strokeWidth;
   final String strokeColorHex;
+  final String backgroundBoxColorHex;
+  final String shadowColorHex;
 
   @override
   Widget build(BuildContext context) {
     final color = _colorFromHex(colorHex);
     final strokeColor = _colorFromHex(strokeColorHex);
+    final boxColor = _colorFromHex(backgroundBoxColorHex).withValues(alpha: 0.48);
+    final shadowColor = _colorFromHex(shadowColorHex);
     final textAlign = switch (textAlignment) {
       'center' => TextAlign.center,
       'right' => TextAlign.right,
@@ -83,11 +89,11 @@ class OverlayRenderWidget extends StatelessWidget {
                   height: lineHeight,
                   letterSpacing: letterSpacing,
                   shadows: shadow
-                      ? const [
+                      ? [
                           Shadow(
                             blurRadius: 3,
-                            offset: Offset(1, 1),
-                            color: Colors.black87,
+                            offset: const Offset(1, 1),
+                            color: shadowColor,
                           ),
                         ]
                       : null,
@@ -110,11 +116,11 @@ class OverlayRenderWidget extends StatelessWidget {
               height: lineHeight,
               letterSpacing: letterSpacing,
               shadows: shadow
-                  ? const [
+                  ? [
                       Shadow(
                         blurRadius: 3,
-                        offset: Offset(1, 1),
-                        color: Colors.black87,
+                        offset: const Offset(1, 1),
+                        color: shadowColor,
                       ),
                     ]
                   : null,
@@ -123,7 +129,7 @@ class OverlayRenderWidget extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: backgroundBox ? Colors.black.withValues(alpha: 0.48) : Colors.transparent,
+        color: backgroundBox ? boxColor : Colors.transparent,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Padding(

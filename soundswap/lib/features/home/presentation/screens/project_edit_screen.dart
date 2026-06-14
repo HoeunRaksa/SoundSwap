@@ -233,6 +233,8 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
           animationExitDuration: item.animationExitDuration,
           strokeWidth: item.strokeWidth,
           strokeColorHex: item.strokeColorHex,
+          backgroundBoxColorHex: item.backgroundBoxColorHex,
+          shadowColorHex: item.shadowColorHex,
         ),
     ];
 

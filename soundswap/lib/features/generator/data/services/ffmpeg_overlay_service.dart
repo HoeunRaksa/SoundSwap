@@ -106,6 +106,8 @@ class FfmpegOverlayService {
             letterSpacing: item.letterSpacing,
             strokeWidth: item.strokeWidth,
             strokeColorHex: item.strokeColorHex,
+            backgroundBoxColorHex: item.backgroundBoxColorHex,
+            shadowColorHex: item.shadowColorHex,
           );
           tempFiles.add(tempPng);
           overlayImageInputIndexes[item.id] = arguments.where((value) => value == '-i').length;

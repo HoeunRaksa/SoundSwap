@@ -44,6 +44,8 @@ class OverlayItem {
     this.letterSpacing = 0.0,
     this.strokeWidth = 0.0,
     this.strokeColorHex = '#000000',
+    this.backgroundBoxColorHex = '#000000',
+    this.shadowColorHex = '#000000',
   });
 
   final String id;
@@ -86,6 +88,8 @@ class OverlayItem {
   final double letterSpacing;
   final double strokeWidth;
   final String strokeColorHex;
+  final String backgroundBoxColorHex;
+  final String shadowColorHex;
 
   bool get hasContent {
     return switch (type) {
@@ -135,6 +139,8 @@ class OverlayItem {
     'letterSpacing': letterSpacing,
     'strokeWidth': strokeWidth,
     'strokeColorHex': strokeColorHex,
+    'backgroundBoxColorHex': backgroundBoxColorHex,
+    'shadowColorHex': shadowColorHex,
   };
 
   factory OverlayItem.fromJson(Map<String, Object?> json) {
@@ -182,6 +188,8 @@ class OverlayItem {
       letterSpacing: (json['letterSpacing'] as num?)?.toDouble() ?? 0.0,
       strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 0.0,
       strokeColorHex: json['strokeColorHex'] as String? ?? '#000000',
+      backgroundBoxColorHex: json['backgroundBoxColorHex'] as String? ?? '#000000',
+      shadowColorHex: json['shadowColorHex'] as String? ?? '#000000',
     );
   }
 
@@ -228,6 +236,8 @@ class OverlayItem {
     double? letterSpacing,
     double? strokeWidth,
     String? strokeColorHex,
+    String? backgroundBoxColorHex,
+    String? shadowColorHex,
   }) {
     return OverlayItem(
       id: id,
@@ -270,6 +280,8 @@ class OverlayItem {
       letterSpacing: letterSpacing ?? this.letterSpacing,
       strokeWidth: strokeWidth ?? this.strokeWidth,
       strokeColorHex: strokeColorHex ?? this.strokeColorHex,
+      backgroundBoxColorHex: backgroundBoxColorHex ?? this.backgroundBoxColorHex,
+      shadowColorHex: shadowColorHex ?? this.shadowColorHex,
     );
   }
 

@@ -50,8 +50,21 @@ class OverlayToolsController extends ChangeNotifier {
   // Timeline playback simulation
   double currentTime = 0.0;
   bool isPlaying = false;
-  double timelineDuration = 30.0;
   Timer? _playbackTimer;
+
+  double get computedTimelineDuration {
+    if (settings.items.isEmpty) return 30.0;
+    double maxTime = 0.0;
+    for (final item in settings.items) {
+      if (item.endTime == null) {
+        // "Entire Video" usually implies we don't know the full length here without the video file.
+        // We can fallback to a large enough default (e.g. 30s) or check the homeController if we had it.
+        return 30.0; 
+      }
+      if (item.endTime! > maxTime) maxTime = item.endTime!;
+    }
+    return maxTime < 5.0 ? 5.0 : maxTime;
+  }
 
   OverlayItem? get selectedItem {
     for (final item in settings.items) {
@@ -208,9 +221,14 @@ class OverlayToolsController extends ChangeNotifier {
     if (isPlaying) return;
     isPlaying = true;
     notifyListeners();
-    _playbackTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      currentTime += 0.05;
-      if (currentTime >= timelineDuration) {
+    
+    // Smooth 60fps simulation: 16ms interval
+    final interval = const Duration(milliseconds: 16);
+    final dt = 16.0 / 1000.0;
+
+    _playbackTimer = Timer.periodic(interval, (timer) {
+      currentTime += dt;
+      if (currentTime >= computedTimelineDuration) {
         currentTime = 0.0;
       }
       notifyListeners();
@@ -224,8 +242,14 @@ class OverlayToolsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void stopPlayback() {
+    pausePlayback();
+    currentTime = 0.0;
+    notifyListeners();
+  }
+
   void seek(double time) {
-    currentTime = time.clamp(0.0, timelineDuration);
+    currentTime = time.clamp(0.0, computedTimelineDuration);
     notifyListeners();
   }
 

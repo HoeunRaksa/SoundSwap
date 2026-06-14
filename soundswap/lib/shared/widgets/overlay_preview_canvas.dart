@@ -49,6 +49,8 @@ class PreviewOverlayItem {
     this.animationExitDuration = 0.5,
     this.strokeWidth = 0.0,
     this.strokeColorHex = '#000000',
+    this.backgroundBoxColorHex = '#000000',
+    this.shadowColorHex = '#000000',
   });
 
   final String id;
@@ -88,6 +90,8 @@ class PreviewOverlayItem {
   final double animationExitDuration;
   final double strokeWidth;
   final String strokeColorHex;
+  final String backgroundBoxColorHex;
+  final String shadowColorHex;
 }
 
 class OverlayPreviewCanvas extends StatefulWidget {
@@ -247,7 +251,7 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                           bottom: 0,
                           child: Container(
                             width: 1.5,
-                            color: Colors.red,
+                            color: const Color(0xFF00C4FF),
                           ),
                         ),
                       // Active Snapping Guides (Y axis alignment)
@@ -258,7 +262,7 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
                           right: 0,
                           child: Container(
                             height: 1.5,
-                            color: Colors.red,
+                            color: const Color(0xFF00C4FF),
                           ),
                         ),
                       // Draggable overlay items
@@ -771,13 +775,13 @@ class _SelectionHandlesFrame extends StatelessWidget {
     return Stack(
         clipBehavior: Clip.none,
         children: [
-          // Orange Selection Border
+          // Canva-style Blue Selection Border
           Positioned.fill(
             child: IgnorePointer(
               child: Container(
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: locked ? Colors.red : Colors.orange,
+                    color: locked ? Colors.red : const Color(0xFF00C4FF),
                     width: 2.0,
                   ),
                   borderRadius: BorderRadius.circular(4),
@@ -825,7 +829,7 @@ class _SelectionHandlesFrame extends StatelessWidget {
             height: 10,
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: Colors.orange, width: 2),
+              border: Border.all(color: const Color(0xFF00C4FF), width: 2),
               borderRadius: BorderRadius.circular(2),
               boxShadow: const [
                 BoxShadow(blurRadius: 2, color: Colors.black26),

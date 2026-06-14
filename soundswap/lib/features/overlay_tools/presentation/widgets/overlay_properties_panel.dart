@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
+import 'package:soundswap/shared/widgets/color_picker_field.dart';
 import 'package:soundswap/shared/widgets/font_dropdown_widget.dart';
 
 class OverlayPropertiesPanel extends StatefulWidget {
@@ -152,7 +153,7 @@ void _syncFromState() {
     _setText(_letterSpacingController, item.letterSpacing.toStringAsFixed(1));
     _setText(_rotationController, item.rotation.toStringAsFixed(0));
     _setText(_startTimeController, item.startTime.toStringAsFixed(1));
-    _setText(_endTimeController, (item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1));
+    _setText(_endTimeController, (item.endTime ?? widget.controller.computedTimelineDuration).toStringAsFixed(1));
     _setText(_strokeWidthController, item.strokeWidth.toStringAsFixed(0));
     _setText(_strokeColorController, item.strokeColorHex);
     _setText(_scaleController, item.scaleX.toStringAsFixed(1));
@@ -411,15 +412,10 @@ void _syncFromState() {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextField(
-                    controller: _colorController,
-                    focusNode: _colorFocus,
-                    decoration: const InputDecoration(
-                      labelText: 'Color Hex',
-                      hintText: '#FFFFFF',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) => widget.controller.updateSelected(item.copyWith(colorHex: value)),
+                  child: ColorPickerField(
+                    label: 'Text Color',
+                    colorHex: item.colorHex,
+                    onChanged: (val) => widget.controller.updateSelected(item.copyWith(colorHex: val)),
                   ),
                 ),
               ],
@@ -490,15 +486,10 @@ void _syncFromState() {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextField(
-                    controller: _strokeColorController,
-                    focusNode: _strokeColorFocus,
-                    decoration: const InputDecoration(
-                      labelText: 'Stroke Color',
-                      hintText: '#000000',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) => widget.controller.updateSelected(item.copyWith(strokeColorHex: value)),
+                  child: ColorPickerField(
+                    label: 'Stroke Color',
+                    colorHex: item.strokeColorHex,
+                    onChanged: (val) => widget.controller.updateSelected(item.copyWith(strokeColorHex: val)),
                   ),
                 ),
               ],
@@ -511,12 +502,28 @@ void _syncFromState() {
               value: item.shadow,
               onChanged: (value) => widget.controller.updateSelected(item.copyWith(shadow: value)),
             ),
+            if (item.shadow) ...[
+              ColorPickerField(
+                label: 'Shadow Color',
+                colorHex: item.shadowColorHex,
+                onChanged: (val) => widget.controller.updateSelected(item.copyWith(shadowColorHex: val)),
+              ),
+              SizedBox(height: gap),
+            ],
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Background Box'),
               value: item.backgroundBox,
               onChanged: (value) => widget.controller.updateSelected(item.copyWith(backgroundBox: value)),
             ),
+            if (item.backgroundBox) ...[
+              ColorPickerField(
+                label: 'Box Color',
+                colorHex: item.backgroundBoxColorHex,
+                onChanged: (val) => widget.controller.updateSelected(item.copyWith(backgroundBoxColorHex: val)),
+              ),
+              SizedBox(height: gap),
+            ],
             Row(
               children: [
                 Expanded(
@@ -839,7 +846,7 @@ void _syncFromState() {
               if (isCustom) {
                 widget.controller.updateItem(item.copyWith(
                   startTime: 0.0,
-                  endTime: widget.controller.timelineDuration > 5.0 ? 5.0 : widget.controller.timelineDuration,
+                  endTime: widget.controller.computedTimelineDuration > 5.0 ? 5.0 : widget.controller.computedTimelineDuration,
                 ));
               } else {
                 widget.controller.updateItem(item.copyWith(
@@ -869,7 +876,7 @@ void _syncFromState() {
                       final parsed = double.tryParse(val);
                       if (parsed != null) {
                         widget.controller.updateItem(item.copyWith(
-                          startTime: parsed.clamp(0.0, item.endTime ?? widget.controller.timelineDuration),
+                          startTime: parsed.clamp(0.0, item.endTime ?? widget.controller.computedTimelineDuration),
                         ));
                       }
                     },
@@ -891,7 +898,7 @@ void _syncFromState() {
                       final parsed = double.tryParse(val);
                       if (parsed != null) {
                         widget.controller.updateItem(item.copyWith(
-                          endTime: parsed.clamp(item.startTime, widget.controller.timelineDuration),
+                          endTime: parsed.clamp(item.startTime, widget.controller.computedTimelineDuration),
                         ));
                       }
                     },
@@ -904,17 +911,17 @@ void _syncFromState() {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Duration: ${item.startTime.toStringAsFixed(1)}s - ${(item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1)}s (Total: ${((item.endTime ?? widget.controller.timelineDuration) - item.startTime).toStringAsFixed(1)}s)',
+                  'Duration: ${item.startTime.toStringAsFixed(1)}s - ${(item.endTime ?? widget.controller.computedTimelineDuration).toStringAsFixed(1)}s (Total: ${((item.endTime ?? widget.controller.computedTimelineDuration) - item.startTime).toStringAsFixed(1)}s)',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
                 RangeSlider(
-                  values: RangeValues(item.startTime, item.endTime ?? widget.controller.timelineDuration),
+                  values: RangeValues(item.startTime, item.endTime ?? widget.controller.computedTimelineDuration),
                   min: 0.0,
-                  max: widget.controller.timelineDuration,
-                  divisions: (widget.controller.timelineDuration * 2).toInt(),
+                  max: widget.controller.computedTimelineDuration,
+                  divisions: (widget.controller.computedTimelineDuration * 2).toInt(),
                   labels: RangeLabels(
                     '${item.startTime.toStringAsFixed(1)}s',
-                    '${(item.endTime ?? widget.controller.timelineDuration).toStringAsFixed(1)}s',
+                    '${(item.endTime ?? widget.controller.computedTimelineDuration).toStringAsFixed(1)}s',
                   ),
                   onChanged: (values) {
                     widget.controller.updateItem(item.copyWith(

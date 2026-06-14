@@ -23,6 +23,8 @@ class TextToImageRenderer {
     double letterSpacing = 0.0,
     double strokeWidth = 0.0,
     required String strokeColorHex,
+    required String backgroundBoxColorHex,
+    required String shadowColorHex,
   }) async {
     debugPrint('PNG Renderer Applied Font - Family: $fontFamily, Bold: $bold, Italic: $italic, StrokeWidth: $strokeWidth');
 
@@ -40,6 +42,8 @@ class TextToImageRenderer {
       letterSpacing: letterSpacing,
       strokeWidth: strokeWidth,
       strokeColorHex: strokeColorHex,
+      backgroundBoxColorHex: backgroundBoxColorHex,
+      shadowColorHex: shadowColorHex,
     );
 
     // Render widget to image off-screen
