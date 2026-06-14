@@ -51,8 +51,8 @@ class TemplatesController extends ChangeNotifier {
     required OverlayToolsController overlay,
   }) async {
     final overlaySettings = overlay.settings;
-    final activeBranding = home.activeBrandingSettings ?? branding.settings;
-    final activeTextOverlay = home.activeTextOverlaySettings ?? textOverlay.settings;
+    final activeBranding = branding.settings;
+    final activeTextOverlay = textOverlay.settings;
     final template = ProjectTemplate(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: name.trim().isEmpty ? 'Untitled template' : name.trim(),
@@ -221,8 +221,8 @@ class TemplatesController extends ChangeNotifier {
     if (editingTemplateId == null) return;
     
     final overlaySettings = overlay.settings.deepCopy();
-    final activeBranding = home.activeBrandingSettings ?? branding.settings;
-    final activeTextOverlay = home.activeTextOverlaySettings ?? textOverlay.settings;
+    final activeBranding = branding.settings;
+    final activeTextOverlay = textOverlay.settings;
     final template = ProjectTemplate(
       id: editingTemplateId!,
       name: name.trim().isEmpty ? 'Untitled template' : name.trim(),

@@ -1836,20 +1836,20 @@ class _TemplateDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Inject available templates so the controller can pick from them when generating
+
     controller.setAvailableTemplates(templatesController.templates);
-    
+
     final count = controller.selectedTemplateIds.length;
-    final singleId = controller.selectedTemplateId;
-    
+
+
+
+
     String label = 'Select templates';
     if (count > 1) {
       label = '$count templates selected';
     } else if (count == 1) {
       final tid = controller.selectedTemplateIds.first;
       label = _templateById(tid)?.name ?? 'Select templates';
-    } else if (singleId != null) {
-      label = _templateById(singleId)?.name ?? 'Select templates';
     } else if (templatesController.templates.isEmpty) {
       label = 'No templates saved';
     }
@@ -1893,9 +1893,10 @@ class _TemplateDropdown extends StatelessWidget {
                     for (final t in templatesController.templates)
                       CheckboxListTile(
                         title: Text(t.name),
-                        value: controller.selectedTemplateIds.contains(t.id) || controller.selectedTemplateId == t.id,
+                        value: controller.selectedTemplateIds.contains(t.id),
                         onChanged: (val) {
                           controller.toggleTemplateSelection(t.id);
+
                           if (controller.selectedTemplateIds.length == 1) {
                             final loaded = _templateById(controller.selectedTemplateIds.first);
                             if (loaded != null) {
@@ -1903,6 +1904,7 @@ class _TemplateDropdown extends StatelessWidget {
                               overlayController.applySettings(loaded.overlaySettings);
                             }
                           }
+
                           setState(() {});
                         },
                       ),

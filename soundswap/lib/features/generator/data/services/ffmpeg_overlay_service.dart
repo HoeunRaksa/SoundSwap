@@ -97,14 +97,14 @@ class FfmpegOverlayService {
             fontFamily: item.fontFamily,
             bold: item.bold,
             italic: item.italic,
-            fontSize: item.fontSize,
+            fontSize: item.fontSize * (outH / 1920.0),
             colorHex: item.colorHex,
             textAlignment: item.textAlignment,
             shadow: item.shadow,
             backgroundBox: item.backgroundBox,
             lineHeight: item.lineHeight,
             letterSpacing: item.letterSpacing,
-            strokeWidth: item.strokeWidth,
+            strokeWidth: item.strokeWidth * (outH / 1920.0),
             strokeColorHex: item.strokeColorHex,
             backgroundBoxColorHex: item.backgroundBoxColorHex,
             shadowColorHex: item.shadowColorHex,
@@ -194,7 +194,14 @@ class FfmpegOverlayService {
     EffectsSettings? effects,
   }) {
     final filters = <String>[];
-    var current = _baseVideoFilter(outputSize, fitMode, filters);
+    var current = _baseVideoFilter(
+      outputSize,
+      fitMode,
+      filters,
+      outW: outW,
+      outH: outH,
+      forceCanvas: overlayItems.isNotEmpty,
+    );
     var index = 0;
 
     if (effects != null) {
@@ -269,12 +276,16 @@ class FfmpegOverlayService {
   }
 
   String _baseVideoFilter(
-    VideoOutputSize outputSize,
-    VideoFitMode fitMode,
-    List<String> filters,
-  ) {
-    final width = outputSize.width;
-    final height = outputSize.height;
+      VideoOutputSize outputSize,
+      VideoFitMode fitMode,
+      List<String> filters, {
+        required int outW,
+        required int outH,
+        required bool forceCanvas,
+      }) {
+    final width = outputSize.width ?? (forceCanvas ? outW : null);
+    final height = outputSize.height ?? (forceCanvas ? outH : null);
+
     if (width == null || height == null) {
       filters.add('[0:v]null[base]');
       return 'base';
@@ -282,11 +293,11 @@ class FfmpegOverlayService {
 
     final baseFilter = switch (fitMode) {
       VideoFitMode.keepOriginal =>
-        'scale=$width:$height:force_original_aspect_ratio=decrease,pad=$width:$height:(ow-iw)/2:(oh-ih)/2:black',
+      'scale=$width:$height:force_original_aspect_ratio=decrease,pad=$width:$height:(ow-iw)/2:(oh-ih)/2:black',
       VideoFitMode.fitInsideBlurred =>
-        'split[fg][bg];[bg]scale=$width:$height:force_original_aspect_ratio=increase,crop=$width:$height,gblur=sigma=28[blur];[fg]scale=$width:$height:force_original_aspect_ratio=decrease[fit];[blur][fit]overlay=(W-w)/2:(H-h)/2',
+      'split[fg][bg];[bg]scale=$width:$height:force_original_aspect_ratio=increase,crop=$width:$height,gblur=sigma=28[blur];[fg]scale=$width:$height:force_original_aspect_ratio=decrease[fit];[blur][fit]overlay=(W-w)/2:(H-h)/2',
       VideoFitMode.fillCrop =>
-        'scale=$width:$height:force_original_aspect_ratio=increase,crop=$width:$height',
+      'scale=$width:$height:force_original_aspect_ratio=increase,crop=$width:$height',
       VideoFitMode.stretch => 'scale=$width:$height',
     };
 

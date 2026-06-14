@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/overlay_tools/presentation/state/overlay_tools_controller.dart';
 import 'package:soundswap/features/templates/presentation/state/templates_controller.dart';
+import '../../../branding/data/models/branding_settings.dart';
+import '../../../text_overlay/data/models/text_overlay_settings.dart';
 import '../widgets/overlay_templates_panel.dart';
 import 'full_screen_editor_screen.dart';
 import 'package:soundswap/features/home/presentation/state/home_controller.dart';
@@ -84,21 +86,26 @@ class _OverlayToolsScreenState extends State<OverlayToolsScreen> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           FilledButton.icon(
-                            onPressed: () {
+                            onPressed: () async {
                               widget.templatesController.cancelEditingTemplate();
-                              widget.controller.clearCanvas();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => FullScreenEditorScreen(
-                                    controller: widget.controller,
-                                    templatesController: widget.templatesController,
-                                    homeController: widget.homeController,
-                                    brandingController: widget.brandingController,
-                                    textOverlayController: widget.textOverlayController,
-                                    outputSize: VideoOutputSize.vertical1080,
+                              await widget.controller.clearCanvas();
+                              await widget.brandingController.update(const BrandingSettings());
+                              await widget.textOverlayController.update(const TextOverlaySettings());
+                              widget.homeController.clearActiveWorkspaceCache();
+                              if (context.mounted) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenEditorScreen(
+                                      controller: widget.controller,
+                                      templatesController: widget.templatesController,
+                                      homeController: widget.homeController,
+                                      brandingController: widget.brandingController,
+                                      textOverlayController: widget.textOverlayController,
+                                      outputSize: VideoOutputSize.vertical1080,
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              }
                             },
                             icon: const Icon(Icons.add),
                             label: const Text('Create New Template'),

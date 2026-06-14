@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/features/home/data/models/image_to_video_settings.dart';
 import 'package:soundswap/features/home/data/models/media_file.dart';
@@ -536,10 +536,12 @@ class LongVideoService {
   }
 
   Future<void> _runFfmpeg(List<String> arguments) async {
+    final commandStr = _formatCommand(_ffmpegService.ffmpegPath, arguments);
+    debugPrint('[LongVideoExport] running ffmpeg command=$commandStr');
     final result = await _runProcess(_ffmpegService.ffmpegPath, arguments);
     if (result.exitCode != 0) {
       throw FfmpegFailure(
-        command: _formatCommand(_ffmpegService.ffmpegPath, arguments),
+        command: commandStr,
         exitCode: result.exitCode,
         stderr: result.stderr,
         stdout: result.stdout,

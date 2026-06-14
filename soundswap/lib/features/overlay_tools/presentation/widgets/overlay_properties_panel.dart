@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:soundswap/core/responsive/app_responsive.dart';
 import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
@@ -1053,45 +1055,105 @@ void _syncFromState() {
         ),
       );
     }
+    final file = File(imagePath);
+    final exists = file.existsSync();
     final filename = p.basename(imagePath);
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.image_outlined, color: theme.colorScheme.primary, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  filename,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  imagePath,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: exists
+                ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                : Colors.red.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: exists
+                  ? theme.colorScheme.outlineVariant.withValues(alpha: 0.3)
+                  : Colors.red,
+              width: exists ? 1 : 1.5,
             ),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Icon(
+                exists ? Icons.image_outlined : Icons.broken_image,
+                color: exists ? theme.colorScheme.primary : Colors.red,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      filename,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: exists ? theme.colorScheme.onSurface : Colors.red,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      imagePath,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: exists
+                            ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
+                            : Colors.red.withValues(alpha: 0.8),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (!exists) ...[
+                      const SizedBox(height: 4),
+                      const Text(
+                        'This file path was saved inside the template earlier. The file no longer exists.',
+                        style: TextStyle(fontSize: 10, color: Colors.red, fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final selectedId = widget.controller.selectedItemId;
+            if (selectedId != null) {
+              final result = await FilePicker.platform.pickFiles(type: FileType.image);
+              final path = result?.files.single.path;
+              if (path != null) {
+                final index = widget.controller.settings.items.indexWhere((i) => i.id == selectedId);
+                if (index >= 0) {
+                  final oldItem = widget.controller.settings.items[index];
+                  final newItem = oldItem.copyWith(
+                    imagePath: path,
+                    name: p.basename(path),
+                  );
+                  final newItems = List<OverlayItem>.from(widget.controller.settings.items);
+                  newItems[index] = newItem;
+                  widget.controller.updateSettings(
+                    widget.controller.settings.copyWith(items: newItems),
+                  );
+                }
+              }
+            }
+          },
+          icon: const Icon(Icons.folder_open, size: 16),
+          label: const Text('Replace Image'),
+          style: OutlinedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
     );
   }
 }

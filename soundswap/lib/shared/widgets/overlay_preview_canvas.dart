@@ -155,15 +155,6 @@ class _OverlayPreviewCanvasState extends State<OverlayPreviewCanvas> {
       if (item.hidden) return false;
       if (widget.currentTime < item.startTime) return false;
       if (item.endTime != null && widget.currentTime > item.endTime!) return false;
-      
-      // If it is an image overlay, only show if the image file exists
-      if (item.kind == PreviewOverlayKind.logo) {
-        final imagePath = item.imagePath;
-        final imageFile = imagePath == null ? null : File(imagePath);
-        if (imageFile == null || !imageFile.existsSync()) {
-          return false;
-        }
-      }
       return true;
     }).toList();
 
@@ -878,7 +869,30 @@ class _LogoPreview extends StatelessWidget {
     final imageFile = imagePath == null ? null : File(imagePath);
 
     if (imageFile == null || !imageFile.existsSync()) {
-      return const SizedBox.shrink();
+      return SizedBox(
+        width: previewWidth,
+        height: item.customHeight != null ? size.height * item.customHeight! : previewWidth,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.15),
+            border: Border.all(color: Colors.red, width: 2),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image, color: Colors.red, size: 28),
+                SizedBox(height: 4),
+                Text(
+                  'Broken Layer',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     return SizedBox(
@@ -1188,8 +1202,6 @@ class _GuidePainter extends CustomPainter {
     return preset != oldDelegate.preset || customPadding != oldDelegate.customPadding;
   }
 }
-
-
 
 class _SizeReporter extends StatefulWidget {
   final Widget child;

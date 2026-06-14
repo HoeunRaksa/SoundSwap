@@ -10,6 +10,7 @@ import '../../../branding/presentation/state/branding_controller.dart';
 import '../../../home/presentation/state/home_controller.dart';
 import '../../../templates/data/models/project_template.dart';
 import '../../../templates/data/services/template_thumbnail_generator.dart';
+import '../../../templates/data/services/template_validator.dart';
 import '../../../templates/presentation/state/templates_controller.dart';
 import '../../../text_overlay/presentation/state/text_overlay_controller.dart';
 import '../../data/models/overlay_item.dart';
@@ -185,13 +186,9 @@ class _TemplateTileState extends State<_TemplateTile> {
     final path = widget.template.thumbnailPath;
     final exists = path != null && File(path).existsSync();
 
-    debugPrint('[TemplateThumbnail] template=${widget.template.name}');
-    debugPrint('[TemplateThumbnail] path=$path');
-    debugPrint('[TemplateThumbnail] exists=$exists');
-    if (exists) {
-      debugPrint('[TemplateThumbnail] size=${File(path).lengthSync()}');
-    }
-    debugPrint('[TemplateThumbnail] itemCount=${widget.template.overlaySettings.items.length}');
+    debugPrint('[Thumbnail] template=${widget.template.name}');
+    debugPrint('[Thumbnail] thumbnailPath=$path');
+    debugPrint('[Thumbnail] fileExists=$exists');
 
     if (exists) {
       if (mounted) {
@@ -262,6 +259,7 @@ class _TemplateTileState extends State<_TemplateTile> {
 
     final resolvedPath = widget.template.thumbnailPath ?? _temporaryThumbnailPath;
     final hasThumbnail = resolvedPath != null && File(resolvedPath).existsSync();
+    final hasMissingAsset = TemplateValidator.validateTemplate(widget.template).isNotEmpty;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -283,44 +281,83 @@ class _TemplateTileState extends State<_TemplateTile> {
         children: [
           AspectRatio(
             aspectRatio: 9 / 16,
-            child: hasThumbnail
-                ? Image.file(
-                    File(resolvedPath),
-                    key: ValueKey('${widget.template.id}-${widget.template.version}-$resolvedPath'),
-                    fit: BoxFit.cover,
-                  )
-                : Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: _isLoadingThumbnail
-                        ? const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                                SizedBox(height: 12),
-                                Text(
-                                  'Generating\npreview...',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 12, color: Colors.grey),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                hasThumbnail
+                    ? Image.file(
+                        File(resolvedPath),
+                        key: ValueKey('${widget.template.id}-${widget.template.version}-$resolvedPath'),
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: _isLoadingThumbnail
+                            ? const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'Generating\npreview...',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          )
-                        : const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.image_not_supported, size: 28, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Preview\nunavailable',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                              )
+                            : const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.image_not_supported, size: 28, color: Colors.grey),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Preview\nunavailable',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
+                      ),
+                if (hasMissingAsset)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.warning, size: 14, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Missing asset',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
+                        ],
+                      ),
+                    ),
                   ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),

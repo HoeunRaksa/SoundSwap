@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/cupertino.dart';
 import '../../../../shared/services/local_json_store.dart';
 import '../models/project_template.dart';
@@ -20,18 +18,22 @@ class TemplatesService {
         .toList();
     for (final t in templates) {
       debugPrint('[TemplatesService] Loaded: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
+      debugPrint('[TemplatesService] loaded thumbnailPath=${t.thumbnailPath}');
     }
     return templates;
   }
 
-  Future<void> saveAll(List<ProjectTemplate> templates) {
+  Future<void> saveAll(List<ProjectTemplate> templates) async {
     debugPrint('\n[TemplatesService] Saving ${templates.length} templates...');
     for (final t in templates) {
       debugPrint('[TemplatesService] Saving: ${t.name} (id: ${t.id}) -> thumbnailPath: ${t.thumbnailPath}');
     }
-    return _store.writeList(
+    await _store.writeList(
       _fileName,
       templates.map((template) => template.toJson()).toList(),
     );
+    for (final t in templates) {
+      debugPrint('[TemplatesService] saved thumbnailPath=${t.thumbnailPath}');
+    }
   }
 }

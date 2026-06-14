@@ -166,6 +166,11 @@ class _MissingAssetsDialogState extends State<MissingAssetsDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('File: ${asset.assetPath}', style: const TextStyle(color: Colors.red)),
+                          const Text(
+                            'This file path was saved inside the template earlier. The file no longer exists.',
+                            style: TextStyle(fontSize: 12, color: Colors.red, fontStyle: FontStyle.italic),
+                          ),
+                          const SizedBox(height: 4),
                           Text('Layer: ${asset.layerName ?? "Logo"} (${asset.assetType == AssetType.logo ? "Logo" : "Image Overlay"})'),
                         ],
                       ),

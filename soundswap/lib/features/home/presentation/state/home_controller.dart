@@ -263,22 +263,41 @@ class HomeController extends ChangeNotifier {
 
   void setAvailableTemplates(List<ProjectTemplate> templates) {
     availableTemplates = templates;
+
+    final validIds = templates.map((t) => t.id).toSet();
+
+    final cleanedIds = selectedTemplateIds
+        .where(validIds.contains)
+        .toList();
+
+    if (cleanedIds.length != selectedTemplateIds.length) {
+      selectedTemplateIds = cleanedIds;
+      selectedTemplateId = cleanedIds.length == 1 ? cleanedIds.first : null;
+      unawaited(_persistLastState());
+      notifyListeners();
+    }
   }
 
-  void toggleTemplateSelection(String id) {
-    if (selectedTemplateIds.contains(id)) {
-      selectedTemplateIds.remove(id);
+  void toggleTemplateSelection(String templateId) {
+    final next = List<String>.from(selectedTemplateIds);
+
+    if (next.contains(templateId)) {
+      next.remove(templateId);
     } else {
-      selectedTemplateIds.add(id);
+      next.add(templateId);
     }
-    if (selectedTemplateIds.isNotEmpty) {
-      selectedTemplateId = null; // Clear single select if multi is used
-    }
-    useTemplate = selectedTemplateIds.isNotEmpty || selectedTemplateId != null;
-    unawaited(_persistLastState());
+
+    setSelectedTemplateIds(next);
+  }
+  void setSelectedTemplateIds(List<String> ids) {
+    selectedTemplateIds
+      ..clear()
+      ..addAll(ids);
+
+    selectedTemplateId = ids.length == 1 ? ids.first : null;
+
     notifyListeners();
   }
-
   void setOutputSize(VideoOutputSize value) {
     if (outputSize == value) return;
     outputSize = value;
@@ -336,6 +355,15 @@ class HomeController extends ChangeNotifier {
     upscaleWarning = outputSize == VideoOutputSize.original
         ? null
         : 'Upscaling may not improve quality.';
+    unawaited(_persistLastState());
+    notifyListeners();
+  }
+
+  void clearActiveWorkspaceCache() {
+    activeBrandingSettings = null;
+    activeTextOverlaySettings = null;
+    activeOverlaySettings = null;
+    selectedTemplateId = null;
     unawaited(_persistLastState());
     notifyListeners();
   }

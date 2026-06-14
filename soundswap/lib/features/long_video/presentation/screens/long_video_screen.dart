@@ -848,6 +848,7 @@ class _LongVideoScreenState extends State<LongVideoScreen> {
                       )
                     : FilledButton.icon(
                         onPressed: controller.canExport ? () async {
+                          debugPrint('[LongVideoExportButton] clicked');
                           await controller.startExport(
                             onMissingAssetsDetected: (missingAssets) async {
                               final Map<String, ProjectTemplate> initialTemplates = {};

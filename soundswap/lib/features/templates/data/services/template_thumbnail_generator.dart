@@ -124,11 +124,14 @@ class TemplateThumbnailGenerator {
     }
     final fileName = 'thumb_${template.id}_v${template.version}.png';
     final file = File('${cacheDir.path}/$fileName');
+
+    debugPrint('[ThumbnailGenerator] itemCount=${allItems.length}');
+    debugPrint('[ThumbnailGenerator] outputPath=${file.path}');
+    debugPrint('[ThumbnailGenerator] bytes=${byteData?.lengthInBytes}');
+
     await file.writeAsBytes(byteData!.buffer.asUint8List());
 
-    debugPrint('output file path: ${file.path}');
-    debugPrint(file.existsSync() as String?);
-    debugPrint(file.lengthSync() as String?);
+    debugPrint('[ThumbnailGenerator] exists=${file.existsSync()}');
 
     // Cleanup ui.Images
     for (final img in loadedImages.values) {

@@ -295,9 +295,10 @@ class _OverlayListTile extends StatelessWidget {
   }
 
   Widget _buildThumbnail(BuildContext context) {
-    if (item.type == OverlayItemType.image && item.imagePath != null) {
-      final file = File(item.imagePath!);
-      if (file.existsSync()) {
+    if (item.type == OverlayItemType.image) {
+      final file = item.imagePath == null ? null : File(item.imagePath!);
+      final exists = file != null && file.existsSync();
+      if (exists) {
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
@@ -312,6 +313,23 @@ class _OverlayListTile extends StatelessWidget {
               height: 30,
               child: Image.file(file, fit: BoxFit.cover),
             ),
+          ),
+        );
+      } else {
+        return Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: Colors.red,
+            ),
+          ),
+          child: const Icon(
+            Icons.broken_image,
+            size: 16,
+            color: Colors.red,
           ),
         );
       }

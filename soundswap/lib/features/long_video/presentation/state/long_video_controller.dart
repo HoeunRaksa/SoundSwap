@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:soundswap/core/constants/app_constants.dart';
@@ -22,7 +23,8 @@ import 'package:soundswap/features/overlay_tools/data/models/overlay_settings.da
 import 'package:soundswap/features/overlay_tools/data/models/overlay_item.dart';
 
 import '../../../../core/video/video_output_settings.dart';
-
+import 'package:soundswap/features/long_video/data/models/long_video_settings.dart';
+import 'package:soundswap/features/long_video/data/services/long_video_settings_service.dart';
 class LongVideoController extends ChangeNotifier {
   LongVideoController({
     FolderPickerService? folderPickerService,
@@ -31,12 +33,16 @@ class LongVideoController extends ChangeNotifier {
     ResultHistoryController? resultHistoryController,
     HomeController? homeController,
     TemplatesController? templatesController,
+    LongVideoSettingsService? settingsService,
   }) : _folderPickerService = folderPickerService ?? FolderPickerService(),
         _mediaScannerService = mediaScannerService ?? MediaScannerService(),
         _longVideoService = longVideoService ?? LongVideoService(),
         _resultHistoryController = resultHistoryController,
         _homeController = homeController,
-        _templatesController = templatesController;
+        _templatesController = templatesController,
+        _settingsService = settingsService ?? LongVideoSettingsService() {
+    _init();
+  }
 
   final FolderPickerService _folderPickerService;
   final MediaScannerService _mediaScannerService;
@@ -44,6 +50,62 @@ class LongVideoController extends ChangeNotifier {
   final ResultHistoryController? _resultHistoryController;
   final HomeController? _homeController;
   final TemplatesController? _templatesController;
+  final LongVideoSettingsService _settingsService;
+  final _random = Random();
+
+  Future<void> _init() async {
+    final settings = await _settingsService.load();
+    if (settings != null) {
+      useOverlays = settings.useOverlay;
+      useTemplate = settings.useTemplate;
+      selectedTemplateId = settings.selectedTemplateId;
+      selectedTemplateIds = List.from(settings.selectedTemplateIds);
+      outputSize = settings.outputSize;
+      fitMode = settings.fitMode;
+      audioMode = settings.audioMode;
+      audioSettings = settings.audioSettings;
+      selectedAudioPath = settings.selectedAudioPath;
+      audioBehavior = settings.audioBehavior;
+      targetMinutes = settings.targetMinutes;
+      clipSeconds = settings.clipSeconds;
+      useImages = settings.useImages;
+      numOutputs = settings.numOutputs;
+      imageSettings = settings.imageSettings;
+      durationMode = settings.durationMode;
+
+      debugPrint('[LongVideoSettings] loaded outputSize=$outputSize');
+      debugPrint('[LongVideoSettings] loaded fitMode=$fitMode');
+      debugPrint('[LongVideoSettings] loaded useTemplate=$useTemplate');
+      debugPrint('[LongVideoSettings] loaded selectedTemplateIds=$selectedTemplateIds');
+      notifyListeners();
+    }
+  }
+
+  Future<void> _persistSettings() async {
+    final settings = LongVideoSettings(
+      useOverlay: useOverlays,
+      useTemplate: useTemplate,
+      selectedTemplateId: selectedTemplateId,
+      selectedTemplateIds: selectedTemplateIds,
+      outputSize: outputSize,
+      fitMode: fitMode,
+      audioMode: audioMode,
+      audioSettings: audioSettings,
+      selectedAudioPath: selectedAudioPath,
+      audioBehavior: audioBehavior,
+      targetMinutes: targetMinutes,
+      clipSeconds: clipSeconds,
+      useImages: useImages,
+      numOutputs: numOutputs,
+      imageSettings: imageSettings,
+      durationMode: durationMode,
+    );
+    await _settingsService.save(settings);
+    debugPrint('[LongVideoSettings] saved outputSize=$outputSize');
+    debugPrint('[LongVideoSettings] saved fitMode=$fitMode');
+    debugPrint('[LongVideoSettings] saved useTemplate=$useTemplate');
+    debugPrint('[LongVideoSettings] saved selectedTemplateIds=$selectedTemplateIds');
+  }
 
   bool useOverlays = false;
   String selectedOverlayPreset = 'current_overlays';
@@ -147,6 +209,7 @@ class LongVideoController extends ChangeNotifier {
     if (targetMinutes == parsed) return;
     targetMinutes = parsed;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -155,6 +218,7 @@ class LongVideoController extends ChangeNotifier {
     if (clipSeconds == parsed) return;
     clipSeconds = parsed;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -162,6 +226,7 @@ class LongVideoController extends ChangeNotifier {
     if (audioMode == value) return;
     audioMode = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -169,6 +234,7 @@ class LongVideoController extends ChangeNotifier {
     if (selectedAudioPath == value) return;
     selectedAudioPath = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -176,6 +242,7 @@ class LongVideoController extends ChangeNotifier {
     if (outputSize == value) return;
     outputSize = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -183,6 +250,7 @@ class LongVideoController extends ChangeNotifier {
     if (fitMode == value) return;
     fitMode = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -191,6 +259,7 @@ class LongVideoController extends ChangeNotifier {
     if (numOutputs == parsed) return;
     numOutputs = parsed;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -198,6 +267,7 @@ class LongVideoController extends ChangeNotifier {
     if (useImages == value) return;
     useImages = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -223,6 +293,7 @@ class LongVideoController extends ChangeNotifier {
       if (imageSettings.durationValue == val) return;
       imageSettings = imageSettings.copyWith(durationValue: val);
       plan = null;
+      _persistSettings();
       notifyListeners();
     }
   }
@@ -231,6 +302,7 @@ class LongVideoController extends ChangeNotifier {
     if (imageSettings.durationUnit == value) return;
     imageSettings = imageSettings.copyWith(durationUnit: value);
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -238,6 +310,7 @@ class LongVideoController extends ChangeNotifier {
     if (imageSettings.fitMode == value) return;
     imageSettings = imageSettings.copyWith(fitMode: value);
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -245,6 +318,7 @@ class LongVideoController extends ChangeNotifier {
     if (durationMode == value) return;
     durationMode = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -252,6 +326,7 @@ class LongVideoController extends ChangeNotifier {
     if (audioBehavior == value) return;
     audioBehavior = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -259,6 +334,7 @@ class LongVideoController extends ChangeNotifier {
     if (useOverlays == value) return;
     useOverlays = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -273,6 +349,7 @@ class LongVideoController extends ChangeNotifier {
     if (useTemplate == value) return;
     useTemplate = value;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -280,9 +357,12 @@ class LongVideoController extends ChangeNotifier {
     if (selectedTemplateId == value) return;
     selectedTemplateId = value;
     if (selectedTemplateId != null) {
+      selectedTemplateIds = [selectedTemplateId!];
+    } else {
       selectedTemplateIds.clear();
     }
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -297,11 +377,13 @@ class LongVideoController extends ChangeNotifier {
     }
     useTemplate = selectedTemplateIds.isNotEmpty || selectedTemplateId != null;
     plan = null;
+    _persistSettings();
     notifyListeners();
   }
 
   void setAudioSettings(AudioSettings settings) {
     audioSettings = settings;
+    _persistSettings();
     notifyListeners();
   }
 
@@ -312,9 +394,32 @@ class LongVideoController extends ChangeNotifier {
           ? null
           : templates.firstWhere((t) => t.id == selectedTemplateId, orElse: () => templates.first);
 
+  ProjectTemplate? _resolveSelectedTemplateForExport() {
+    if (!useTemplate) return null;
+
+    if (selectedTemplateIds.isNotEmpty) {
+      final id = selectedTemplateIds[_random.nextInt(selectedTemplateIds.length)];
+      try {
+        return templates.firstWhere((t) => t.id == id);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    if (selectedTemplateId != null) {
+      try {
+        return templates.firstWhere((t) => t.id == selectedTemplateId);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
   String? validateTemplateOrOverlay() {
     if (useTemplate) {
-      final t = selectedTemplate;
+      final t = _resolveSelectedTemplateForExport();
       if (t == null) {
         return 'No template selected.';
       }
@@ -532,9 +637,11 @@ class LongVideoController extends ChangeNotifier {
   Future<void> startExport({
     Future<TemplateValidationResult?> Function(List<MissingAsset> missingAssets)? onMissingAssetsDetected,
   }) async {
+    debugPrint('[LongVideoExport] startExport entered');
     final currentPlan = plan;
     if (currentPlan == null) {
       errorMessage = 'Generate a plan before exporting.';
+      debugPrint('[LongVideoExport] blocked reason=Generate a plan before exporting.');
       notifyListeners();
       return;
     }
@@ -542,6 +649,7 @@ class LongVideoController extends ChangeNotifier {
     final validationError = validateTemplateOrOverlay();
     if (validationError != null) {
       errorMessage = 'Validation Failed: $validationError';
+      debugPrint('[LongVideoExport] blocked reason=Validation Failed: $validationError');
       isExporting = false;
       notifyListeners();
       return;
@@ -549,6 +657,7 @@ class LongVideoController extends ChangeNotifier {
 
     if (audios.isEmpty && audioSettings.mode == AudioMode.mixOriginalAndNew) {
       errorMessage = 'Mix Audio Mode requires at least one audio file.';
+      debugPrint('[LongVideoExport] blocked reason=Mix Audio Mode requires at least one audio file.');
       isExporting = false;
       notifyListeners();
       return;
@@ -556,6 +665,7 @@ class LongVideoController extends ChangeNotifier {
     
     if (audios.isEmpty && audioSettings.mode == AudioMode.replaceOriginal) {
       errorMessage = 'Replace Mode requires at least one audio file.';
+      debugPrint('[LongVideoExport] blocked reason=Replace Mode requires at least one audio file.');
       isExporting = false;
       notifyListeners();
       return;
@@ -585,6 +695,7 @@ class LongVideoController extends ChangeNotifier {
       if (missingAssets.isNotEmpty) {
         if (onMissingAssetsDetected == null) {
           errorMessage = 'Templates have missing assets but no UI callback was provided.';
+          debugPrint('[LongVideoExport] blocked reason=Templates have missing assets but no UI callback was provided.');
           isExporting = false;
           notifyListeners();
           return;
@@ -592,6 +703,7 @@ class LongVideoController extends ChangeNotifier {
         final resolution = await onMissingAssetsDetected(missingAssets);
         if (resolution == null) {
           errorMessage = 'Export cancelled (Missing template assets).';
+          debugPrint('[LongVideoExport] blocked reason=Export cancelled (Missing template assets).');
           isExporting = false;
           notifyListeners();
           return;
@@ -678,25 +790,49 @@ class LongVideoController extends ChangeNotifier {
 
           ProjectTemplate? loopTemplate;
           if (useTemplate) {
-            if (selectedTemplateIds.isNotEmpty) {
-              final idList = selectedTemplateIds.toList()..shuffle();
-              try {
-                loopTemplate = templates.firstWhere((t) => t.id == idList.first);
-              } catch (_) {
-                if (templates.isNotEmpty) loopTemplate = templates.first;
-              }
-            } else if (selectedTemplateId != null) {
-              try {
-                loopTemplate = templates.firstWhere((t) => t.id == selectedTemplateId);
-              } catch (_) {
-                if (templates.isNotEmpty) loopTemplate = templates.first;
-              }
-            }
+            loopTemplate = _resolveSelectedTemplateForExport();
           }
 
-          final loopBranding = loopTemplate != null ? (loopTemplate.useBranding ? loopTemplate.branding : null) : getActiveBranding();
-          final loopTextOverlay = loopTemplate != null ? (loopTemplate.useTextOverlay ? loopTemplate.textOverlay : null) : getActiveTextOverlay();
-          final loopOverlaySettings = loopTemplate != null ? (loopTemplate.useOverlay ? loopTemplate.overlaySettings : null) : getActiveOverlaySettings();
+          debugPrint('\n[LongVideoTemplate]');
+          debugPrint('useTemplate=$useTemplate');
+          debugPrint('selectedTemplateId=$selectedTemplateId');
+          debugPrint('selectedTemplateIds=$selectedTemplateIds');
+          debugPrint('resolvedTemplate=${loopTemplate?.name ?? 'null'}');
+
+          BrandingSettings? loopBranding;
+          TextOverlaySettings? loopTextOverlay;
+          OverlaySettings? loopOverlaySettings;
+
+          if (useTemplate && loopTemplate != null) {
+            loopBranding = loopTemplate.useBranding ? loopTemplate.branding : null;
+            loopTextOverlay = loopTemplate.useTextOverlay ? loopTemplate.textOverlay : null;
+            loopOverlaySettings = loopTemplate.useOverlay ? loopTemplate.overlaySettings : null;
+          } else if (!useTemplate && useOverlays) {
+            loopBranding = _homeController?.useBranding == true ? _homeController?.activeBrandingSettings : null;
+            loopTextOverlay = _homeController?.useTextOverlay == true ? _homeController?.activeTextOverlaySettings : null;
+            loopOverlaySettings = _homeController?.useOverlay == true ? _homeController?.activeOverlaySettings : null;
+          }
+
+          debugPrint('\n[LongVideoExport]');
+          debugPrint('index=$k');
+          debugPrint('useTemplate=$useTemplate');
+          debugPrint('selectedTemplateIds=${selectedTemplateIds.isNotEmpty ? selectedTemplateIds : (selectedTemplateId != null ? [selectedTemplateId] : [])}');
+          debugPrint('pickedTemplate=${loopTemplate?.name}');
+          debugPrint('outputSize=$outputSize');
+          debugPrint('fitMode=$fitMode');
+
+          final overlayItemsCount = loopOverlaySettings?.items.length ?? 0;
+          final hasBranding = loopBranding?.hasLogo == true || loopBranding?.hasContactText == true;
+          final hasTextOverlay = loopTextOverlay?.hasContent == true;
+          debugPrint('\n[LongVideoOverlay]');
+          debugPrint('branding=$hasBranding');
+          debugPrint('textOverlay=$hasTextOverlay');
+          debugPrint('overlayItems=$overlayItemsCount');
+          debugPrint('template=${loopTemplate?.name}');
+
+          if (useTemplate && loopTemplate != null && overlayItemsCount == 0 && !hasBranding && !hasTextOverlay) {
+            debugPrint('[LongVideoOverlay] WARNING selected template has no renderable content');
+          }
 
           await _longVideoService.exportPlan(
             loopPlan,
@@ -749,6 +885,9 @@ class LongVideoController extends ChangeNotifier {
           // Continue to next output instead of rethrowing for multi-output batches
           logs = [...logs, '[Video $k/$total] FAILED: $error'];
           message = '[Video $k/$total] Failed — continuing...';
+          if (errorMessage == null) {
+            errorMessage = error.toString();
+          }
           notifyListeners();
         }
       }
@@ -756,7 +895,7 @@ class LongVideoController extends ChangeNotifier {
         message = 'All $total export${total > 1 ? 's' : ''} completed! ✓ $successCount succeeded.';
       } else {
         message = 'Completed: ✓ $successCount succeeded, ✗ $failedCount failed.';
-        if (failedCount == total) errorMessage = 'All exports failed. Check logs.';
+        if (failedCount == total && errorMessage == null) errorMessage = 'All exports failed. Check logs.';
       }
     } catch (error) {
       errorMessage = error.toString();

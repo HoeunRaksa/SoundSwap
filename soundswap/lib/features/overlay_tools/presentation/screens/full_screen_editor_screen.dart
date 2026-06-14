@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:soundswap/features/text_overlay/presentation/state/text_overlay_
 import 'package:soundswap/features/overlay_tools/utils/template_render_data.dart';
 import 'package:soundswap/shared/widgets/overlay_preview_canvas.dart';
 
+import '../../../templates/data/services/template_thumbnail_generator.dart';
 import '../widgets/overlay_layers_panel.dart';
 import '../widgets/overlay_properties_panel.dart';
 
@@ -294,6 +296,147 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
     );
   }
 
+  Future<void> _handleRemoveMissingAssets() async {
+    final tCtrl = widget.templatesController;
+    if (tCtrl.editingTemplateId == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Remove Missing Assets'),
+          content: const Text(
+            'This will permanently remove broken image/logo layers from the saved template. Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    final beforeItems = List<OverlayItem>.from(widget.controller.settings.items);
+    int removedCount = 0;
+    bool logoCleared = false;
+
+    // 1. Remove from BrandingController logoPath if missing
+    if (widget.brandingController.settings.logoPath != null &&
+        widget.brandingController.settings.logoPath!.isNotEmpty) {
+      final f = File(widget.brandingController.settings.logoPath!);
+      if (!f.existsSync()) {
+        await widget.brandingController.update(
+          widget.brandingController.settings.copyWith(
+            logoPath: '',
+          ),
+        );
+        logoCleared = true;
+      }
+    }
+
+    // 2. Remove from OverlayToolsController.settings.items
+    final items = widget.controller.settings.items;
+    final cleanItems = items.where((item) {
+      if (item.type == OverlayItemType.image &&
+          item.imagePath != null &&
+          item.imagePath!.isNotEmpty) {
+        final exists = File(item.imagePath!).existsSync();
+        if (!exists) {
+          removedCount++;
+        }
+        return exists;
+      }
+      return true;
+    }).toList();
+    
+    widget.controller.updateSettings(
+      widget.controller.settings.copyWith(items: cleanItems),
+    );
+
+    // Get selected template
+    final templateId = tCtrl.editingTemplateId!;
+    final existingIndex = tCtrl.templates.indexWhere((t) => t.id == templateId);
+    bool templateSaved = false;
+    bool thumbnailRegenerated = false;
+
+    if (existingIndex >= 0) {
+      final existingTemplate = tCtrl.templates[existingIndex];
+
+      // Remove from selected template.overlaySettings.items
+      final updatedOverlaySettings = existingTemplate.overlaySettings.copyWith(
+        items: existingTemplate.overlaySettings.items.where((item) {
+          if (item.type == OverlayItemType.image &&
+              item.imagePath != null &&
+              item.imagePath!.isNotEmpty) {
+            return File(item.imagePath!).existsSync();
+          }
+          return true;
+        }).toList(),
+      );
+
+      final updatedBranding = logoCleared 
+          ? existingTemplate.branding.copyWith(logoPath: '') 
+          : existingTemplate.branding;
+
+      var updatedTemplate = existingTemplate.copyWith(
+        overlaySettings: updatedOverlaySettings,
+        branding: updatedBranding,
+        version: existingTemplate.version + 1,
+      );
+
+      // Save updated template to project_templates.json
+      tCtrl.templates[existingIndex] = updatedTemplate;
+      await tCtrl.saveTemplate(updatedTemplate);
+      templateSaved = true;
+
+      // Regenerate thumbnail
+      try {
+        final newThumbPath = await TemplateThumbnailGenerator.generateThumbnail(
+          updatedTemplate, 
+          activeWorkspaceItems: cleanItems,
+        );
+        updatedTemplate = updatedTemplate.copyWith(thumbnailPath: newThumbPath);
+        tCtrl.templates[existingIndex] = updatedTemplate;
+        await tCtrl.saveTemplate(updatedTemplate);
+        thumbnailRegenerated = true;
+      } catch (e) {
+        debugPrint('Thumbnail generation failed: $e');
+      }
+
+      // Clear old active workspace cache
+      widget.homeController.clearActiveWorkspaceCache();
+
+      // notifyListeners()
+      tCtrl.notifyListeners();
+
+      // Reload templates from disk
+      await tCtrl.load();
+
+      // Add debug log after cleanup exactly as requested:
+      debugPrint('\n[CleanupMissingAssets]');
+      debugPrint('before overlayItems=${beforeItems.map((e) => e.name).toList()}');
+      debugPrint('after overlayItems=${cleanItems.map((e) => e.name).toList()}');
+      debugPrint('removed=$removedCount');
+      debugPrint('brandingLogoCleared=$logoCleared');
+      debugPrint('templateSaved=$templateSaved');
+      debugPrint('thumbnailRegenerated=$thumbnailRegenerated\n');
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Removed all missing assets and updated template.')),
+      );
+    }
+  }
+
   Widget _buildToolbar(ColorScheme colorScheme) {
     return Container(
       color: colorScheme.surfaceContainer,
@@ -362,7 +505,7 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                   ),
-                  if (isEditing)
+                  if (isEditing) ...[
                     OutlinedButton.icon(
                       onPressed: _handleSaveAsNewTemplate,
                       icon: const Icon(Icons.copy, size: 18),
@@ -372,6 +515,39 @@ class _FullScreenEditorScreenState extends State<FullScreenEditorScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                     ),
+                    ListenableBuilder(
+                      listenable: Listenable.merge([widget.controller, widget.brandingController]),
+                      builder: (context, _) {
+                        final hasMissingBrandingLogo = widget.brandingController.settings.logoPath != null &&
+                            widget.brandingController.settings.logoPath!.isNotEmpty &&
+                            !File(widget.brandingController.settings.logoPath!).existsSync();
+                        final hasMissingOverlayImages = widget.controller.settings.items.any((item) =>
+                            item.type == OverlayItemType.image &&
+                            item.imagePath != null &&
+                            item.imagePath!.isNotEmpty &&
+                            !File(item.imagePath!).existsSync());
+                        if (hasMissingBrandingLogo || hasMissingOverlayImages) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 12.0),
+                            child: OutlinedButton.icon(
+                              onPressed: _handleRemoveMissingAssets,
+                              icon: const Icon(Icons.cleaning_services, size: 18, color: Colors.red),
+                              label: const Text(
+                                'Remove all missing assets from this template',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 36),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                side: const BorderSide(color: Colors.red),
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
                 ],
               );
             },
